@@ -171,3 +171,9 @@ The SDK's per-request `timeout` stops counting once the response headers arrive,
   - `callableCases(db, actor)` and `scriptedCallsAllowed()` live in `src/server/services/live.ts`. The flag is not in `src/server/env.ts`, because importing that file into the app makes Turbopack trace the whole project.
   - `GET /api/dev/script-turns` checks the flag before the session, so without it everyone gets 404, even with no cookie. With it, a banker gets `{ turns: [{ speaker, text }] }`, a reviewer gets 403, and a request with no cookie gets 401.
 - `?pace=` is clamped to 50 to 10,000 ms (default 1,500). The control page shows a one-line note when a call is scripted.
+
+## Task 18: the Mac app
+
+- Built on the assumption `audio grant: needs-video` (the spike has no verdict yet): the display-media handler grants the first screen source as `video` beside `audio: "loopback"`. When Task 3 settles on `audio-only`, drop the `video` field in `desktop/src/main.ts`.
+- `desktop/` is a pnpm workspace package (`packages: [desktop]` in `pnpm-workspace.yaml`), so the root lockfile covers it and `pnpm install` at the root installs everything. Electron 45.x no longer has an install script (the binary is downloaded by `@electron/packager` while packaging), so nothing needed adding to `onlyBuiltDependencies`.
+- The control window can set the pill's visibility over IPC only from its own window and only from the Blink origin. Permissions: `media` for `BLINK_URL`'s origin only; every other permission is refused.

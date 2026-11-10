@@ -49,3 +49,8 @@ next-env.d.ts
 
 # spike scratch (Task 2)
 /spike/
+
+# desktop shell build outputs (Task 18)
+/desktop/out/
+/desktop/dist/
+/desktop/node_modules/

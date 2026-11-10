@@ -14,6 +14,9 @@ const eslintConfig = defineConfig([
     "next-env.d.ts",
     // Throwaway spike code (git-ignored) must never break the checks.
     "spike/**",
+    // The Mac shell has its own tsconfig; its build outputs are not source.
+    "desktop/out/**",
+    "desktop/dist/**",
   ]),
 ]);
 

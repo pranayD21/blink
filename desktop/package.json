@@ -1,0 +1,20 @@
+{
+  "name": "blink-desktop",
+  "productName": "Blink",
+  "version": "0.1.0",
+  "private": true,
+  "description": "The banker's Mac app: floats the pill above a call and hands the web app system audio",
+  "main": "dist/main.js",
+  "scripts": {
+    "compile": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "build": "pnpm compile && node scripts/package.mjs",
+    "smoke": "node scripts/smoke.mjs"
+  },
+  "devDependencies": {
+    "@electron/packager": "20.3.0",
+    "@types/node": "^24",
+    "electron": "45.2.3",
+    "typescript": "^5"
+  }
+}

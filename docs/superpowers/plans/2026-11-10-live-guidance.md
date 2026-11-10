@@ -877,17 +877,17 @@ Build this unless the notes file says `verdict: fallback`; in that case tick thi
 - Consumes: `/desktop` and `/desktop/pill` (Tasks 15 and 17); the spike's `audio grant` line.
 - Produces: `desktop/out/Blink-darwin-arm64/Blink.app`; `window.blinkDesktop = { isDesktop: true, setPillVisible(visible: boolean): void }`; root scripts `desktop:build` and `desktop:smoke`.
 
-- [ ] **Step 1: Write the smoke check first.** `main.ts` accepts `--smoke`: it creates both windows, prints one JSON line `{ "pill": { "alwaysOnTop": true, "ignoresMouse": true, "width": 600, "height": 56, "centred": true }, "control": { "url": "<BLINK_URL>/desktop" } }`, and quits with code 0. `desktop:smoke` runs the packaged app with `--smoke` and fails unless that line parses with those values.
-- [ ] **Step 2: Run it and see it fail.** Run: `pnpm desktop:build && pnpm desktop:smoke`. Expected: FAIL, nothing is built yet.
-- [ ] **Step 3: Write the shell.**
+- [x] **Step 1: Write the smoke check first.** `main.ts` accepts `--smoke`: it creates both windows, prints one JSON line `{ "pill": { "alwaysOnTop": true, "ignoresMouse": true, "width": 600, "height": 56, "centred": true }, "control": { "url": "<BLINK_URL>/desktop" } }`, and quits with code 0. `desktop:smoke` runs the packaged app with `--smoke` and fails unless that line parses with those values.
+- [x] **Step 2: Run it and see it fail.** Run: `pnpm desktop:build && pnpm desktop:smoke`. Expected: FAIL, nothing is built yet.
+- [x] **Step 3: Write the shell.**
   - `BLINK_URL` from `--server=` or the environment, default `http://localhost:3000`.
   - Control window 420 by 560 loading `<BLINK_URL>/desktop`. Pill window 600 by 56: `frame: false`, `transparent: true`, `resizable: false`, `movable: false`, `focusable: false`, `hasShadow: false`, `skipTaskbar: true`; `setAlwaysOnTop(true, "screen-saver")`; `setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true })`; `setIgnoreMouseEvents(true)`; x centred on the primary display's work area, y 8 below its top; hidden until `setPillVisible(true)`.
   - `setDisplayMediaRequestHandler` answers with `audio: "loopback"`, and with a screen source as `video` only if the spike recorded `audio grant: needs-video`.
   - `setPermissionRequestHandler` allows `media` for `BLINK_URL`'s origin only. Navigation and new windows outside that origin are refused. `contextIsolation: true`, `nodeIntegration: false`.
   - `scripts/package.mjs` uses `@electron/packager` with `extendInfo` for `NSAudioCaptureUsageDescription` ("Blink listens to the other side of your call to warn you during it.") and `NSMicrophoneUsageDescription` ("Blink listens to your side of the call."), then ad-hoc signs the app.
   - Pin Electron exactly in `desktop/package.json` and allow its install script there.
-- [ ] **Step 4: Run the smoke check.** Run: `pnpm desktop:build && pnpm desktop:smoke`. Expected: PASS.
-- [ ] **Step 5: Commit.**
+- [x] **Step 4: Run the smoke check.** Run: `pnpm desktop:build && pnpm desktop:smoke`. Expected: PASS.
+- [x] **Step 5: Commit.**
 
 ```bash
 git add desktop package.json tsconfig.json eslint.config.mjs .gitignore
