@@ -5,8 +5,8 @@ import { getDb } from "@/server/db/client";
 import { releasedBriefs } from "@/server/services/briefs";
 
 export default async function AnalystPage() {
-  await pageActor();
-  const briefs = releasedBriefs(getDb());
+  const actor = await pageActor();
+  const briefs = releasedBriefs(getDb(), actor);
   return (
     <PageShell title="Released briefs" description="Research briefs that compliance has released. Each sentence cites the expert statements it rests on. Statements compliance restricted are not here, and neither are briefs still in review.">
       {briefs.length === 0 ? (

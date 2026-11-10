@@ -222,12 +222,12 @@ describe("what an analyst may never read (§14)", () => {
     expect(appError(() => transact((tx) => requestBriefDraft(tx, CASE, "template", priya))).status).toBe(403);
     expect(appError(() => transact((tx) => editBrief(tx, brief.id, { sections: [], expectedVersion: 1 }, priya))).status).toBe(403);
     expect(appError(() => transact((tx) => releaseBrief(tx, brief.id, { audience: "analyst", expectedVersion: 1 }, priya))).status).toBe(403);
-    expect(releasedBriefs(getDb())).toEqual([]);
+    expect(releasedBriefs(getDb(), user("priya"))).toEqual([]);
 
     approve(brief.id);
-    expect(releasedBriefs(getDb())).toEqual([]);
+    expect(releasedBriefs(getDb(), user("priya"))).toEqual([]);
     expect(release(brief.id)).toMatchObject({ released: true });
-    const visible = releasedBriefs(getDb());
+    const visible = releasedBriefs(getDb(), user("priya"));
     expect(visible).toHaveLength(1);
     expect(visible[0].standing).toBe("current");
   });
@@ -245,7 +245,7 @@ describe("what an analyst may never read (§14)", () => {
     const brief = draftTemplate();
     approve(brief.id);
     release(brief.id);
-    const [visible] = releasedBriefs(getDb());
+    const [visible] = releasedBriefs(getDb(), user("priya"));
     const cited = visible.citations.map((c) => c.key);
     expect(cited).not.toContain(G1);
     expect(cited).not.toContain(G2);

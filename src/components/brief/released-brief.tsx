@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import { Chip } from "@/components/app/status-chip";
 import { formatDateTime, plural, shortHash } from "@/lib/format";
@@ -61,7 +62,12 @@ export function ReleasedBrief({ brief }: { brief: Released }) {
               </ul>
             </section>
           ))}
-          <p className="border-t pt-3 text-sm font-medium text-slate-600" data-testid="withheld-note">
+          <p className="border-t pt-3 text-sm">
+            <Link href={`/analyst/${brief.releaseId}`} data-testid="read-transcript" className="font-medium text-indigo-700 underline-offset-4 hover:underline">
+              Read the transcript
+            </Link>
+          </p>
+          <p className="text-sm font-medium text-slate-600" data-testid="withheld-note">
             {brief.withheldCount === 0 ? "No statements were withheld by compliance." : `${plural(brief.withheldCount, "statement")} withheld by compliance.`}
           </p>
         </div>

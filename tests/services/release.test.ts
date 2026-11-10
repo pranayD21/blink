@@ -99,7 +99,7 @@ describe("release check (§12.4): each failure is named", () => {
     // The approval depended on the brief's hash, so the same check also marks it stale.
     expect(codes(result)).toContain("APPROVAL_STALE");
     expect(statusOf()).not.toBe("RELEASED");
-    expect(releasedBriefs(getDb())).toEqual([]);
+    expect(releasedBriefs(getDb(), user("priya"))).toEqual([]);
   });
 
   it("open finding → FINDING_OPEN", () => {
@@ -188,12 +188,12 @@ describe("transcript v2: a correction to T19 (§12.3, demo steps 8–9)", () => 
   it("after release: the analyst's copy is marked under re-review; re-attest, redraft, approve, release succeeds", async () => {
     const v1 = reviewAndApprove();
     expect(release(v1.id)).toMatchObject({ released: true });
-    expect(releasedBriefs(getDb())[0].standing).toBe("current");
+    expect(releasedBriefs(getDb(), user("priya"))[0].standing).toBe("current");
 
     await uploadV2();
     expect(statusOf()).toBe("IN_REVIEW");
     // Exposure already happened: the released brief stays visible, flagged, not silently withdrawn.
-    const flagged = releasedBriefs(getDb())[0];
+    const flagged = releasedBriefs(getDb(), user("priya"))[0];
     expect(flagged.standing).toBe("under_re_review");
     expect(flagged.staleReason).toBe("claim changed (C9 · T19)");
     expect(codes(release(v1.id))).toEqual(expect.arrayContaining(["APPROVAL_STALE", "ATTESTATION_STALE"]));
@@ -210,7 +210,7 @@ describe("transcript v2: a correction to T19 (§12.3, demo steps 8–9)", () => 
     expect(release(v2.id)).toMatchObject({ released: true });
     expect(statusOf()).toBe("RELEASED");
 
-    const visible = releasedBriefs(getDb());
+    const visible = releasedBriefs(getDb(), user("priya"));
     expect(visible.map((b) => [b.versionNo, b.standing])).toEqual([
       [2, "current"],
       [1, "superseded"],
@@ -292,7 +292,7 @@ describe("release snapshots the blanked transcript and refuses a leaking summary
     expect(after.redactedTranscriptJson).toBe(before.redactedTranscriptJson);
     expect(after.transcriptVersionId).toBe(before.transcriptVersionId);
     expect(after.transcriptVersionId).not.toBe(currentTranscript(getDb(), CASE)!.id);
-    expect(releasedBriefs(getDb())[0].standing).toBe("under_re_review");
+    expect(releasedBriefs(getDb(), user("priya"))[0].standing).toBe("under_re_review");
   });
 
   it("a claim on a turn that is flagged live-only is not eligible", () => {

@@ -356,20 +356,34 @@ export function briefWorkspace(tx: DbOrTx, caseId: string, actor: Actor) {
   };
 }
 
-/** GET /api/analyst/briefs — released briefs only, with the quotes behind each citation. */
-export function releasedBriefs(tx: DbOrTx) {
+export type ReleaseStanding = "current" | "superseded" | "under_re_review";
+
+/** Compliance reads every release. A banker reads the releases of cases they created, and any release to the investment team. */
+export function canReadRelease(actor: Actor, release: { audience: string }, caseRow: { createdBy: string }): boolean {
+  return isReviewer(actor) || caseRow.createdBy === actor.id || release.audience === "investment_team";
+}
+
+/** Every release the actor may read, newest first, with where each stands. */
+export function readableReleases(tx: DbOrTx, actor: Actor) {
   const releaseRows = tx.select().from(releases).orderBy(desc(releases.releasedAt)).all();
   const caseRows = new Map(tx.select().from(cases).all().map((c) => [c.id, c]));
   const newestByCase = new Map<string, string>();
   for (const r of releaseRows) if (!newestByCase.has(r.caseId)) newestByCase.set(r.caseId, r.id);
 
-  return releaseRows.map((release) => {
-    const brief = getBrief(tx, release.briefId);
-    const caseRow = caseRows.get(release.caseId)!;
+  return releaseRows
+    .filter((release) => canReadRelease(actor, release, caseRows.get(release.caseId)!))
+    .map((release) => {
+      const brief = getBrief(tx, release.briefId);
+      // Exposure has already occurred; the view says so rather than quietly withdrawing the brief (§9.3).
+      const standing: ReleaseStanding = newestByCase.get(release.caseId) !== release.id ? "superseded" : brief.status === "released" ? "current" : "under_re_review";
+      return { release, brief, caseRow: caseRows.get(release.caseId)!, standing };
+    });
+}
+
+/** GET /api/analyst/briefs — released briefs only, with the quotes behind each citation. */
+export function releasedBriefs(tx: DbOrTx, actor: Actor) {
+  return readableReleases(tx, actor).map(({ release, brief, caseRow, standing }) => {
     const sections = fromJson<BriefSection[]>(brief.sentencesJson, []);
-    const newest = newestByCase.get(release.caseId) === release.id;
-    // Exposure has already occurred; the view says so rather than quietly withdrawing the brief (§9.3).
-    const standing = !newest ? ("superseded" as const) : brief.status === "released" ? ("current" as const) : ("under_re_review" as const);
     return {
       releaseId: release.id,
       releasedAt: release.releasedAt,

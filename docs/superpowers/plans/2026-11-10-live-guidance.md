@@ -1077,7 +1077,7 @@ export function releasedTranscript(tx: DbOrTx, releaseId: string, actor: Actor):
 
 - `GET /api/analyst/releases/:id` returns that object; 404 for a release the actor may not read.
 
-- [ ] **Step 1: Write the failing tests.**
+- [x] **Step 1: Write the failing tests.**
 
 ```ts
 it("the banker's transcript holds no restricted text, in any field", () => {
@@ -1091,10 +1091,10 @@ it("another banker cannot read it", () => expect(appError(() => releasedTranscri
 it("a release to the investment team is visible to every banker", () => { /* audience "investment_team" → otherBanker sees it */ });
 ```
 
-- [ ] **Step 2: Run it and see it fail.** Run: `pnpm exec vitest run tests/services/released.test.ts`. Expected: FAIL.
-- [ ] **Step 3: Implement.** The transcript comes only from `releases.redacted_transcript_json`; the service never reads `turns` for a banker. The page shows the summary's link "Read the transcript", then one line per turn; a blanked run is a bar with `aria-label="Hidden by compliance"` sized by its character count; a line above reads "N passages hidden by compliance." An "under re-review" release keeps showing its snapshot under a banner.
-- [ ] **Step 4: Run the tests.** Run: `pnpm test && pnpm e2e`. Expected: PASS.
-- [ ] **Step 5: Commit.**
+- [x] **Step 2: Run it and see it fail.** Run: `pnpm exec vitest run tests/services/released.test.ts`. Expected: FAIL.
+- [x] **Step 3: Implement.** The transcript comes only from `releases.redacted_transcript_json`; the service never reads `turns` for a banker. The page shows the summary's link "Read the transcript", then one line per turn; a blanked run is a bar with `aria-label="Hidden by compliance"` sized by its character count; a line above reads "N passages hidden by compliance." An "under re-review" release keeps showing its snapshot under a banner.
+- [x] **Step 4: Run the tests.** Run: `pnpm test && pnpm e2e`. Expected: PASS.
+- [x] **Step 5: Commit.**
 
 ```bash
 git add src/server/services/released.ts src/server/services/briefs.ts src/app/api/analyst src/app/analyst src/components/brief scripts/record-demo.ts tests/services/released.test.ts tests/services/api.test.ts

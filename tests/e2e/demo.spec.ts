@@ -194,6 +194,16 @@ test("the demo script runs end to end from recordings", async ({ page, baseURL }
     await expect(brief).not.toContainText("dashboard");
     await brief.locator('[data-testid^="citation-"]').first().click();
     await expect(brief.locator("aside")).toContainText("“");
+
+    // The banker reads the transcript too, with what compliance kept hidden blanked.
+    await brief.getByTestId("read-transcript").click();
+    await expect(page.getByTestId("hidden-count")).toHaveText(/^\d+ passages hidden by compliance\.$/);
+    const hidden = Number.parseInt((await page.getByTestId("hidden-count").textContent()) ?? "", 10);
+    await expect(page.getByTestId("hidden-bar")).toHaveCount(hidden);
+    await expect(page.getByTestId("hidden-bar").first()).toHaveAttribute("aria-label", "Hidden by compliance");
+    await expect(page.getByTestId("released-transcript")).not.toContainText("Cardinal");
+    await expect(page.getByTestId("released-transcript")).toContainText("Distributors broadly are soft");
+    await page.goto("/analyst");
   });
 
   // ── 8. Evidence changes; only what depended on it reopens ─────────────────

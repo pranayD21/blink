@@ -3,4 +3,4 @@ import { getDb } from "@/server/db/client";
 import { api } from "@/server/http/route";
 import { releasedBriefs } from "@/server/services/briefs";
 
-export const GET = api(() => ({ briefs: releasedBriefs(getDb()) }));
+export const GET = api(({ actor }) => ({ briefs: releasedBriefs(getDb(), actor) }));

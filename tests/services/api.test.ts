@@ -19,6 +19,7 @@ vi.mock("next/headers", () => ({
 
 import { POST as actAs } from "@/app/api/session/act-as/route";
 import { GET as getAnalystBriefs } from "@/app/api/analyst/briefs/route";
+import { GET as getAnalystRelease } from "@/app/api/analyst/releases/[id]/route";
 import { GET as getAudit } from "@/app/api/audit/route";
 import { POST as verifyAudit } from "@/app/api/audit/verify/route";
 import { POST as releaseRoute } from "@/app/api/briefs/[id]/release/route";
@@ -29,9 +30,9 @@ import { POST as postEvent } from "@/app/api/findings/[id]/events/route";
 import { GET as getJobRoute } from "@/app/api/jobs/[id]/route";
 import { POST as approvePolicyRoute } from "@/app/api/policies/[versionId]/approve/route";
 import { getDb } from "@/server/db/client";
-import { decisions, jobs } from "@/server/db/schema";
+import { decisions, jobs, releases, users } from "@/server/db/schema";
 import { getBrief } from "@/server/services/briefs";
-import { CASE, G1, G2, G3, RATIONALE, completeReview, draftTemplate, findingOn, seedAnalyzed } from "../helpers/db";
+import { CASE, G1, G2, G3, RATIONALE, approve, completeReview, draftTemplate, findingOn, release, seedAnalyzed } from "../helpers/db";
 
 type Handler<P> = (req: NextRequest, ctx: { params: Promise<P> }) => Promise<Response>;
 
@@ -83,6 +84,28 @@ describe("status codes and the error shape (§14)", () => {
     expect(JSON.stringify(list.json)).not.toMatch(/REVIEW_REQUIRED|NEEDS_CONTEXT/);
     const briefs = await call(getAnalystBriefs, "priya");
     expect(briefs.json).toEqual({ briefs: [] });
+  });
+
+  it("the released transcript: the banker who owns the case reads it blanked; another banker and the unreleased case get 404", async () => {
+    completeReview();
+    const brief = draftTemplate();
+    approve(brief.id);
+    expect((await call(getAnalystBriefs, "priya")).json).toEqual({ briefs: [] });
+    release(brief.id);
+    const id = getDb().select().from(releases).get()!.id;
+    getDb().insert(users).values({ id: "user_sam", name: "Sam Ortiz", role: "analyst" }).run();
+
+    const own = await call(getAnalystRelease, "priya", { params: { id } });
+    expect(own.status).toBe(200);
+    expect(own.json).toMatchObject({ release: { id, standing: "current" }, hiddenPassages: expect.any(Number) });
+    expect(JSON.stringify(own.json)).not.toMatch(/Cardinal|I still have a login/);
+
+    const other = await call(getAnalystRelease, "sam", { params: { id } });
+    expect(other.status).toBe(404);
+    expect(other.json.error!.code).toBe("NOT_FOUND");
+    expect((await call(getAnalystBriefs, "sam")).json).toEqual({ briefs: [] });
+    expect((await call(getAnalystRelease, "priya", { params: { id: "rel_missing" } })).status).toBe(404);
+    expect((await call(getAnalystRelease, null, { params: { id } })).status).toBe(401);
   });
 
   it("an analyst polling a job sees progress but not its result", async () => {

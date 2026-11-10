@@ -221,7 +221,7 @@ async function main() {
   const brief1 = await draftApproveRelease("v1");
   if (!brief1) return finish();
   check(brief1.withheldCount === 2, `"2 statements withheld" (got ${brief1.withheldCount})`);
-  const analystView = JSON.stringify(releasedBriefs(getDb()));
+  const analystView = JSON.stringify(releasedBriefs(getDb(), who("priya")));
   check(!/Cardinal/.test(analystView) && !/dashboard/i.test(analystView), "the analyst view contains neither restricted statement");
   if (reached("brief") || problems.length > 0) return finish();
 
