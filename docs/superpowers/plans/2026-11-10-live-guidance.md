@@ -314,7 +314,7 @@ export function probeClaim(question: LlmQuestionWire, turnLabel: string, ctx: Ca
 export function probeRuleIds(question: LlmQuestionWire, turnLabel: string, env: EvaluationEnv, policy: CompiledPolicy): string[];
 ```
 
-- [ ] **Step 1: Write the failing tests.**
+- [x] **Step 1: Write the failing tests.**
 
 ```ts
 // live-transcript.test.ts
@@ -340,15 +340,15 @@ it("small talk hits nothing", () => expect(probeRuleIds(q({ asks_for_fact: false
 it("a rule with no topic predicate is never hit by a question", () => expect(probeRuleIds(q(), "T10", env, policy)).not.toContain("R2"));
 ```
 
-- [ ] **Step 2: Run them and see them fail.** Run: `pnpm exec vitest run tests/core/live-transcript.test.ts tests/core/live-pill.test.ts tests/core/live-probe.test.ts`. Expected: FAIL, modules not found.
-- [ ] **Step 3: Implement the three modules.**
+- [x] **Step 2: Run them and see them fail.** Run: `pnpm exec vitest run tests/core/live-transcript.test.ts tests/core/live-pill.test.ts tests/core/live-probe.test.ts`. Expected: FAIL, modules not found.
+- [x] **Step 3: Implement the three modules.**
   - `liveTranscriptText`: one line per turn, `[HH:MM:SS] Analyst (<name>): <text>`, time from `speechStartMs ?? speechEndMs`, line breaks in text replaced by one space.
   - `decidePill`: red when a move enters `REVIEW_REQUIRED` or `ESCALATION_REQUESTED` from any other state; otherwise amber for a non-empty `probeRuleIds`, or for a move from `NEEDS_CONTEXT` to `NEEDS_CONTEXT` with `addedQuoteThisTurn`; amber is suppressed when `msSinceLastAmber` is below `AMBER_MIN_GAP_MS`.
   - `isTopicPredicate`: the registry entry's `inputs` is non-empty and every input is one of `subject_entity`, `metric`, `event_kind`, `period`, `scope`.
   - `probeClaim`: `null` unless `asks_for_fact`; otherwise a claim with key `probe:<turnLabel>`, the question's subject (name filled with `ctx.issuer` when the kind is `issuer` and the name is blank), metric, event, period and scope, `knowledge_basis: "unstated"`, `access_timing: "unknown"`, no quotes, `solicitedByAnalyst: "yes"`.
   - `probeRuleIds`: a rule is hit when its guard has at least one topic predicate, every topic predicate assesses `supported` on the probe, and `evaluateGuard(...).tri` is not `"false"`.
-- [ ] **Step 4: Run the tests.** Expected: PASS.
-- [ ] **Step 5: Commit.**
+- [x] **Step 4: Run the tests.** Expected: PASS.
+- [x] **Step 5: Commit.**
 
 ```bash
 git add src/core/live/transcript.ts src/core/live/pill.ts src/core/live/probe.ts tests/core/live-transcript.test.ts tests/core/live-pill.test.ts tests/core/live-probe.test.ts
