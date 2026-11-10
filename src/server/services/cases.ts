@@ -6,7 +6,7 @@ import { type Actor, isReviewer, requireRole } from "../auth/actor";
 import { appendAudit } from "../audit/log";
 import { nowIso } from "../clock";
 import { type DbOrTx, fromJson, toJson } from "../db/client";
-import { cases, documentSets, documents, experts, findings, packets, reviewSessions } from "../db/schema";
+import { cases, documentSets, documents, experts, findings, jobs, packets, releases, reviewSessions, tasks, transcriptVersions } from "../db/schema";
 import { newId } from "../ids";
 import { activePolicyVersion, currentTranscript } from "./loaders";
 
@@ -158,5 +158,43 @@ export function packetView(db: DbOrTx, caseId: string) {
     expert: expert
       ? { id: expert.id, name: expert.name, currentEmployer: expert.currentEmployer, currentTitle: expert.currentTitle, employment: fromJson<{ employer: string; title: string; start: string | null; end: string | null }[]>(expert.employmentJson, []), network: expert.network, networkAttestation: fromJson<Record<string, unknown>>(expert.networkAttestationJson, {}) }
       : null,
+  };
+}
+
+/** The three cards above the queue (§15.1). Findings are counted only for reviewers. */
+export function queueSummary(db: DbOrTx, actor: Actor) {
+  const rows = db.select().from(cases).all();
+  const inReview = rows.filter((c) => c.status === "IN_REVIEW" || c.status === "READY_FOR_APPROVAL" || c.status === "STALE").length;
+  if (!isReviewer(actor)) return { inReview, avgReviewMinutes: null, awaitingEscalation: null };
+  const sessions = db.select().from(reviewSessions).all().filter((s) => s.mode === "blink" && s.activeMs > 0);
+  const perCase = new Map<string, number>();
+  for (const s of sessions) perCase.set(s.caseId, (perCase.get(s.caseId) ?? 0) + s.activeMs);
+  const totals = [...perCase.values()];
+  const avgReviewMinutes = totals.length > 0 ? Math.round((totals.reduce((a, b) => a + b, 0) / totals.length / 60000) * 10) / 10 : null;
+  const awaitingEscalation = db.select().from(tasks).all().filter((t) => t.kind === "escalation" && t.status === "open").length;
+  return { inReview, avgReviewMinutes, awaitingEscalation };
+}
+
+/**
+ * What an analyst sees of their own case: the packet, the transcript versions
+ * they uploaded, and how far along the case is. Nothing about findings.
+ */
+export function analystCaseView(db: DbOrTx, caseId: string) {
+  const row = db.select().from(cases).where(eq(cases.id, caseId)).get();
+  if (!row) return null;
+  const versions = db.select().from(transcriptVersions).where(eq(transcriptVersions.caseId, caseId)).orderBy(desc(transcriptVersions.versionNo)).all();
+  const job = db
+    .select()
+    .from(jobs)
+    .where(eq(jobs.type, "analyze_transcript"))
+    .orderBy(desc(jobs.createdAt), desc(jobs.id))
+    .all()
+    .find((j) => fromJson<{ caseId?: string }>(j.payloadJson, {}).caseId === caseId);
+  return {
+    case: { id: row.id, title: row.title, issuer: row.issuer, ticker: row.ticker, status: row.status, createdAt: row.createdAt },
+    packet: packetView(db, caseId),
+    transcripts: versions.map((v) => ({ versionNo: v.versionNo, sourceLabel: v.sourceLabel, createdAt: v.createdAt })),
+    job: job ? { id: job.id, status: job.status } : null,
+    released: db.select({ id: releases.id }).from(releases).where(eq(releases.caseId, caseId)).all().length > 0,
   };
 }
