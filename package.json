@@ -26,6 +26,7 @@
     "record:live": "BLINK_LLM_MODE=record tsx scripts/record-live.ts",
     "live:check": "BLINK_LLM_MODE=replay tsx scripts/record-live.ts",
     "demo:offline": "sh scripts/offline-demo.sh",
+    "live:prepare": "sh scripts/prepare-live-call.sh",
     "audit:verify": "tsx scripts/verify-audit.ts",
     "desktop:build": "pnpm --filter blink-desktop build",
     "desktop:smoke": "pnpm --filter blink-desktop smoke"

@@ -105,6 +105,10 @@ When the owner has reported, the next step is to fill in the answers here, write
 - Task 3 Step 3: waits on Step 2. The answers (system track live, mic track live, pill above Zoom, audio without video, far-side level in the mic) are filled in from the owner's report.
 - Task 3 Step 4: waits on Step 3. Writes `verdict: mac-app` or `verdict: fallback` and `audio grant: audio-only` or `needs-video`; Tasks 18 and 19 read them (Task 18 assumes `needs-video` until then).
 - Task 3 Step 5: waits on Step 4. Commit the notes as `docs(spike): record what the Mac app can hear and show`.
+- Task 19: not built, because the spike has no verdict yet. If the spike's Step 4 writes `verdict: fallback`, Task 19 (the Chrome picture-in-picture pill) must be built then; with `verdict: mac-app` it is not needed.
+- Task 20 Step 2: hold the five-minute call. Steps are in "Task 20: first real call".
+- Task 20 Step 3: waits on Step 2. After the call, tell the agent; it reads the record back from `call_turns` (turn count, turns not read live, median, 95th percentile and worst of `shown_at` minus `speech_ended_at`, whether the pill went red where expected) and writes it in the notes against the targets.
+- Task 20 Step 4: waits on Step 3. Commit the notes as `docs: record the first real call's timings`.
 
 ## Task 10: the time limit is enforced twice
 
@@ -177,3 +181,19 @@ The SDK's per-request `timeout` stops counting once the response headers arrive,
 - Built on the assumption `audio grant: needs-video` (the spike has no verdict yet): the display-media handler grants the first screen source as `video` beside `audio: "loopback"`. When Task 3 settles on `audio-only`, drop the `video` field in `desktop/src/main.ts`.
 - `desktop/` is a pnpm workspace package (`packages: [desktop]` in `pnpm-workspace.yaml`), so the root lockfile covers it and `pnpm install` at the root installs everything. Electron 45.x no longer has an install script (the binary is downloaded by `@electron/packager` while packaging), so nothing needed adding to `onlyBuiltDependencies`.
 - The control window can set the pill's visibility over IPC only from its own window and only from the Blink origin. Permissions: `media` for `BLINK_URL`'s origin only; every other permission is refused.
+
+## Task 20: first real call
+
+Step 1 is done: `pnpm live:prepare` (`scripts/prepare-live-call.sh`) resets `data/blink.db` to the Halvorsen case at intake with the manual policy active, and prints the next commands. It starts nothing. Steps 2 to 4 wait on the owner.
+
+**For the owner (Step 2), about fifteen minutes plus the call.**
+
+1. In the repo folder run `pnpm live:prepare`. This deletes and rebuilds `data/blink.db`, the disposable dev database. Run `pnpm db:reset` afterwards to get the usual seeded dev database back.
+2. Start the server in live mode and leave it running: `BLINK_LLM_MODE=live BLINK_AUTH_MODE=switcher pnpm dev`. The keys in `.env.local` are used; nothing is printed.
+3. Build the Mac app if `desktop/out` is missing (`pnpm desktop:build`), then open it with `open desktop/out/Blink-darwin-arm64/Blink.app`. Do not run the inner binary from a terminal. Allow Microphone and System Audio Recording if macOS asks (see "Spike: Mac app" for what to do if it does not).
+4. In the control window choose the **Halvorsen** case.
+5. Press **Start**. The pill appears at the top of the screen.
+6. Put on headphones, so the expert's voice reaches the app only through the system audio and not through the microphone. Join a Zoom call with a second person (or a second device) who reads the expert's side of a script you wrote. Keep it to about five minutes.
+7. During the call, say at least one thing the demo policy restricts. For example, have the expert give a company figure and say it comes from an internal system they can still access.
+8. Press **Stop**.
+9. Tell the agent the call is done. It reads the record back (Steps 3 and 4).

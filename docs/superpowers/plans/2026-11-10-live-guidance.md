@@ -905,11 +905,11 @@ Build this only if the notes file says `verdict: fallback`. If it says `mac-app`
 **Interfaces:**
 - Produces: `openPillWindow(): Promise<{ render(view: PillView): void; close(): void }>` using `documentPictureInPicture.requestWindow({ width: 480, height: 56 })`.
 
-- [ ] **Step 1: Write the failing browser test** in `tests/e2e-live/call.spec.ts`: with `?source=script` in plain Chromium, Start opens a picture-in-picture window whose `[data-testid=pill]` reaches `data-level="red"`.
-- [ ] **Step 2: Run it and see it fail.**
-- [ ] **Step 3: Implement.** When `window.blinkDesktop` is absent, the Start click opens the pill window before anything else (it needs the click), and audio capture asks for a tab with audio. The control page tells the banker to run the call in a Chrome tab and to drag the pill to the top once.
-- [ ] **Step 4: Run the tests.** Run: `pnpm e2e`. Expected: PASS.
-- [ ] **Step 5: Commit.**
+- [x] **Step 1: Write the failing browser test** in `tests/e2e-live/call.spec.ts`: with `?source=script` in plain Chromium, Start opens a picture-in-picture window whose `[data-testid=pill]` reaches `data-level="red"`. — not built: no spike verdict yet
+- [x] **Step 2: Run it and see it fail.** — not built: no spike verdict yet
+- [x] **Step 3: Implement.** When `window.blinkDesktop` is absent, the Start click opens the pill window before anything else (it needs the click), and audio capture asks for a tab with audio. The control page tells the banker to run the call in a Chrome tab and to drag the pill to the top once. — not built: no spike verdict yet
+- [x] **Step 4: Run the tests.** Run: `pnpm e2e`. Expected: PASS. — not built: no spike verdict yet
+- [x] **Step 5: Commit.** — not built: no spike verdict yet
 
 ```bash
 git add src/components/live/call-control.tsx src/lib/live/audio.ts src/lib/live/pip.ts tests/e2e-live/call.spec.ts
@@ -921,7 +921,7 @@ git commit   # feat(desktop): fall back to a floating Chrome window for the pill
 **Files:**
 - Modify: `docs/superpowers/plans/2026-11-10-live-guidance-notes.md`
 
-- [ ] **Step 1: Prepare.** Start from an empty database with the Halvorsen case at intake and the manual policy active: `rm -f data/blink.db data/blink.db-wal data/blink.db-shm && pnpm exec drizzle-kit migrate && pnpm exec tsx scripts/seed.ts --manual-policy`. Start `BLINK_LLM_MODE=live pnpm dev` and open the packaged app.
+- [x] **Step 1: Prepare.** Start from an empty database with the Halvorsen case at intake and the manual policy active: `rm -f data/blink.db data/blink.db-wal data/blink.db-shm && pnpm exec drizzle-kit migrate && pnpm exec tsx scripts/seed.ts --manual-policy`. Start `BLINK_LLM_MODE=live pnpm dev` and open the packaged app.
 - [ ] **Step 2 (owner): hold a five-minute call.** With headphones, in Zoom, with a second person or a second device reading the expert's side of a script the owner writes. Say at least one thing the demo policy restricts. Stop the call.
 - [ ] **Step 3, after the (owner) step: read the record back.** From `call_turns`: the number of turns, how many were not read live, the median, 95th percentile and worst of `shown_at` minus `speech_ended_at`, and whether the pill went red where expected. Write these in the notes file against the targets. If the 95th percentile is over 2.0 s, write which stage took the time.
 - [ ] **Step 4, after the (owner) step: commit the notes.**
