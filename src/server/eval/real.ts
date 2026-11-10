@@ -10,11 +10,13 @@
  */
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join, resolve } from "node:path";
-import { and, desc, eq, like } from "drizzle-orm";
+import { and, eq, like } from "drizzle-orm";
+import { z } from "zod";
 import { sha256Hex } from "@/core/deps/hash";
 import { type Inventory, type Monitor, MonitorsDocSchema, type RulesDoc, RulesDocSchema } from "@/core/policy/schema";
 import { type ValidationIssue, compileRules } from "@/core/policy/validate";
 import type { CompiledPolicy } from "@/core/runtime/evaluateClaim";
+import { aggregateMonitorStates } from "@/core/workflow/finding";
 import { loadActor } from "../auth/actor";
 import { getDb, transact } from "../db/client";
 import { cases, llmCalls, monitorEvaluations, monitorInstances } from "../db/schema";
@@ -203,12 +205,32 @@ export function realCallsIn(dir: string): string[] {
     .sort();
 }
 
-/** `coverage-<policy>.json` beside the call: `{ "<turn>": { covered, clause } }`, read as turn → covered. */
+/** The shape of `coverage-<policy>.json`: turn label → whether the policy covers it, and the clause (quoted, or "none"). */
+export const CoverageFileSchema = z.record(z.string().regex(/^T\d+$/, "a turn label such as T4"), z.strictObject({ covered: z.boolean(), clause: z.string().min(1) }));
+
+/** `coverage-<policy>.json` beside the call, read as turn → covered. A file of the wrong shape is refused. */
 export function readCoverage(callDir: string, policy: string): Record<string, boolean> {
   const path = join(callDir, `coverage-${policy}.json`);
   if (!existsSync(path)) return {};
-  const raw = JSON.parse(readFileSync(path, "utf8")) as Record<string, { covered: boolean; clause: string }>;
+  const raw = CoverageFileSchema.parse(JSON.parse(readFileSync(path, "utf8")));
   return Object.fromEntries(Object.entries(raw).map(([turn, v]) => [turn, v.covered]));
+}
+
+/**
+ * A name for an error that carries no text from what failed: its code (`LLM_REFUSAL`, `VALIDATION`) or else its
+ * class name (`SyntaxError`, `ZodError`). Messages can quote the input (a transcript line, a JSON file), so they are
+ * kept out of anything `--counts-only` prints or writes.
+ */
+export function errorCode(err: unknown): string {
+  const code = err && typeof err === "object" ? (err as { code?: unknown }).code : undefined;
+  if (typeof code === "string" && /^[A-Z][A-Z0-9_]*$/.test(code)) return code;
+  return err instanceof Error ? err.name : "UnknownError";
+}
+
+/** The error as stored on a score: its code alone with `countsOnly`, otherwise code and message. */
+function describeError(err: unknown, countsOnly: boolean): string {
+  const code = errorCode(err);
+  return countsOnly ? code : `${code}: ${err instanceof Error ? err.message : String(err)}`;
 }
 
 interface InstalledPolicy {
@@ -243,39 +265,44 @@ function installPolicies(names: string[]): InstalledPolicy[] {
   );
 }
 
-const STATE_RANK = ["ESCALATION_REQUESTED", "REVIEW_REQUIRED", "NEEDS_CONTEXT", "UNASSESSED", "NOT_TRIGGERED"];
-
-/** Each claim's turns and the state its monitors end in; a guard conflict opens review, as the app does (§7.1). */
+/**
+ * Each claim's turns and its monitors' aggregate end state. A guard conflict at any step opens review, as the app
+ * does when it opens the finding (§7.1, `persistMonitorRuns`).
+ */
 function claimStates(caseId: string, policyVersionId: string) {
   const db = getDb();
   return loadCurrentClaims(db, caseId)
     .filter((c) => c.row.status !== "rejected")
     .map((c) => {
       const instances = db.select().from(monitorInstances).where(and(eq(monitorInstances.caseId, caseId), eq(monitorInstances.claimLogicalKey, c.row.logicalKey), eq(monitorInstances.policyVersionId, policyVersionId))).all();
-      const conflict = instances.some((i) => db.select({ flag: monitorEvaluations.conflictFlag }).from(monitorEvaluations).where(eq(monitorEvaluations.instanceId, i.id)).orderBy(desc(monitorEvaluations.seq)).limit(1).get()?.flag);
-      const states = instances.map((i) => i.state);
-      const worst = STATE_RANK.find((s) => states.includes(s)) ?? "NOT_EVALUATED";
-      const state = conflict && !HIDING_STATES.includes(worst) ? "REVIEW_REQUIRED" : worst;
+      const conflict = instances.some((i) => db.select({ id: monitorEvaluations.id }).from(monitorEvaluations).where(and(eq(monitorEvaluations.instanceId, i.id), eq(monitorEvaluations.conflictFlag, true))).limit(1).get());
+      const state = conflict ? "REVIEW_REQUIRED" : aggregateMonitorStates(instances.map((i) => i.state));
       return { key: c.row.logicalKey, turns: c.turnLabels, state, speaker: c.fields.speaker, summary: c.fields.summary, quotes: c.quotes.map((q) => `${q.turnLabel}: "${q.quote}"`) };
     });
 }
 
-function caseSpend(caseId: string): number | null {
-  const rows = getDb().select().from(llmCalls).where(like(llmCalls.refJson, `%${caseId}%`)).all();
+/** Dollars for logged model calls, and how many had no listed price (an unknown cost is never counted as zero). */
+export function priceCalls(rows: readonly (typeof llmCalls.$inferSelect)[]): { usd: number; unpriced: number } {
   let usd = 0;
+  let unpriced = 0;
   for (const c of rows) {
     const one = costUsd({ input_tokens: c.inputTokens, output_tokens: c.outputTokens, cache_read_input_tokens: c.cacheReadTokens, cache_creation_input_tokens: c.cacheCreationTokens }, c.model);
-    if (one === null) return null;
-    usd += one;
+    if (one === null) unpriced++;
+    else usd += one;
   }
-  return usd;
+  return { usd, unpriced };
+}
+
+function caseSpend(caseId: string): number | null {
+  const { usd, unpriced } = priceCalls(getDb().select().from(llmCalls).where(like(llmCalls.refJson, `%${caseId}%`)).all());
+  return unpriced > 0 ? null : usd;
 }
 
 /** One line of numbers, ids and turn labels: no word of the transcript. With `countsOnly`, an error shows only its code. */
 export function countsLine(s: RealCaseScore, countsOnly = true): string {
   const list = (xs: string[]) => (xs.length ? ` [${xs.join(",")}]` : "");
   const nf = (c: boolean | null) => s.extractedNotFlagged.filter((t) => t.covered === c).map((t) => t.turn);
-  if (s.error) return `${s.id} · ${s.policy} · run ${s.run}: ERROR (${countsOnly ? (/^[A-Z_]+/.exec(s.error)?.[0] ?? "unknown") : s.error.slice(0, 200)})`;
+  if (s.error) return `${s.id} · ${s.policy} · run ${s.run}: ERROR (${countsOnly ? (/^[A-Za-z][A-Za-z0-9_]*/.exec(s.error)?.[0] ?? "UnknownError") : s.error.slice(0, 200)})`;
   return [
     `${s.id} · ${s.policy} · run ${s.run}: labelled ${s.labelled}`,
     `hidden ${s.hidden}`,
@@ -324,31 +351,58 @@ export async function runRealEval(opts: RealEvalOptions): Promise<RealCaseScore[
   for (const p of policies) log(p.name === DEMO_POLICY ? `policy demo: the demo policy's hand-written fallback, for comparison only` : `policy ${p.name}: compiled with ${p.coverageGaps} blocking coverage issue${p.coverageGaps === 1 ? "" : "s"}`);
 
   const scores: RealCaseScore[] = [];
+  // A call that cannot be set up or scored is reported as an error on its score, never thrown: an error's message
+  // can quote the call's files, and with countsOnly only its code may be shown.
+  const failedScore = (id: string, policy: string, labels: { turn: string }[], err: unknown): RealCaseScore => ({ ...scoreRealCase(labels, [], {}, { id, policy }), run, error: describeError(err, opts.countsOnly) });
   for (const id of calls) {
     const callDir = join(opts.dir, id);
     const read = (file: string) => readFileSync(join(callDir, file), "utf8");
-    const packet = JSON.parse(read("packet.json")) as Record<string, unknown>;
-    const expert = JSON.parse(read("expert.json")) as Record<string, unknown>;
-    const labels = (JSON.parse(read("labels.json")) as { labels: { turn: string }[] }).labels;
-    const speakers = JSON.parse(read("speakers.json")) as Record<string, "analyst" | "expert" | "moderator">;
-    const transcript = read("transcript.txt");
-    const input = CreateCaseSchema.parse({ ...packet, expert });
+    let setup: { labels: { turn: string }[]; speakers: Record<string, "analyst" | "expert" | "moderator">; transcript: string; input: ReturnType<typeof CreateCaseSchema.parse> };
+    try {
+      const expert = JSON.parse(read("expert.json")) as Record<string, unknown>;
+      setup = {
+        labels: (JSON.parse(read("labels.json")) as { labels: { turn: string }[] }).labels,
+        speakers: JSON.parse(read("speakers.json")) as Record<string, "analyst" | "expert" | "moderator">,
+        transcript: read("transcript.txt"),
+        input: CreateCaseSchema.parse({ ...(JSON.parse(read("packet.json")) as Record<string, unknown>), expert }),
+      };
+    } catch (err) {
+      for (const policy of policies) {
+        const score = failedScore(id, policy.name, [], err);
+        scores.push(score);
+        log(countsLine(score, opts.countsOnly));
+      }
+      continue;
+    }
+    const { labels, speakers, transcript, input } = setup;
 
     for (const policy of policies) {
-      const caseId = transact((tx) => {
-        const created = createCase(tx, input, loadActor(tx, ANALYST_ID));
-        tx.update(cases).set({ activePolicyVersionId: policy.versionId }).where(eq(cases.id, created.caseId)).run();
-        uploadTranscript(tx, created.caseId, { text: transcript, filename: `${id}.txt`, sourceLabel: `real call ${id}`, speakerMap: speakers, source: "ai" }, loadActor(tx, ANALYST_ID));
-        return created.caseId;
-      });
-      await drainJobs();
-      const analysis = latestRun(getDb(), caseId);
-      const failed = !analysis || analysis.status !== "succeeded";
-      const claims = failed ? [] : claimStates(caseId, policy.versionId);
-      const score = scoreRealCase(labels, claims, readCoverage(callDir, policy.name), { id, policy: policy.name });
-      score.run = run;
-      score.spendUsd = caseSpend(caseId);
-      if (failed) score.error = analysis?.error ?? "the analysis did not run";
+      let score: RealCaseScore;
+      let claims: ReturnType<typeof claimStates> = [];
+      try {
+        const caseId = transact((tx) => {
+          const created = createCase(tx, input, loadActor(tx, ANALYST_ID));
+          tx.update(cases).set({ activePolicyVersionId: policy.versionId }).where(eq(cases.id, created.caseId)).run();
+          uploadTranscript(tx, created.caseId, { text: transcript, filename: `${id}.txt`, sourceLabel: `real call ${id}`, speakerMap: speakers, source: "ai" }, loadActor(tx, ANALYST_ID));
+          return created.caseId;
+        });
+        await drainJobs();
+        const analysis = latestRun(getDb(), caseId);
+        const failed = !analysis || analysis.status !== "succeeded";
+        claims = failed ? [] : claimStates(caseId, policy.versionId);
+        score = scoreRealCase(labels, claims, readCoverage(callDir, policy.name), { id, policy: policy.name });
+        score.run = run;
+        score.spendUsd = caseSpend(caseId);
+        if (failed) {
+          // A run's error is "CODE: message"; the message may quote the model's answer, so countsOnly keeps the code.
+          const stored = analysis?.error ?? "ANALYSIS_NOT_RUN: the analysis did not run";
+          const code = /^([A-Z][A-Z0-9_]*):/.exec(stored)?.[1] ?? "ANALYSIS_FAILED";
+          score.error = opts.countsOnly ? code : stored;
+        }
+      } catch (err) {
+        score = failedScore(id, policy.name, labels, err);
+        claims = [];
+      }
       scores.push(score);
       log(countsLine(score, opts.countsOnly));
       if (!opts.countsOnly) {

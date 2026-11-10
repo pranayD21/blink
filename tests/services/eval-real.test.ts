@@ -2,13 +2,13 @@
  * The real-material harness (Task 37): the scorer, and the runner driven end to
  * end on a made-up call with the model stubbed out. No network.
  */
-import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { LlmClaimWire, LlmExtractionWire } from "@/core/extraction/schema";
 import { resetDbForTests } from "@/server/db/client";
-import { type RealCaseScore, repeatAgreement, runRealEval, scoreRealCase } from "@/server/eval/real";
+import { type RealCaseScore, readCoverage, repeatAgreement, runRealEval, scoreRealCase } from "@/server/eval/real";
 import { words } from "../helpers/prompt-leak";
 
 const stub = vi.hoisted(() => ({ extraction: null as unknown }));
@@ -192,6 +192,7 @@ describe("runRealEval", () => {
     root = mkdtempSync(join(tmpdir(), "blink-eval-real-"));
     writeCase(root, "made-up");
   });
+  afterEach(() => rmSync(root, { recursive: true, force: true }));
 
   it("creates a case per policy, runs the after-call pipeline and scores each one", async () => {
     const scores = await runRealEval({ dir: root, policies: ["oaktree", "demo"], countsOnly: true, log: () => undefined });
@@ -229,9 +230,12 @@ describe("runRealEval", () => {
 
   it("a call whose analysis fails is reported as an error, never scored as hidden", async () => {
     stub.extraction = null;
-    const [score] = await runRealEval({ dir: root, policies: ["oaktree"], countsOnly: true, log: () => undefined });
-    expect(score.error).toMatch(/no stubbed extraction/);
+    const [score] = await runRealEval({ dir: root, policies: ["oaktree"], countsOnly: false, log: () => undefined });
+    expect(score.error).toMatch(/^ANALYSIS_ERROR: .*no stubbed extraction/);
     expect(score.hidden).toBe(0);
+    // With countsOnly the score itself, which the script writes to disk, keeps the code alone.
+    const [quiet] = await runRealEval({ dir: root, policies: ["oaktree"], countsOnly: true, log: () => undefined });
+    expect(quiet.error).toBe("ANALYSIS_ERROR");
   });
 
   it("with --counts-only an error is printed by its code alone", async () => {
@@ -240,6 +244,38 @@ describe("runRealEval", () => {
     await runRealEval({ dir: root, policies: ["oaktree"], countsOnly: true, log: (l) => lines.push(l) });
     expect(lines.join("\n")).toMatch(/made-up · oaktree · run 1: ERROR \(ANALYSIS_ERROR\)/);
     expect(lines.join("\n")).not.toMatch(/stubbed/);
+  });
+
+  it("with --counts-only a transcript that will not parse is an error on the score, and none of its words is printed", async () => {
+    const bad = "this opening line has no speaker label so the parser quotes it back";
+    writeFileSync(join(root, "made-up", "transcript.txt"), `${bad}\n${TRANSCRIPT}\n`);
+    const lines: string[] = [];
+    const scores = await runRealEval({ dir: root, policies: ["oaktree", "demo"], countsOnly: true, log: (l) => lines.push(l) });
+    expect(scores.map((s) => s.error)).toEqual(["VALIDATION", "VALIDATION"]);
+    const out = words(`${lines.join("\n")}\n${JSON.stringify(scores)}`).join(" ");
+    const w = words(bad);
+    for (let i = 0; i + 4 <= w.length; i++) expect(out.includes(w.slice(i, i + 4).join(" ")), `printed "${w.slice(i, i + 4).join(" ")}"`).toBe(false);
+    // Without countsOnly the message is kept, so the check above is not vacuous.
+    const [loud] = await runRealEval({ dir: root, policies: ["oaktree"], countsOnly: false, log: () => undefined });
+    expect(loud.error).toMatch(/no speaker label/);
+  });
+
+  it("with --counts-only a malformed JSON file is an error on every policy's score, printed by class name", async () => {
+    writeFileSync(join(root, "made-up", "labels.json"), "{ not json at all, a secret phrase here");
+    const lines: string[] = [];
+    const scores = await runRealEval({ dir: root, policies: ["oaktree", "demo"], countsOnly: true, log: (l) => lines.push(l) });
+    expect(scores.map((s) => [s.policy, s.error])).toEqual([
+      ["oaktree", "SyntaxError"],
+      ["demo", "SyntaxError"],
+    ]);
+    expect(`${lines.join("\n")}${JSON.stringify(scores)}`).not.toMatch(/secret phrase/);
+  });
+
+  it("refuses a coverage file of the wrong shape", () => {
+    writeFileSync(join(root, "made-up", "coverage-tcw.json"), JSON.stringify({ T4: { covered: "yes", clause: "none" } }));
+    expect(() => readCoverage(join(root, "made-up"), "tcw")).toThrow();
+    writeFileSync(join(root, "made-up", "coverage-tcw.json"), JSON.stringify({ T4: { covered: true, clause: "P9" } }));
+    expect(readCoverage(join(root, "made-up"), "tcw")).toEqual({ T4: true });
   });
 
   it("refuses an unknown policy name", async () => {

@@ -16,7 +16,10 @@ Spec section 11 asks how Blink does on real material. This is the development se
 
 Each (call, policy) pair is its own case with its own model call, so extraction varies from one pair to the next.
 
-- **Hidden:** a labelled turn is hidden when a claim quotes it and that claim's monitors end in `REVIEW_REQUIRED`, `ESCALATION_REQUESTED` or `NEEDS_CONTEXT`. A guard conflict counts as `REVIEW_REQUIRED`, as it does in the app.
+- **Hidden:** a labelled turn is hidden when a claim quotes it and that claim's monitors end in `REVIEW_REQUIRED`, `ESCALATION_REQUESTED` or `NEEDS_CONTEXT`. A guard conflict at any step counts as `REVIEW_REQUIRED`, as it does in the app.
+  - The runs below read a conflict only on each monitor's last step. The rule was widened after review, and the scores could not be recomputed from the saved files, which hold no monitor steps.
+  - The labelled counts cannot change: every labelled turn is either already hidden or quoted by no claim.
+  - "Other passages hidden" could only rise. That has not been re-measured.
 - **Not extracted:** no claim quotes the turn.
 - **Not flagged:** a claim quotes the turn, but nothing flags it. `coverage-<policy>.json` then says whether the policy has a clause that covers it.
 - **Other passages hidden:** unlabelled turns that a flagged claim quotes.
@@ -100,7 +103,7 @@ Five labelled statements is far too few to tell "90%" from "80%". The first bar'
 
 ## Spend
 
-All runs used `claude-opus-5-5`, live. The dollars are what `llm_calls` reports.
+All runs used `claude-opus-5-5`, live. Each row is what `llm_calls` reports for that run. The exception is the `pnpm eval` part of the re-recording, which is an estimate: the eval prints no cost, so it was priced from its recordings' token counts with `costUsd`.
 
 | Run | Dollars |
 |---|---|

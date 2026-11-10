@@ -20,8 +20,8 @@ import { dirname, join, resolve } from "node:path";
 import { closeDb, getDb, migrateDb } from "../src/server/db/client";
 import { llmCalls } from "../src/server/db/schema";
 import { loadEnv } from "../src/server/env";
-import { DEMO_POLICY, REAL_POLICIES, type RealCaseScore, realCallsIn, repeatAgreement, runRealEval } from "../src/server/eval/real";
-import { RECORDINGS_DIR, costUsd, llmMode, llmModel } from "../src/server/llm/client";
+import { DEMO_POLICY, REAL_POLICIES, type RealCaseScore, errorCode, priceCalls, realCallsIn, repeatAgreement, runRealEval } from "../src/server/eval/real";
+import { RECORDINGS_DIR, llmMode, llmModel } from "../src/server/llm/client";
 
 function args(argv: string[]) {
   const all = (flag: string) => argv.flatMap((a, i) => (a === flag && argv[i + 1] ? [argv[i + 1]] : []));
@@ -43,14 +43,8 @@ function args(argv: string[]) {
 function spend(): string {
   const calls = getDb().select().from(llmCalls).all();
   const live = calls.filter((c) => !c.replayed);
-  let usd = 0;
-  let unpriced = 0;
-  for (const c of live) {
-    const one = costUsd({ input_tokens: c.inputTokens, output_tokens: c.outputTokens, cache_read_input_tokens: c.cacheReadTokens, cache_creation_input_tokens: c.cacheCreationTokens }, c.model);
-    if (one === null) unpriced++;
-    else usd += one;
-  }
   // An unknown price is reported as unknown, never as zero.
+  const { usd, unpriced } = priceCalls(live);
   return `${calls.length} model call(s), ${live.length} live: $${usd.toFixed(2)}${unpriced > 0 ? ` + ${unpriced} call(s) with no listed price` : ""}`;
 }
 
@@ -108,7 +102,8 @@ async function main() {
 }
 
 main().catch((err) => {
-  console.error(err instanceof Error ? err.message : err);
+  // A message can quote a call's files; with --counts-only only the error's code or class name is printed.
+  console.error(process.argv.includes("--counts-only") ? `eval:real failed: ${errorCode(err)} (run without --counts-only on public material to see the message)` : err instanceof Error ? err.message : err);
   closeDb();
   process.exit(1);
 });
