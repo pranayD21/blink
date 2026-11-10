@@ -14,6 +14,7 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "e2e": "playwright test",
+    "e2e:serve": "BLINK_DB_PATH=./data/e2e.db BLINK_LLM_MODE=replay sh -c 'rm -f data/e2e.db data/e2e.db-wal data/e2e.db-shm && mkdir -p data && drizzle-kit migrate && tsx scripts/seed.ts && tsx scripts/eval.ts --quiet && next build && concurrently -k -n web,worker \"next start -p 3100\" \"tsx scripts/worker.ts\"'",
     "eval": "tsx scripts/eval.ts",
     "record": "BLINK_LLM_MODE=record tsx scripts/record-demo.ts",
     "demo:check": "BLINK_LLM_MODE=replay tsx scripts/record-demo.ts",

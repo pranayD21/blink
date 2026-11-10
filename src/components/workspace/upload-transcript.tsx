@@ -76,7 +76,7 @@ export function TranscriptUploadForm({ caseId, samples, allowGold, onUploaded, o
   const hasExpert = preview?.speakers.some((s) => s.role === "expert") ?? false;
 
   return (
-    <div className="space-y-3 text-sm">
+    <div className="min-w-0 space-y-3 text-sm">
       <div className="flex flex-wrap items-center gap-2">
         <input
           ref={fileInput}
@@ -106,12 +106,12 @@ export function TranscriptUploadForm({ caseId, samples, allowGold, onUploaded, o
         }}
         onBlur={() => void runPreview(text, filename, speakerMap)}
         placeholder={"…or paste the transcript here.\n[00:01:10] Expert (R. Castellano): Orders fell off a cliff."}
-        className="h-36 font-mono text-xs"
+        className="field-sizing-fixed h-36 w-full font-mono text-xs"
         data-testid="transcript-text"
       />
 
       {preview && (
-        <div className="rounded-lg border bg-slate-50 p-3" data-testid="transcript-preview">
+        <div className="min-w-0 rounded-lg border bg-slate-50 p-3" data-testid="transcript-preview">
           <div className="text-xs font-medium text-slate-700">
             Parsed as {preview.format.toUpperCase()}: {preview.turnCount} turns{filename ? ` from ${filename}` : ""}
           </div>
@@ -197,7 +197,7 @@ export function UploadTranscriptDialog({ caseId, samples, allowGold, currentVers
           </Button>
         )}
       </DialogTrigger>
-      <DialogContent className="sm:max-w-2xl">
+      <DialogContent className="max-h-[92vh] overflow-y-auto sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>{currentVersion ? `Upload a new transcript version (current: v${currentVersion})` : "Upload the call transcript"}</DialogTitle>
           <DialogDescription>
