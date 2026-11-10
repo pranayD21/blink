@@ -193,7 +193,12 @@ The owner approved Deepgram and Railway on 2026-11-10, with one condition: **eve
 | Models | Anthropic API | **Not free.** | The one paid item, on the owner's existing key. Haiku 5.5 live, Opus 5.5 after the call. A few cents for the live path of a call; under fifty cents for the after-call read. |
 | Fast model host | Not chosen | Cerebras gives its credit only with a payment method on file, so it is out. | The day-one comparison uses a host with a free plan and no card, such as Groq, or is skipped. Not approved by the owner yet. |
 
-A new Railway account that Railway has not verified gets a limited trial with restricted outbound network access, which would block the calls to Deepgram and Anthropic. Verification is automatic and usually follows from connecting GitHub. If the account stays limited, hosting has to be reconsidered.
+**Accounts, as of 2026-11-10.** Both were created at the owner's request, under the owner's personal Google account, with no card.
+
+- **Deepgram:** $200.00 of credit showing. An API key named `blink-dev`, expiring 2026-12-10, is in `.env.local` as `DEEPGRAM_API_KEY`.
+- **Railway:** on the full trial, 30 days or $5.00. A new account starts on a limited trial with restricted outbound network access, which would have blocked the calls to Deepgram and Anthropic; connecting the owner's GitHub account verified it. A token named `blink-deploy` is in `.env.local` as `RAILWAY_API_TOKEN`. Nothing is deployed, and the trial clock is running: it ends on 2026-12-10.
+
+`.env.local` is ignored by git. Neither value has been printed or committed.
 
 The deployed app is protected by real sign-in, described under [Keeping it secure](#keeping-it-secure).
 
