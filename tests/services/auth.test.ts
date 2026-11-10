@@ -192,7 +192,7 @@ describe("where sign-in may send you next", () => {
 
 describe("every page checks the session itself", () => {
   // The proxy only sees that a cookie exists; pageActor() is what refuses a stale or forged one.
-  const PUBLIC = new Set(["login/page.tsx", "desktop/pill/page.tsx"]);
+  const PUBLIC = new Set(["login/page.tsx", "desktop/pill/page.tsx", "page.tsx"]);
   const pages = readdirSync("src/app", { recursive: true, encoding: "utf8" })
     .map((f) => f.split("\\").join("/"))
     .filter((f) => f === "page.tsx" || f.endsWith("/page.tsx"))

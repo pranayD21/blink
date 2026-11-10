@@ -16,7 +16,7 @@ import { AUTH_COOKIE, DEFAULT_USER_ID, LOGIN_PATH, PATH_HEADER, SESSION_COOKIE, 
 import { authMode } from "@/server/auth/mode";
 
 /** Pages that must open with nobody signed in: the sign-in page, and the pill window, which shows only what it is sent. */
-const isPublic = (path: string) => path === LOGIN_PATH || path === "/desktop/pill";
+const isPublic = (path: string) => path === LOGIN_PATH || path === "/desktop/pill" || path === "/";
 
 /** Continue to the page, with its path in a request header. Copied after any cookie change so that change is kept. */
 function next(request: NextRequest): NextResponse {

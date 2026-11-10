@@ -8,7 +8,7 @@ import { type Page, expect, test } from "@playwright/test";
 
 async function actAs(page: Page, userId: "user_priya" | "user_marcus" | "user_jordan" | "user_dana", name: string) {
   // The role switcher lives in the app header, so start from a page that has one.
-  if (page.url() === "about:blank") await page.goto("/");
+  if (page.url() === "about:blank") await page.goto("/cases");
   await page.getByTestId("role-switcher").click();
   await page.getByTestId(`act-as-${userId}`).click();
   await expect(page.getByTestId("current-user")).toHaveText(name);
@@ -54,7 +54,7 @@ test("a banker cannot open either screen", async ({ page }) => { await actAs(pag
 test("neither a banker nor the policy owner can open one call", async ({ page }) => {
   expect((await switchTo(page, "user_marcus")).ok()).toBe(true);
   const { recent } = (await (await page.request.get("/api/calls")).json()) as { recent: { callId: string }[] };
-  await page.goto("/");
+  await page.goto("/cases");
   for (const [userId, name] of [["user_priya", "Priya Raman"], ["user_dana", "Dana Okafor"]] as const) {
     await actAs(page, userId, name); await page.goto(`/calls/${recent[0].callId}`);
     await expect(page.getByTestId("role-gate")).toBeVisible();
@@ -81,7 +81,7 @@ test("the policy owner's overview names no call and links to none", async ({ pag
   expect((await post(`/api/calls/${call.id}/outages`, { stage: "transcribing", startedAt: new Date(at).toISOString(), endedAt: new Date(at + 4000).toISOString(), cause: "The transcription socket closed.", shownToBanker: true })).ok()).toBe(true);
   expect((await post(`/api/calls/${call.id}/end`, {})).ok()).toBe(true);
 
-  await page.goto("/");
+  await page.goto("/cases");
   await actAs(page, "user_marcus", "Marcus Lee"); await page.goto("/calls");
   await expect(page.getByTestId("problem-0")).toContainText("Outage drill");
   await expect(page.getByTestId("problem-0").getByRole("link", { name: /Open call/ })).toHaveCount(1);

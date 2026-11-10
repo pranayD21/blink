@@ -3,42 +3,41 @@ import { DEMO_USERS } from "@/server/auth/actor";
 import { authMode } from "@/server/auth/mode";
 import { optionalPageActor } from "@/server/auth/session";
 import { llmMode } from "@/server/llm/client";
+import { BlinkMark } from "@/components/home/blink-mark";
 import { AccountMenu } from "./account-menu";
-import { NavLinks } from "./nav-links";
+import { GlassNav } from "./glass-nav";
 import { RoleSwitcher } from "./role-switcher";
 import { StatusDot } from "./status-dot";
 
 const NAV: Record<string, { href: string; label: string }[]> = {
   analyst: [
     { href: "/call", label: "Call" },
-    { href: "/", label: "Cases" },
+    { href: "/cases", label: "Cases" },
     { href: "/analyst", label: "Released briefs" },
   ],
   reviewer: [
-    { href: "/", label: "Cases" },
+    { href: "/cases", label: "Cases" },
     { href: "/documents", label: "Documents" },
     { href: "/policies", label: "Policy" },
     { href: "/calls", label: "Calls" },
     { href: "/metrics", label: "Metrics" },
   ],
   senior_reviewer: [
-    { href: "/", label: "Cases" },
+    { href: "/cases", label: "Cases" },
     { href: "/documents", label: "Documents" },
     { href: "/policies", label: "Policy" },
     { href: "/calls", label: "Calls" },
     { href: "/metrics", label: "Metrics" },
   ],
   policy_owner: [
-    { href: "/", label: "Cases" },
+    { href: "/cases", label: "Cases" },
     { href: "/policies", label: "Policy" },
     { href: "/calls", label: "Calls" },
     { href: "/metrics", label: "Metrics" },
   ],
 };
 
-const HEADER_CLASS = "glass-bar sticky top-0 z-40 flex h-12 shrink-0 items-center gap-4 px-4";
-const BRAND_CLASS = "flex items-center gap-2 font-semibold tracking-tight text-foreground";
-const Mark = () => <span className="glass-button grid size-8 place-items-center text-sm">B</span>;
+const HEADER_CLASS = "glass-bar sticky top-0 z-40 flex h-16 shrink-0 items-center gap-4 px-5";
 
 /**
  * Never redirects, so the sign-in page cannot loop. With nobody signed in (password mode, on the
@@ -50,21 +49,19 @@ export async function AppHeader() {
   if (!actor) {
     return (
       <header className={HEADER_CLASS}>
-        <span className={BRAND_CLASS}>
-          <Mark />
-          Blink
-        </span>
+        <Link href="/" className="text-foreground" aria-label="Blink home">
+          <BlinkMark />
+        </Link>
       </header>
     );
   }
   const mode = llmMode();
   return (
     <header className={HEADER_CLASS}>
-      <Link href="/" className={BRAND_CLASS}>
-        <Mark />
-        Blink
+      <Link href="/" className="text-foreground" aria-label="Blink home">
+        <BlinkMark />
       </Link>
-      <NavLinks links={NAV[actor.role] ?? NAV.reviewer} />
+      <GlassNav links={NAV[actor.role] ?? NAV.reviewer} />
       <div className="ml-auto flex items-center gap-3">
         {mode !== "live" && (
           <span

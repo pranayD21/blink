@@ -7,7 +7,7 @@ import { type Page, expect, test } from "@playwright/test";
 
 async function actAs(page: Page, userId: "user_priya" | "user_marcus" | "user_jordan" | "user_dana", name: string) {
   // The role switcher lives in the app header, so start from a page that has one.
-  if (page.url() === "about:blank") await page.goto("/");
+  if (page.url() === "about:blank") await page.goto("/cases");
   await page.getByTestId("role-switcher").click();
   await page.getByTestId(`act-as-${userId}`).click();
   await expect(page.getByTestId("current-user")).toHaveText(name);
