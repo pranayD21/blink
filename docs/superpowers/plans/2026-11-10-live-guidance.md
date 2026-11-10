@@ -394,7 +394,7 @@ export const INITIAL_CLIENT: ClientState;
 export function reduceClient(state: ClientState, event: ClientEvent): ClientState;
 ```
 
-- [ ] **Step 1: Write the failing tests.** The assertions that pin behaviour:
+- [x] **Step 1: Write the failing tests.** The assertions that pin behaviour:
 
 ```ts
 expect(percentile([5, 1, 3, 2, 4], 50)).toBe(3); expect(percentile([1, 2, 3, 4], 95)).toBe(4); expect(percentile([], 50)).toBeNull();
@@ -417,10 +417,10 @@ expect(parseFluxMessage("not json")).toEqual({ kind: "other" });
 // broken replaces everything once a stage is down more than 3000 ms and clears on stage_up; ended shows for 10000 ms, then idle.
 ```
 
-- [ ] **Step 2: Run them and see them fail.** Run: `pnpm exec vitest run tests/core/live-stats.test.ts tests/core/live-health.test.ts tests/core/live-echo.test.ts tests/core/live-flux.test.ts tests/core/live-describe.test.ts tests/core/live-client.test.ts`. Expected: FAIL, modules not found.
-- [ ] **Step 3: Implement.** `isEchoOf`: lower-case, strip punctuation, split on spaces; true when the microphone text has at least three words and at least 80% of them occur in the other text. `brokenStage` returns the first stage in `STAGES` order whose down time exceeds `BROKEN_AFTER_MS`. Confirm the Flux field names against the reference before finalising `parseFluxMessage`.
-- [ ] **Step 4: Run the tests.** Expected: PASS.
-- [ ] **Step 5: Commit.**
+- [x] **Step 2: Run them and see them fail.** Run: `pnpm exec vitest run tests/core/live-stats.test.ts tests/core/live-health.test.ts tests/core/live-echo.test.ts tests/core/live-flux.test.ts tests/core/live-describe.test.ts tests/core/live-client.test.ts`. Expected: FAIL, modules not found.
+- [x] **Step 3: Implement.** `isEchoOf`: lower-case, strip punctuation, split on spaces; true when the microphone text has at least three words and at least 80% of them occur in the other text. `brokenStage` returns the first stage in `STAGES` order whose down time exceeds `BROKEN_AFTER_MS`. Confirm the Flux field names against the reference before finalising `parseFluxMessage`.
+- [x] **Step 4: Run the tests.** Expected: PASS.
+- [x] **Step 5: Commit.**
 
 ```bash
 git add src/core/live tests/core/live-stats.test.ts tests/core/live-health.test.ts tests/core/live-echo.test.ts tests/core/live-flux.test.ts tests/core/live-describe.test.ts tests/core/live-client.test.ts
