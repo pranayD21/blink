@@ -1275,7 +1275,7 @@ export function callsOverview(db: DbOrTx, actor: Actor): CallsOverview;         
 
 - `GET /api/calls` returns the overview; `GET /api/calls/:id` returns the trace.
 
-- [ ] **Step 1: Write the failing tests** on a database where `halvorsenLiveTurns()` were fed with `goldReader()`, one 19-second outage recorded, the call ended with `{ source: "gold" }`, the jobs drained, and the case reviewed with `completeReview()` (two findings kept hidden, one cleared).
+- [x] **Step 1: Write the failing tests** on a database where `halvorsenLiveTurns()` were fed with `goldReader()`, one 19-second outage recorded, the call ended with `{ source: "gold" }`, the jobs drained, and the case reviewed with `completeReview()` (two findings kept hidden, one cleared).
 
 ```ts
 it("one line per moment, in order, with the outage among them", () => { const t = callTrace(db, id, user("marcus")); expect(t.moments.map((m) => m.kind)).toContain("outage"); expect(t.moments.map((m) => m.atMs)).toEqual([...t.moments.map((m) => m.atMs)].sort((a, b) => a - b)); });
@@ -1292,10 +1292,10 @@ it("the overview uses percentiles and counts what compliance unhid", () => { con
 it("a banker is refused both", () => { expect(appError(() => callTrace(db, id, user("priya"))).status).toBe(403); expect(appError(() => callsOverview(db, user("priya"))).status).toBe(403); });
 ```
 
-- [ ] **Step 2: Run it and see it fail.** Run: `pnpm exec vitest run tests/services/observability.test.ts`. Expected: FAIL.
-- [ ] **Step 3: Implement.** `totalMs` is `shown_at` minus `speech_ended_at`, null until acknowledged. Step offsets: Transcribed from the end of speech to `transcribed_at`; Read `read_ms`; Rules checked `rules_ms`; Shown from the reply to `shown_at`. A turn's "problem" is any read status other than `read`. A stage is not ok when it has an outage on the call (or, for the overview, in the last hour). `problems` lists outages and not-read turns, newest first, at most ten. "Hidden" and "Reviewed" steps appear only on a turn whose claim was flagged; "Reviewed" reads the latest decision on the finding that covers it.
-- [ ] **Step 4: Run the tests.** Run: `pnpm test`. Expected: PASS. Add the two routes to the table in `tests/services/breakin.test.ts`.
-- [ ] **Step 5: Commit.**
+- [x] **Step 2: Run it and see it fail.** Run: `pnpm exec vitest run tests/services/observability.test.ts`. Expected: FAIL.
+- [x] **Step 3: Implement.** `totalMs` is `shown_at` minus `speech_ended_at`, null until acknowledged. Step offsets: Transcribed from the end of speech to `transcribed_at`; Read `read_ms`; Rules checked `rules_ms`; Shown from the reply to `shown_at`. A turn's "problem" is any read status other than `read`. A stage is not ok when it has an outage on the call (or, for the overview, in the last hour). `problems` lists outages and not-read turns, newest first, at most ten. "Hidden" and "Reviewed" steps appear only on a turn whose claim was flagged; "Reviewed" reads the latest decision on the finding that covers it.
+- [x] **Step 4: Run the tests.** Run: `pnpm test`. Expected: PASS. Add the two routes to the table in `tests/services/breakin.test.ts`.
+- [x] **Step 5: Commit.**
 
 ```bash
 git add src/server/services/observability.ts src/app/api/calls tests/services/observability.test.ts tests/services/breakin.test.ts

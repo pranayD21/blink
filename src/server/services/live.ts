@@ -409,7 +409,7 @@ const GAP_WORDING: Record<Stage, { what: string; lost: string }> = {
 const lineName = (name: string): string => name.replace(/[():\r\n]+/g, " ").replace(/\s+/g, " ").trim().slice(0, 60);
 
 /** The turns that go into the transcript, in order. Turn n of the transcript is the nth of these. */
-const spokenTurns = (rows: readonly CallTurnRow[]): CallTurnRow[] => [...rows].sort((a, b) => a.seq - b.seq).filter((t) => t.text.trim().length > 0);
+export const spokenTurns = (rows: readonly CallTurnRow[]): CallTurnRow[] => [...rows].sort((a, b) => a.seq - b.seq).filter((t) => t.text.trim().length > 0);
 
 /**
  * Ends the banker's live call. A call where the expert never spoke is abandoned: nothing is

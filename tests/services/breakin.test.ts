@@ -242,8 +242,11 @@ const TABLE: Row[] = [
     params: () => ({ id: ids.call }),
     body: () => ({ stage: "hearing", startedAt: LATER, endedAt: null, cause: "microphone unplugged", shownToBanker: true }),
   },
+  // One call's record is compliance's: a banker, even the one who made the call, is refused.
+  { file: "src/app/api/calls/[id]/route.ts", method: "GET", caseScoped: true, owner: "marcus", params: () => ({ id: ids.call }) },
   { file: "src/app/api/calls/[id]/stt-token/route.ts", method: "POST", caseScoped: true, owner: "priya", params: () => ({ id: ids.call }), body: () => ({}) },
   { file: "src/app/api/calls/[id]/turns/route.ts", method: "POST", caseScoped: true, owner: "priya", params: () => ({ id: ids.call }), body: () => turnInput(1) },
+  { file: "src/app/api/calls/route.ts", method: "GET", caseScoped: false },
   { file: "src/app/api/calls/route.ts", method: "POST", caseScoped: true, owner: "priya", body: () => ({ caseId: CASE }) },
   { file: "src/app/api/cases/[id]/analyze/route.ts", method: "POST", caseScoped: true, owner: "marcus", params: () => ({ id: CASE }), body: () => ({}) },
   { file: "src/app/api/cases/[id]/attest/route.ts", method: "POST", caseScoped: true, owner: "marcus", params: () => ({ id: CASE }), body: () => ({ transcriptVersionId: ids.transcript }) },
@@ -386,6 +389,12 @@ describe("break-in: every route, as a banker (live guidance, section 5)", () => 
     expect(cases.cases).toEqual([]);
     const briefs = (await hit(TABLE.find((r) => r.file === "src/app/api/analyst/briefs/route.ts")!, "sam")).json as { briefs: unknown[] };
     expect(briefs.briefs).toEqual([]);
+  });
+
+  it("a banker reads neither her own call's record nor the overview of calls", async () => {
+    for (const file of ["src/app/api/calls/[id]/route.ts", "src/app/api/calls/route.ts"]) {
+      expect((await hit(TABLE.find((r) => r.file === file && r.method === "GET")!, "priya")).status, file).toBe(403);
+    }
   });
 
   it("the owning banker reads the release, blanked", async () => {
