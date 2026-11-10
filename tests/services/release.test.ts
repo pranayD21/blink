@@ -392,6 +392,53 @@ describe("release snapshots the blanked transcript and refuses a leaking summary
     expect(JSON.stringify(turns.find((t) => t.label === "T23"))).toContain("That's all my questions"); // the next turn is shown
   });
 
+  it("a split whose short half comes first blanks both halves in the released snapshot", async () => {
+    const kept = liveFindingOn("T21");
+    completeReview();
+    dispose(kept.id, "restricted_exclude", "marcus");
+    // Lineage reports the short first half as an added T21 and pairs the rest (now T22) with the old T21.
+    await uploadEdited((v1) =>
+      v1.replace(
+        "Mostly yes. The industry pushed two price increases this year, and distributors accepted them because lead times were so long last year.",
+        "Mostly yes.\n[00:05:00] Expert (R. Castellano): The industry pushed two price increases this year, and distributors accepted them because lead times were so long last year.",
+      ),
+    );
+    attest();
+    const brief = draftTemplate();
+    approve(brief.id);
+    const result = release(brief.id);
+    expect(result.released ? [] : result.failures).toEqual([]);
+    const text = releaseRow().redactedTranscriptJson!;
+    expect(text).not.toContain("Mostly yes"); // the added half before the mapped turn
+    expect(text).not.toContain("two price increases"); // the half lineage pairs with the old T21
+    const turns = JSON.parse(text) as RedactedTurn[];
+    expect(turns.find((t) => t.label === "T21")!.segments).toEqual([{ hidden: expect.any(Number) }]);
+    expect(turns.find((t) => t.label === "T22")!.segments).toEqual([{ hidden: expect.any(Number) }]);
+    expect(text).toContain("And pricing power"); // T20, before the gap, is shown
+  });
+
+  it("with no stored lineage, a removed turn between the mapped turn and an added one does not hide the added one", async () => {
+    const kept = liveFindingOn("T19");
+    completeReview();
+    dispose(kept.id, "restricted_exclude", "marcus");
+    // T19 is edited, T20 and T21 are replaced by one unrelated expert turn: the diff reads edited, removed, added, removed.
+    await uploadEdited((v1) =>
+      v1
+        .replace("hot-rolled is up about twelve percent", "hot-rolled is up about fifteen percent")
+        .replace(
+          /\[00:04:50\] Analyst \(Priya\): And pricing power[^\n]*\n\[00:04:56\] Expert \(R\. Castellano\): Mostly yes\.[^\n]*/,
+          "[00:04:56] Expert (R. Castellano): Steel aside, Brightwater may cut prices next spring.",
+        ),
+    );
+    const current = turnsOfVersion(getDb(), currentTranscript(getDb(), CASE)!.id);
+    expect(current.find((t) => t.label === "T20")!.text).toBe("Steel aside, Brightwater may cut prices next spring.");
+    const whole = (label: string) => ({ turnLabel: label, start: 0, end: current.find((t) => t.label === label)!.text.length });
+    const stored = restrictedOnCase(getDb(), CASE).spans;
+    expect(stored).toEqual(expect.arrayContaining([whole("T19"), whole("T20")]));
+    getDb().delete(turnLineage).run();
+    expect(restrictedOnCase(getDb(), CASE).spans).toEqual(expect.arrayContaining([whole("T19"), whole("T20")]));
+  });
+
   it("a hidden quote that moved to another turn verbatim is blanked where it now stands", async () => {
     const kept = liveFindingOn("T9");
     completeReview();

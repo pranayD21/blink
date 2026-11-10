@@ -9,7 +9,7 @@
  *
  * Fail closed when the text changed on the way:
  *  - the turn lineage maps it to is blanked whole;
- *  - so is every turn lineage reports as added directly after it, in the same gap (a split turn);
+ *  - so is every turn lineage reports as added directly before or after it, in the same gap (a split turn);
  *  - and every current turn that contains the hidden words verbatim (whitespace aside) has that run blanked.
  */
 import { and, eq, inArray } from "drizzle-orm";
@@ -100,43 +100,49 @@ export function turnPlacer(tx: DbOrTx, caseId: string, preload: readonly string[
     return list;
   };
 
-  /** Turns lineage reports as added directly after `turn` in its version. */
-  const addedAfter = (turn: TurnRow): TurnRow[] => {
-    const list = turnsOf(turn.transcriptVersionId);
+  /**
+   * The contiguous runs of added turns directly before and after `turn`, by position in its version (the
+   * same gap: a split turn's other half). Removed turns have no position there, so they never break a run.
+   */
+  const addedAround = (turn: TurnRow, list: readonly TurnRow[], added: ReadonlySet<string>): TurnRow[] => {
+    const sorted = [...list].sort((a, b) => a.idx - b.idx);
+    const at = sorted.findIndex((t) => t.id === turn.id);
+    if (at < 0) return [];
+    const out: TurnRow[] = [];
+    for (let i = at - 1; i >= 0 && added.has(sorted[i].id); i--) out.push(sorted[i]);
+    for (let i = at + 1; i < sorted.length && added.has(sorted[i].id); i++) out.push(sorted[i]);
+    return out;
+  };
+
+  /** Stored lineage: the turns of `turn`'s version that the upload recorded as added. */
+  const storedAdded = (turn: TurnRow): TurnRow[] => {
     const added = new Set(
       tx
         .select()
         .from(turnLineage)
         .where(and(eq(turnLineage.transcriptVersionId, turn.transcriptVersionId), eq(turnLineage.change, "added")))
         .all()
-        .map((r) => r.newTurnId),
+        .flatMap((r) => (r.newTurnId ? [r.newTurnId] : [])),
     );
-    const out: TurnRow[] = [];
-    for (const t of list.filter((x) => x.idx > turn.idx).sort((a, b) => a.idx - b.idx)) {
-      if (!added.has(t.id)) break;
-      out.push(t);
-    }
-    return out;
+    return addedAround(turn, turnsOf(turn.transcriptVersionId), added);
   };
 
   /** Fallback with no stored lineage: align the version directly with the current one. */
-  const fallbacks = new Map<string, { map: Map<string, string | null>; order: { oldLabel: string | null; newLabel: string | null; change: string }[] }>();
+  const fallbacks = new Map<string, { map: Map<string, string | null>; added: Set<string> }>();
   const viaDiff = (src: TurnRow): { turn: TurnRow | null; added: TurnRow[] } => {
     let fb = fallbacks.get(src.transcriptVersionId);
     if (!fb) {
-      const order = diffTurns(turnsOf(src.transcriptVersionId).map(lineageTurn), current.map(lineageTurn));
-      fb = { map: new Map(order.filter((r) => r.oldLabel).map((r) => [r.oldLabel!, r.newLabel])), order };
+      const rows = diffTurns(turnsOf(src.transcriptVersionId).map(lineageTurn), current.map(lineageTurn));
+      const idOf = new Map(current.map((t) => [t.label, t.id]));
+      fb = {
+        map: new Map(rows.filter((r) => r.oldLabel).map((r) => [r.oldLabel!, r.newLabel])),
+        added: new Set(rows.filter((r) => r.change === "added" && r.newLabel).map((r) => idOf.get(r.newLabel!)!)),
+      };
       fallbacks.set(src.transcriptVersionId, fb);
     }
     const label = fb.map.get(src.label);
     const turn = label ? (current.find((t) => t.label === label) ?? null) : null;
-    const added: TurnRow[] = [];
-    const at = fb.order.findIndex((r) => r.oldLabel === src.label);
-    for (let i = at + 1; at >= 0 && i < fb.order.length && fb.order[i].change === "added"; i++) {
-      const t = current.find((c) => c.label === fb.order[i].newLabel);
-      if (t) added.push(t);
-    }
-    return { turn, added };
+    return { turn, added: turn ? addedAround(turn, current, fb.added) : [] };
   };
 
   /**
@@ -162,7 +168,7 @@ export function turnPlacer(tx: DbOrTx, caseId: string, preload: readonly string[
       const to: TurnRow | null = next.newTurnId ? turnRow(next.newTurnId) : null;
       if (!to || to.textHash !== turn.textHash) {
         changed = true;
-        if (to) pending.push(...addedAfter(to));
+        if (to) pending.push(...storedAdded(to));
       }
       turn = to;
     }
