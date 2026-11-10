@@ -272,6 +272,8 @@ const TABLE: Row[] = [
     owner: "marcus",
     body: () => ({ caseId: CASE, title: "Raised by hand", severity: "high", explanation: "The expert named a customer.", turnLabel: "T15" }),
   },
+  // The one public route: the platform's health check, which says only that the database answers.
+  { file: "src/app/api/health/route.ts", method: "GET", caseScoped: false, noSession: 200 },
   { file: "src/app/api/jobs/[id]/route.ts", method: "GET", caseScoped: true, owner: "priya", params: () => ({ id: ids.job }) },
   { file: "src/app/api/metrics/route.ts", method: "GET", caseScoped: false },
   { file: "src/app/api/policies/[versionId]/approve/route.ts", method: "POST", caseScoped: false, params: () => ({ versionId: ids.policy }), body: () => ({ bundleHash: "0".repeat(64) }) },

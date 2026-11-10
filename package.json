@@ -29,6 +29,7 @@
     "demo:offline": "sh scripts/offline-demo.sh",
     "live:prepare": "sh scripts/prepare-live-call.sh",
     "audit:verify": "tsx scripts/verify-audit.ts",
+    "smoke": "tsx scripts/smoke-deployed.ts",
     "desktop:build": "pnpm --filter blink-desktop build",
     "desktop:smoke": "pnpm --filter blink-desktop smoke"
   },

@@ -13,8 +13,8 @@ import { hashPassword, verifyPassword } from "@/server/auth/password";
 import { SESSION_TTL_HOURS, createSession, destroySession, purgeExpired, recordAttempt, sessionActor, tooManyAttempts } from "@/server/auth/sessions";
 import { setClockForTests } from "@/server/clock";
 import { getDb, resetDbForTests } from "@/server/db/client";
-import { authSessions, loginAttempts, users } from "@/server/db/schema";
-import { seedBase } from "@/server/services/seed";
+import { authSessions, auditEvents, cases, documents, jobs, loginAttempts, users } from "@/server/db/schema";
+import { seedBase, seedUsersOnly } from "@/server/services/seed";
 
 const START = Date.parse("2026-11-10T09:00:00.000Z");
 let now = START;
@@ -242,6 +242,31 @@ describe("seeding accounts", () => {
     process.env.BLINK_SEED_PASSWORDS = JSON.stringify({ user_priya: "second" });
     seedBase({ enqueueDocFacts: false, goldDocFacts: true });
     expect(rows().user_priya.passwordHash).toBe(before);
+  });
+
+  it("with --users-only, inserts the users on an empty database and touches nothing else", () => {
+    resetDbForTests();
+    process.env.BLINK_SEED_PASSWORDS = JSON.stringify({ user_priya: "pw-for-priya" });
+    expect(seedUsersOnly()).toEqual({ inserted: 4, updated: 0 });
+    const r = rows();
+    expect(Object.keys(r).sort()).toEqual(["user_dana", "user_jordan", "user_marcus", "user_priya"]);
+    expect(verifyPassword("pw-for-priya", r.user_priya.passwordHash)).toBe(true);
+    expect(r.user_marcus.passwordHash).toBeNull();
+    const db = getDb();
+    for (const table of [cases, documents, jobs, auditEvents]) expect(db.select().from(table).all()).toEqual([]);
+  });
+
+  it("with --users-only, fills in a missing password on a seeded database and keeps one that is set", () => {
+    process.env.BLINK_SEED_PASSWORDS = JSON.stringify({ user_priya: "first" });
+    seedBase({ enqueueDocFacts: false, goldDocFacts: true });
+    const before = rows().user_priya.passwordHash;
+    const audit = getDb().select().from(auditEvents).all().length;
+    process.env.BLINK_SEED_PASSWORDS = JSON.stringify({ user_priya: "second", user_marcus: "pw-for-marcus" });
+    expect(seedUsersOnly()).toEqual({ inserted: 0, updated: 1 });
+    const r = rows();
+    expect(r.user_priya.passwordHash).toBe(before);
+    expect(verifyPassword("pw-for-marcus", r.user_marcus.passwordHash)).toBe(true);
+    expect(getDb().select().from(auditEvents).all()).toHaveLength(audit);
   });
 
   it("fails without echoing the value when BLINK_SEED_PASSWORDS is not a JSON object of strings", () => {

@@ -316,3 +316,13 @@ Step 1 is done: `pnpm live:prepare` (`scripts/prepare-live-call.sh`) resets `dat
   - Every policy compile stage now has a 32,000-token cap. The demo was re-recorded: the broken policy still ends COMPILE_FAILED with CLAUSE_DROPPED (now also SCENARIO_FAILED), and v1 is VALIDATED with 8/8 reviewer scenarios. `recordings.test.ts`, `demo:check` and `live:check` pass. The 9 demo recordings left unused were deleted.
   - `structuredCall` now raises `LlmTruncated` when a stream stops at `max_tokens` and the SDK's parse fails. It logs the call with the usage the stream's last snapshot reports, which the SDK does expose.
 - **Result:** all three compile, and none validates. Oaktree has 10 `CLAUSE_DROPPED`, Sage Rock 7, TCW 10. In every case a required paragraph has a clause the ten predicates cannot express, and no other issue blocks. `loadRealPolicy` refuses all three by name, so Task 37 has no validated real policy to run under. Replay matches the record run byte for byte.
+
+## Task 42: the production container
+
+- Deploy moved ahead of Phase 8 at the owner's request so a friend can use it (order: 36, 42, 43, 37, 38, 39, 40, 44, 45).
+- **The image installs `blink...` only.** `.dockerignore` drops `desktop/`; `pnpm-workspace.yaml` still names it, and a frozen install filtered to `blink...` works with the folder absent (checked with the real lockfile). Electron is never installed.
+- **corepack:** Node 25 and later stop bundling it, so the image runs `npm install -g corepack@0.36.0` before `corepack enable`; `corepack install` then fetches the pnpm in `packageManager` (10.33.2).
+- **Restarts keep the data.** `scripts/start-prod.sh` seeds in full only when the database has no users; otherwise `seed.ts --users-only` adds missing users and fills in a missing email or password. A password already set is never replaced, so changing one in `BLINK_SEED_PASSWORDS` after the first start does nothing until that user's `password_hash` is cleared.
+- **The start script refuses to run** when `BLINK_ALLOW_SWITCHER=1` or `BLINK_ALLOW_SCRIPTED_CALLS=1`.
+- **Smoke, workspace check:** the deployment has one banker, who owns the only case, so the "case she does not own" is an id no case has (404). The script says which it used.
+- **Local check (steps 2 and 4)** ran with `BLINK_DB_PATH=./data/prod-check.db` added, so it did not seed passwords into the development database. Docker was not used: the client is installed but its daemon was not running, so the Railway build in Task 43 is the first build of the image.

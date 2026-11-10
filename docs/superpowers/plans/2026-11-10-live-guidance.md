@@ -1583,11 +1583,11 @@ Do not start this phase before Phase 5 is complete: the app is not put on a publ
 - `scripts/start-prod.sh`: `drizzle-kit migrate`, then `tsx scripts/seed.ts` on an empty database or `--users-only` otherwise, then `concurrently -k -n web,worker "next start -p $PORT" "tsx scripts/worker.ts"`.
 - `railway.json`: `{ "build": { "builder": "DOCKERFILE" }, "deploy": { "healthcheckPath": "/api/health", "restartPolicyType": "ON_FAILURE" } }`.
 
-- [ ] **Step 1: Write the smoke script.** It fails unless: `/api/health` is 200; `/` without a session redirects to `/login`; each of the four users can sign in; signed in as the banker, `GET /api/calls` is 403, `POST /api/session/act-as` is 404, and the workspace of a case they do not own is 403 or 404; sign-out ends the session.
-- [ ] **Step 2: Run it against a local production run and see it fail.** Run the app with `NODE_ENV=production BLINK_AUTH_MODE=password BLINK_SEED_PASSWORDS='{...}' BLINK_LLM_MODE=replay PORT=3200 sh scripts/start-prod.sh` after `pnpm build`, then `pnpm smoke --url http://localhost:3200`. Expected: FAIL, no health route.
-- [ ] **Step 3: Write the health route, the start script, the Dockerfile and `railway.json`.** The image is `node:26-bookworm-slim` with `python3`, `make` and `g++` for better-sqlite3, `corepack enable`, `pnpm install --frozen-lockfile` with development dependencies (the start script needs `tsx` and `drizzle-kit`), `pnpm build`, `NODE_ENV=production` set only after the install, and the start script as its command. `.dockerignore` excludes `.env*`, `data/`, `desktop/`, `spike/`, `test-results/`, `.next/`, `node_modules/`.
-- [ ] **Step 4: Run the smoke script again.** Expected: PASS.
-- [ ] **Step 5: Commit.**
+- [x] **Step 1: Write the smoke script.** It fails unless: `/api/health` is 200; `/` without a session redirects to `/login`; each of the four users can sign in; signed in as the banker, `GET /api/calls` is 403, `POST /api/session/act-as` is 404, and the workspace of a case they do not own is 403 or 404; sign-out ends the session.
+- [x] **Step 2: Run it against a local production run and see it fail.** Run the app with `NODE_ENV=production BLINK_AUTH_MODE=password BLINK_SEED_PASSWORDS='{...}' BLINK_LLM_MODE=replay PORT=3200 sh scripts/start-prod.sh` after `pnpm build`, then `pnpm smoke --url http://localhost:3200`. Expected: FAIL, no health route.
+- [x] **Step 3: Write the health route, the start script, the Dockerfile and `railway.json`.** The image is `node:26-bookworm-slim` with `python3`, `make` and `g++` for better-sqlite3, `corepack enable`, `pnpm install --frozen-lockfile` with development dependencies (the start script needs `tsx` and `drizzle-kit`), `pnpm build`, `NODE_ENV=production` set only after the install, and the start script as its command. `.dockerignore` excludes `.env*`, `data/`, `desktop/`, `spike/`, `test-results/`, `.next/`, `node_modules/`.
+- [x] **Step 4: Run the smoke script again.** Expected: PASS.
+- [x] **Step 5: Commit.**
 
 ```bash
 git add Dockerfile .dockerignore railway.json scripts/start-prod.sh scripts/smoke-deployed.ts scripts/seed.ts src/app/api/health package.json tests/services/breakin.test.ts

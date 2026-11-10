@@ -14,7 +14,7 @@ import { parseTranscript } from "@/core/transcript/parse";
 import { DEMO_USERS, loadActor } from "../auth/actor";
 import { hashPassword } from "../auth/password";
 import { appendAudit } from "../audit/log";
-import { transact } from "../db/client";
+import { type Tx, transact } from "../db/client";
 import { cases, users } from "../db/schema";
 import { enqueueJob } from "../jobs/queue";
 import { drainJobs } from "../jobs/runner";
@@ -107,22 +107,42 @@ function seedPasswords(): Record<string, string> {
   return parsed as Record<string, string>;
 }
 
+/**
+ * Inserts the demo users that are missing and fills in what an existing one lacks: its email, and
+ * a password `BLINK_SEED_PASSWORDS` names when it has none. A password that is already set is never
+ * replaced. Touches the users table and nothing else.
+ */
+function seedUsers(tx: Tx): { inserted: number; updated: number } {
+  const passwords = seedPasswords();
+  let inserted = 0;
+  let updated = 0;
+  for (const user of DEMO_USERS) {
+    const existing = tx.select().from(users).where(eq(users.id, user.id)).get();
+    const password = passwords[user.id];
+    if (!existing) {
+      tx.insert(users).values({ ...user, email: demoEmail(user.name), passwordHash: password ? hashPassword(password) : null }).run();
+      inserted++;
+      continue;
+    }
+    const fill: { email?: string; passwordHash?: string } = {};
+    if (!existing.email) fill.email = demoEmail(user.name);
+    if (!existing.passwordHash && password) fill.passwordHash = hashPassword(password);
+    if (Object.keys(fill).length) {
+      tx.update(users).set(fill).where(eq(users.id, user.id)).run();
+      updated++;
+    }
+  }
+  return { inserted, updated };
+}
+
+/** `tsx scripts/seed.ts --users-only`: the start script's re-seed of a database that already holds data. */
+export function seedUsersOnly(): { inserted: number; updated: number } {
+  return transact((tx) => seedUsers(tx));
+}
+
 export function seedBase(options: SeedOptions = {}): { caseId: string; documents: string[] } {
   return transact((tx) => {
-    const passwords = seedPasswords();
-    for (const user of DEMO_USERS) {
-      const existing = tx.select().from(users).where(eq(users.id, user.id)).get();
-      const password = passwords[user.id];
-      if (!existing) {
-        tx.insert(users).values({ ...user, email: demoEmail(user.name), passwordHash: password ? hashPassword(password) : null }).run();
-        continue;
-      }
-      // A re-seed fills in what is missing and never replaces a password that is already set.
-      const fill: { email?: string; passwordHash?: string } = {};
-      if (!existing.email) fill.email = demoEmail(user.name);
-      if (!existing.passwordHash && password) fill.passwordHash = hashPassword(password);
-      if (Object.keys(fill).length) tx.update(users).set(fill).where(eq(users.id, user.id)).run();
-    }
+    seedUsers(tx);
     const documentIds: string[] = [];
     for (const file of readdirSync(fixture("documents")).filter((f) => f.endsWith(".md")).sort()) {
       const input = parseDocumentFile(file.replace(/\.md$/, ""), readFixtureText("documents", file));
