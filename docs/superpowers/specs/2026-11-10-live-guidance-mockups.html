@@ -1,0 +1,220 @@
+<!doctype html>
+<!--
+  Reference mockups for 2026-11-10-live-guidance-design.md.
+  They show direction, wording and layout. They are not a pixel specification.
+  All numbers are placeholders, not measurements.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Blink: live guidance mockups</title>
+<style>
+  :root {
+    --background: #0b0b0c; --foreground: #ededee; --muted: #151516; --muted-foreground: #8a8a90;
+    --card: #101011; --popover: #141415; --popover-foreground: #ededee; --secondary: #1a1a1c;
+    --border: #232326; --warning: #f5a524; --destructive: #ef4444; --success: #2fb37a; --radius: 10px;
+    --font-sans: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+    --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+  * { box-sizing: border-box; }
+  html { background: var(--background); }
+  body { margin: 0 auto; padding: 32px 16px 48px; max-width: 760px; font-family: var(--font-sans); color: var(--foreground); font-size: 13px; line-height: 1.45; }
+  .sec { margin: 0 0 40px; }
+  .eyebrow { font-size: 11px; letter-spacing: .07em; text-transform: uppercase; color: var(--muted-foreground); margin: 0 0 4px; }
+  h2 { font-size: 16px; font-weight: 600; margin: 0 0 2px; letter-spacing: -.01em; }
+  .sub { color: var(--muted-foreground); margin: 0 0 16px; }
+  .muted { color: var(--muted-foreground); }
+
+  .dot { width: 8px; height: 8px; border-radius: 50%; flex: none; display: inline-block; }
+  .warn { background: var(--warning); }
+  .stop { background: var(--destructive); }
+  .good { background: var(--success); }
+  .none { background: var(--muted-foreground); opacity: .45; }
+  .ring { border: 1.5px solid var(--muted-foreground); background: transparent; }
+
+  .states { display: grid; grid-template-columns: auto 1fr; gap: 10px 16px; align-items: center; }
+  .pill { justify-self: start; border-radius: 999px; padding: 7px 14px 7px 12px; white-space: nowrap; display: inline-flex; align-items: center; gap: 8px; font-size: 12.5px; font-weight: 500; background: var(--popover); color: var(--popover-foreground); border: 1px solid var(--border); box-shadow: 0 6px 18px rgba(0,0,0,.16); }
+  .pill.soft { font-weight: 400; color: var(--muted-foreground); box-shadow: none; }
+
+  .call { border: 1px solid var(--border); border-radius: var(--radius); background: var(--card); overflow: hidden; margin-top: 18px; }
+  .call-bar { height: 28px; display: flex; align-items: center; gap: 8px; padding: 0 12px; font-size: 11px; color: var(--muted-foreground); border-bottom: 1px solid var(--border); }
+  .lights { display: inline-flex; gap: 5px; margin-right: 4px; }
+  .lights i { width: 8px; height: 8px; border-radius: 50%; background: var(--border); display: block; }
+  .stage { position: relative; height: 172px; background: var(--muted); display: flex; align-items: center; justify-content: center; }
+  .stage .pill { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); }
+  .avatar { width: 58px; height: 58px; border-radius: 50%; background: var(--card); border: 1px solid var(--border); display: grid; place-items: center; font-weight: 600; font-size: 15px; color: var(--muted-foreground); }
+  .who { position: absolute; left: 12px; bottom: 10px; font-size: 11px; color: var(--muted-foreground); }
+  .self { position: absolute; right: 12px; bottom: 12px; width: 86px; height: 56px; border-radius: 8px; background: var(--card); border: 1px solid var(--border); display: grid; place-items: center; font-size: 10px; color: var(--muted-foreground); }
+
+  .panel { border: 1px solid var(--border); border-radius: var(--radius); background: var(--card); padding: 16px; }
+  .head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin: 0 0 14px; }
+  .head b { font-size: 14px; font-weight: 600; }
+  .status { display: flex; align-items: center; gap: 8px; font-weight: 600; margin: 0 0 12px; }
+  .status span { font-weight: 400; color: var(--muted-foreground); }
+  .row { display: grid; grid-template-columns: 44px 1fr; gap: 10px; padding: 9px 0; border-top: 1px solid var(--border); align-items: start; }
+  .spk { color: var(--muted-foreground); font-size: 11px; margin-bottom: 1px; }
+  .bar { display: inline-block; height: 12px; border-radius: 2px; background: var(--foreground); vertical-align: -1px; opacity: .88; }
+  .tag { float: right; font-size: 11px; color: var(--muted-foreground); }
+  .review { margin-top: 12px; }
+  .review .why { color: var(--muted-foreground); font-size: 12px; margin: 6px 0 12px; }
+  .review blockquote { margin: 0; padding: 0 0 0 12px; border-left: 2px solid var(--destructive); }
+  .btns { display: flex; gap: 8px; }
+  .btn { border: 1px solid var(--border); border-radius: 7px; padding: 5px 12px; font-size: 12px; background: transparent; color: var(--foreground); font-family: inherit; }
+  .btn.solid { background: var(--foreground); color: var(--background); border-color: var(--foreground); }
+
+  .kpis { display: grid; gap: 0; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); margin: 0 0 12px; }
+  .kpis.five { grid-template-columns: repeat(5, 1fr); }
+  .kpis.four { grid-template-columns: repeat(4, 1fr); }
+  .kpi { padding: 10px 12px 10px 0; }
+  .kpi + .kpi { padding-left: 12px; border-left: 1px solid var(--border); }
+  .kpi .l { font-size: 11px; color: var(--muted-foreground); }
+  .kpi .v { font-size: 18px; font-weight: 600; letter-spacing: -.01em; margin-top: 1px; }
+  .kpi .v small { font-size: 11px; font-weight: 400; color: var(--muted-foreground); letter-spacing: 0; }
+
+  .stages { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 12px; margin: 0 0 4px; }
+  .stages span { display: inline-flex; align-items: center; gap: 7px; }
+  .stages em { font-style: normal; color: var(--muted-foreground); }
+
+  .trow { display: grid; grid-template-columns: 44px 10px 1fr 46px; gap: 10px; padding: 10px 0; border-top: 1px solid var(--border); align-items: start; }
+  .trow .dot { margin-top: 5px; }
+  .t { font-family: var(--font-mono); font-size: 11px; color: var(--muted-foreground); padding-top: 2px; }
+  .said { font-weight: 500; }
+  .did { color: var(--muted-foreground); font-size: 12px; margin-top: 2px; }
+  .ms { font-family: var(--font-mono); font-size: 11px; color: var(--muted-foreground); text-align: right; padding-top: 2px; font-variant-numeric: tabular-nums; }
+  .trow.open { background: var(--secondary); margin: 0 -16px; padding-left: 16px; padding-right: 16px; }
+
+  .step { display: grid; grid-template-columns: 92px 1fr 120px 44px; gap: 12px; padding: 10px 0; border-top: 1px solid var(--border); align-items: start; }
+  .step:first-of-type { border-top: 0; padding-top: 0; }
+  .step .n { font-weight: 600; }
+  .step .d small { display: block; color: var(--muted-foreground); font-size: 11.5px; margin-top: 2px; }
+  .track { position: relative; height: 8px; margin-top: 5px; border-radius: 4px; background: var(--secondary); }
+  .track i { position: absolute; top: 0; height: 8px; border-radius: 4px; background: var(--foreground); opacity: .78; min-width: 3px; }
+  .track.blank { background: transparent; }
+  .foot { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); font-size: 12px; color: var(--muted-foreground); }
+  .foot b { color: var(--foreground); font-weight: 600; }
+
+  .hero { display: flex; align-items: flex-end; gap: 18px; margin: 0 0 14px; }
+  .hero .big { font-size: 52px; font-weight: 600; letter-spacing: -.03em; line-height: 1; }
+  .hero .cap b { display: block; font-weight: 600; font-size: 13px; }
+  .hero .cap span { color: var(--muted-foreground); font-size: 12px; }
+  .prob { display: grid; grid-template-columns: 52px 1fr auto; gap: 12px; padding: 9px 0; border-top: 1px solid var(--border); font-size: 12.5px; }
+  .prob .when { font-family: var(--font-mono); font-size: 11px; color: var(--muted-foreground); padding-top: 1px; }
+  .prob .go { color: var(--muted-foreground); font-size: 12px; }
+  .lbl { font-size: 11px; color: var(--muted-foreground); margin: 14px 0 6px; }
+  .note { font-size: 11px; color: var(--muted-foreground); margin-top: 8px; }
+</style>
+</head>
+<body>
+
+<div class="sec">
+  <p class="eyebrow">1 · The pill</p>
+  <h2>Five things it can ever say</h2>
+  <p class="sub">No suggestions, no questions. It says what is happening and nothing else.</p>
+  <div class="states">
+    <span class="pill soft"><span class="dot good"></span>Listening</span><span class="muted">Most of the call. Nothing to read.</span>
+    <span class="pill"><span class="dot warn"></span>Getting close to inside information. Steer away.</span><span class="muted">The conversation is drifting.</span>
+    <span class="pill"><span class="dot stop"></span>Sounds like inside information. Move on.</span><span class="muted">The expert has said it.</span>
+    <span class="pill"><span class="dot good"></span>Call ended. 3 passages hidden and sent to compliance.</span><span class="muted">When the call ends.</span>
+    <span class="pill"><span class="dot ring"></span>Blink can't hear the call.</span><span class="muted">If something breaks, it says so.</span>
+  </div>
+  <div class="call">
+    <div class="call-bar"><span class="lights"><i></i><i></i><i></i></span>Any call app · 02:41</div>
+    <div class="stage">
+      <span class="pill"><span class="dot stop"></span>Sounds like inside information. Move on.</span>
+      <div class="avatar">RC</div>
+      <div class="who">R. Castellano · Expert</div>
+      <div class="self">You</div>
+    </div>
+  </div>
+  <p class="note">The pill floats at the top centre of the screen, above whatever call app is open.</p>
+</div>
+
+<div class="sec">
+  <p class="eyebrow">2 · When the call ends</p>
+  <h2>Hidden first, checked after</h2>
+  <p class="sub">The banker does nothing. Compliance sees the full text and decides.</p>
+  <div class="panel">
+    <div class="status"><span class="dot good"></span>Call ended <span>· 3 passages hidden · sent to compliance</span></div>
+    <div class="row"><div class="t">01:10</div><div><div class="spk">Expert <span class="tag">hidden · with compliance</span></div>Honestly, <span class="bar" style="width:286px"></span></div></div>
+    <div class="row"><div class="t">01:24</div><div><div class="spk">Expert</div>Distributors broadly are soft right now. Everyone overbought in 2025 and they're working through inventory.</div></div>
+    <div class="row"><div class="t">02:41</div><div><div class="spk">Expert <span class="tag">hidden · with compliance</span></div><span class="bar" style="width:204px"></span> <span class="bar" style="width:132px"></span> <span class="bar" style="width:318px"></span></div></div>
+  </div>
+  <div class="panel review">
+    <div class="spk">What compliance sees · 02:41</div>
+    <blockquote>“I still have a login to their pipeline dashboard in Salesforce. They never shut it off when I left.”</blockquote>
+    <div class="why">Hidden because your policy restricts company results that come from inside the company. Linked to 01:10.</div>
+    <div class="btns"><button class="btn solid">Keep hidden</button><button class="btn">Unhide</button><button class="btn">Send to legal</button></div>
+  </div>
+</div>
+
+<div class="sec">
+  <p class="eyebrow">3 · One call</p>
+  <h2>Everything that happened, in order</h2>
+  <p class="sub">One line per moment. Quiet moments stay quiet; warnings and problems stand out.</p>
+  <div class="panel">
+    <div class="head"><b>Halvorsen Pumps · R. Castellano</b><span class="muted">Nov 3, 2026 · 31 min</span></div>
+    <div class="kpis five">
+      <div class="kpi"><div class="l">Turns heard</div><div class="v">44</div></div>
+      <div class="kpi"><div class="l">Warnings shown</div><div class="v">2</div></div>
+      <div class="kpi"><div class="l">Passages hidden</div><div class="v">3</div></div>
+      <div class="kpi"><div class="l">Problems</div><div class="v">1</div></div>
+      <div class="kpi"><div class="l">Cost</div><div class="v">$0.19</div></div>
+    </div>
+    <div class="stages">
+      <span><span class="dot good"></span>Hearing</span>
+      <span><span class="dot warn"></span>Transcribing <em>dropped once, 19 s</em></span>
+      <span><span class="dot good"></span>Reading</span>
+      <span><span class="dot good"></span>Rules</span>
+      <span><span class="dot good"></span>Screen</span>
+    </div>
+    <div style="height:10px"></div>
+    <div class="trow"><div class="t">01:10</div><span class="dot none"></span><div><div class="said">Expert: “orders fell off a cliff… down about twenty percent”</div><div class="did">A company number, source not known yet. Watching. Nothing shown.</div></div><div class="ms">0.8 s</div></div>
+    <div class="trow"><div class="t">02:36</div><span class="dot warn"></span><div><div class="said">Banker: “What are bookings looking like this quarter?”</div><div class="did">The question points at current company results. Showed “Getting close to inside information.”</div></div><div class="ms">0.9 s</div></div>
+    <div class="trow open"><div class="t">02:41</div><span class="dot stop"></span><div><div class="said">Expert: “I still have a login to their pipeline dashboard”</div><div class="did">Links back to 01:10. The policy's rule on inside sources is met. Showed “Sounds like inside information.” Both passages hidden.</div></div><div class="ms">1.3 s</div></div>
+    <div class="trow"><div class="t">04:12</div><span class="dot ring"></span><div><div class="said">Blink could not hear the call for 19 seconds</div><div class="did">The transcription connection dropped and came back. The banker saw “Blink can't hear the call.” Those 19 seconds were re-read after the call.</div></div><div class="ms">19 s</div></div>
+  </div>
+</div>
+
+<div class="sec">
+  <p class="eyebrow">4 · One moment, opened</p>
+  <h2>Why the warning at 02:41 appeared</h2>
+  <p class="sub">Each step: what went in, what came out, who or what decided, and how long it took.</p>
+  <div class="panel">
+    <div class="step"><div class="n">Transcribed</div><div class="d">“I still have a login to their pipeline dashboard in Salesforce.”</div><div class="track"><i style="left:0;width:28px"></i></div><div class="ms">0.3 s</div></div>
+    <div class="step"><div class="n">Read</div><div class="d">An inside source, still in use. Explains the number at 01:10.<small>By a model: claude-haiku-5-5 · prompt live-v1 · 412 tokens in, 96 out · $0.002</small></div><div class="track"><i style="left:30px;width:79px"></i></div><div class="ms">0.9 s</div></div>
+    <div class="step"><div class="n">Rules checked</div><div class="d">About the company: yes. From an inside source: yes. Current period: yes. Result: restricted.<small>By code, not a model · policy v2, approved by Dana Okafor</small></div><div class="track"><i style="left:110px;width:3px"></i></div><div class="ms">4 ms</div></div>
+    <div class="step"><div class="n">Shown</div><div class="d">“Sounds like inside information. Move on.”</div><div class="track"><i style="left:111px;width:9px"></i></div><div class="ms">0.1 s</div></div>
+    <div class="step"><div class="n">Hidden</div><div class="d">01:10 and 02:41 blacked out and sent to compliance.</div><div class="track blank"></div><div class="ms"></div></div>
+    <div class="step"><div class="n">Reviewed</div><div class="d">Marcus Lee kept both hidden.<small>Nov 3, 14:02 · “Current-quarter bookings from a live internal dashboard.”</small></div><div class="track blank"></div><div class="ms"></div></div>
+    <div class="foot"><b>1.3 s</b> from the end of the expert's sentence to the warning on screen.</div>
+  </div>
+</div>
+
+<div class="sec">
+  <p class="eyebrow">5 · All calls</p>
+  <h2>Is Blink working?</h2>
+  <p class="sub">One number that matters most, the parts that can fail, and every recent problem.</p>
+  <div class="panel">
+    <div class="hero"><div class="big">1.1 s</div><div class="cap"><b>Typical time from words to warning</b><span>19 in 20 warnings arrive within 1.9 s. Slowest this week: 3.4 s.</span></div></div>
+    <div class="kpis four">
+      <div class="kpi"><div class="l">Calls this week</div><div class="v">12</div></div>
+      <div class="kpi"><div class="l">Turns with a problem</div><div class="v">2 <small>of 518</small></div></div>
+      <div class="kpi"><div class="l">Unhidden by compliance</div><div class="v">2 <small>of 14 hidden</small></div></div>
+      <div class="kpi"><div class="l">Typical cost per call</div><div class="v">$0.19</div></div>
+    </div>
+    <div class="stages">
+      <span><span class="dot good"></span>Hearing <em>working</em></span>
+      <span><span class="dot good"></span>Transcribing <em>working</em></span>
+      <span><span class="dot good"></span>Reading <em>working</em></span>
+      <span><span class="dot good"></span>Rules <em>working</em></span>
+      <span><span class="dot good"></span>Screen <em>working</em></span>
+    </div>
+    <p class="lbl">Recent problems</p>
+    <div class="prob"><div class="when">Nov 3</div><div>Halvorsen call: could not hear for 19 seconds. Transcription dropped and came back.</div><div class="go">Open call →</div></div>
+    <div class="prob"><div class="when">Nov 2</div><div>Brightwater call: one turn took 3.4 s to read, so a warning arrived late.</div><div class="go">Open call →</div></div>
+  </div>
+  <p class="note">All numbers are placeholders to show the layout, not measurements.</p>
+</div>
+
+</body>
+</html>
