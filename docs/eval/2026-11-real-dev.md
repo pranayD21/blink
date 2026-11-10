@@ -16,7 +16,7 @@ Spec section 11 asks how Blink does on real material. This is the development se
 
 Each (call, policy) pair is its own case with its own model call, so extraction varies from one pair to the next.
 
-- **Hidden:** a labelled turn is hidden when a claim quotes it and the case has a policy finding on that claim that compliance has not cleared. That is what the app hides on (`restrictedOnCase`, `hiddenBy`).
+- **Hidden:** a labelled turn is hidden when a claim quotes it and the case has a policy finding on that claim that compliance has not cleared. That is the policy half of what the app hides on (`restrictedOnCase`, `hiddenBy`). The app also hides the quotes of a claim under an uncleared AI-suggested concern, and those are not counted here.
   - The runs below were scored by an equivalent rule: the claim's monitors end in `REVIEW_REQUIRED`, `ESCALATION_REQUESTED` or `NEEDS_CONTEXT`, or the last step has a guard conflict.
   - The two rules agree, because a freshly uploaded case gets exactly one evaluation pass (the `analyze_transcript` job's `reevaluateCase`). In that pass the app opens a finding exactly when the last step has a conflict or its monitors end in one of those states (`settlesQuietly` in `persistMonitorRuns`).
 - **Not extracted:** no claim quotes the turn.
