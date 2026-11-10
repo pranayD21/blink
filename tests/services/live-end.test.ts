@@ -5,7 +5,8 @@
  * touches the network.
  */
 import { and, eq } from "drizzle-orm";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { sql } from "drizzle-orm";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { turnHash } from "@/core/deps/hash";
 import { type GroundingTurn, groundExtraction } from "@/core/extraction/ground";
 import { type LlmExtraction, LlmExtractionSchema } from "@/core/extraction/schema";
@@ -15,13 +16,13 @@ import { EVIDENCE_FIELDS } from "@/core/types";
 import { listAudit } from "@/server/audit/log";
 import { setClockForTests } from "@/server/clock";
 import { fromJson, getDb, resetDbForTests, transact } from "@/server/db/client";
-import { callClaims, callOutages, callTurns, calls, findingPassages, jobs, processingIssues } from "@/server/db/schema";
+import { callClaims, callOutages, callTurns, calls, claimQuotes, findingPassages, jobs, processingIssues } from "@/server/db/schema";
 import { drainJobs } from "@/server/jobs/runner";
 import type { LiveReader } from "@/server/live/reader";
 import { type CallRow, ackTurn, endCall, ingestTurn, recordOutage, reconcileLiveFlags, startCall } from "@/server/services/live";
 import { turnsOfVersion } from "@/server/services/loaders";
 import { seedDatabase } from "@/server/services/seed";
-import { CASE, appError, findingsOf, openTasks, statusOf, user } from "../helpers/db";
+import { CASE, answerMarginClarification, appError, findingOn, findingsOf, openTasks, statusOf, user } from "../helpers/db";
 import { readJson } from "../helpers/fixtures";
 import { goldReader, halvorsenLiveTurns, scriptedReader } from "../helpers/live";
 
@@ -132,6 +133,88 @@ describe("ending a call", () => {
     // Reconciling again opens nothing new.
     expect(transact((tx) => reconcileLiveFlags(tx, r.transcriptVersionId!))).toEqual({ created: [] });
     expect(passagesOf(live[0].id)).toHaveLength(1);
+  });
+
+  it("a policy finding that is no longer held for compliance does not cover a live flag", async () => {
+    await feed(22);
+    const r = end({ source: "gold" });
+    await drainJobs();
+    expect(liveFindings()).toEqual([]);
+    // The margin finding (C8, T17) is answered as public commentary: not triggered, awaiting acknowledgement.
+    answerMarginClarification();
+    expect(findingOn("C8").state).toBe("NOT_TRIGGERED_PENDING_ACK");
+
+    const { created } = transact((tx) => reconcileLiveFlags(tx, r.transcriptVersionId!));
+    expect(created).toHaveLength(1);
+    const live = liveFindings();
+    expect(live.map((f) => f.id)).toEqual(created);
+    expect(live[0].dedupeKey).toBe(`live:${CASE}:${call.id}:C8`);
+    expect(passagesOf(live[0].id).map((p) => p.turnId.split(":").at(-1))).toEqual(["T17"]);
+  });
+
+  it("coverage is per turn: a turn the after-call finding does not quote still gets a live finding", async () => {
+    await feed(22);
+    const r = end({ source: "gold" });
+    await drainJobs();
+    expect(liveFindings()).toEqual([]);
+    // As if the after-call read had confirmed C1 on T5 only: drop its quotes of T11.
+    const t11 = `${r.transcriptVersionId}:T11`;
+    getDb().delete(claimQuotes).where(eq(claimQuotes.turnId, t11)).run();
+
+    transact((tx) => reconcileLiveFlags(tx, r.transcriptVersionId!));
+    const live = liveFindings();
+    expect(live).toHaveLength(1);
+    expect(live[0].dedupeKey).toBe(`live:${CASE}:${call.id}:C1`);
+    expect(passagesOf(live[0].id).map((p) => p.turnId)).toEqual([t11]);
+    expect(fromJson<string[]>(live[0].reasonCodesJson, [])).toEqual(["LIVE_ONLY", "R1", "R2", "R4", "TURN:T11"]);
+    expect(live[0].explanation).toMatch(/^Live guidance flagged the expert's statement in T11: it met rule R1, rule R2 and rule R4 during the call\. The after-call read raised no policy finding on this turn/);
+  });
+
+  it("a live flag whose turns the transcript does not have is raised as a warning", async () => {
+    await feed(22, dashboardClaimAtT7());
+    const row = claimRows()[0];
+    const record = fromJson<{ quotes: { turnLabel: string }[] }>(row.recordJson, { quotes: [] });
+    getDb().update(callClaims).set({ recordJson: JSON.stringify({ ...record, quotes: record.quotes.map((q) => ({ ...q, turnLabel: "T99" })) }) }).where(eq(callClaims.id, row.id)).run();
+    const r = end({ source: "gold" });
+    await drainJobs();
+
+    expect(liveFindings()).toEqual([]);
+    const issues = issuesOf("LIVE_FLAG_UNMAPPED");
+    expect(issues).toHaveLength(1);
+    expect(issues[0]).toMatchObject({ severity: "warning", resolved: false });
+    expect(issues[0].message).toContain(row.id);
+    expect(issues[0].message).toContain("T99");
+    // Raised once, however often the flags are reconciled.
+    transact((tx) => reconcileLiveFlags(tx, r.transcriptVersionId!));
+    expect(issuesOf("LIVE_FLAG_UNMAPPED")).toHaveLength(1);
+  });
+
+  it("a live flag that quotes no turn is raised as a warning", async () => {
+    await feed(22, dashboardClaimAtT7());
+    const row = claimRows()[0];
+    getDb().update(callClaims).set({ recordJson: JSON.stringify({ ...fromJson<object>(row.recordJson, {}), quotes: [] }) }).where(eq(callClaims.id, row.id)).run();
+    end({ source: "gold" });
+    await drainJobs();
+    expect(liveFindings()).toEqual([]);
+    expect(issuesOf("LIVE_FLAG_UNMAPPED").map((i) => i.message)).toEqual([`Live flag ${row.id} (claim ${row.logicalKey}) quotes no turn, so no passage could be hidden for it.`]);
+  });
+
+  it("if keeping the live flags fails after a failed read, the case is blocked", async () => {
+    await feed(22);
+    end();
+    getDb().run(sql`DROP TABLE finding_passages`);
+    const logged = vi.spyOn(console, "error").mockImplementation(() => {});
+    try {
+      await drainJobs();
+      expect(logged).toHaveBeenCalled();
+    } finally {
+      logged.mockRestore();
+    }
+    expect(issuesOf("LLM_REPLAY_MISS")).toHaveLength(1);
+    const failed = issuesOf("LIVE_RECONCILE_FAILED");
+    expect(failed).toHaveLength(1);
+    expect(failed[0]).toMatchObject({ severity: "blocking", resolved: false });
+    expect(failed[0].message).toMatch(/finding_passages/);
   });
 
   it("if the after-call read fails, every live flag still becomes a finding", async () => {

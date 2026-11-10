@@ -14,7 +14,7 @@ import { fromJson, getDb, transact } from "../../db/client";
 import { analysisRuns, transcriptVersions } from "../../db/schema";
 import { LlmError, LlmSchemaError, llmModel, structuredCall } from "../../llm/client";
 import { EXTRACT_PROMPT_VERSION, EXTRACT_STAGE, EXTRACT_SYSTEM, buildExtractUser } from "../../llm/prompts/extract";
-import { persistAnalysis, recordAnalysisFailure, setRunStage, startRun } from "../../services/analysis";
+import { persistAnalysis, recordAnalysisFailure, recordBlockingIssue, setRunStage, startRun } from "../../services/analysis";
 import { reconcileLiveFlags } from "../../services/live";
 import { loadCaseBundle, loadDocumentSet, turnsOfVersion } from "../../services/loaders";
 import { type JobRow, setJobStage } from "../queue";
@@ -130,5 +130,13 @@ export function analyzeTranscriptFailed(job: JobRow, error: unknown): void {
   runByJob.delete(job.id);
   transact((tx) => recordAnalysisFailure(tx, { caseId: payload.caseId, runId, code, message }));
   // Fail closed: with no after-call read, every passage a live call flagged becomes a finding.
-  if (payload.transcriptVersionId) transact((tx) => reconcileLiveFlags(tx, payload.transcriptVersionId));
+  if (!payload.transcriptVersionId) return;
+  try {
+    transact((tx) => reconcileLiveFlags(tx, payload.transcriptVersionId));
+  } catch (reconcileError) {
+    // Live flags that could not be kept must not fail quietly: block the case, then let the runner log it.
+    const detail = reconcileError instanceof Error ? reconcileError.message : String(reconcileError);
+    transact((tx) => recordBlockingIssue(tx, { caseId: payload.caseId, code: "LIVE_RECONCILE_FAILED", message: `Passages flagged during the live call could not be kept for compliance after the after-call read failed: ${detail}`, ref: { transcriptVersionId: payload.transcriptVersionId } }));
+    throw reconcileError;
+  }
 }

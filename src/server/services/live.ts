@@ -447,11 +447,16 @@ export function endCall(tx: DbOrTx, callId: string, actor: Actor, options: { sou
 
 const joinAnd = (items: readonly string[]): string => (items.length <= 1 ? (items[0] ?? "") : `${items.slice(0, -1).join(", ")} and ${items.at(-1)}`);
 
+/** Policy finding states in which the after-call read itself holds the passage for compliance. */
+const COVERING_STATES: ReadonlySet<string> = new Set(["REVIEW_REQUIRED", "NEEDS_CONTEXT", "ESCALATED", "REOPENED", "DISPOSITIONED"]);
+
 /**
- * Fails closed (spec section 5): every claim the call flagged keeps its turns hidden. A flag is
- * covered when a policy finding of the after-call read quotes any of its turns; otherwise it
- * becomes a `live` finding for compliance, with each of its turns as a hidden passage. Runs after
- * the after-call read, whether it succeeded or failed. A no-op when no call owns the transcript.
+ * Fails closed (spec section 5): every turn a live flag rests on stays hidden until compliance
+ * decides. A turn is covered when a policy finding of the after-call read, in a state that holds
+ * it for compliance, quotes that turn. A flag with any uncovered turn becomes a `live` finding
+ * for compliance, with each uncovered turn as a hidden passage. A flag whose turns cannot be
+ * found in the transcript is raised as a warning instead. Runs after the after-call read,
+ * whether it succeeded or failed. A no-op when no call owns the transcript.
  */
 export function reconcileLiveFlags(tx: DbOrTx, transcriptVersionId: string): { created: string[] } {
   const call = tx.select().from(calls).where(eq(calls.transcriptVersionId, transcriptVersionId)).get();
@@ -469,6 +474,7 @@ export function reconcileLiveFlags(tx: DbOrTx, transcriptVersionId: string): { c
       .from(findings)
       .where(and(eq(findings.caseId, call.caseId), eq(findings.origin, "policy")))
       .all()
+      .filter((f) => COVERING_STATES.has(f.state))
       .flatMap((f) => (f.claimLogicalKey ? (claimTurns.get(f.claimLogicalKey) ?? []) : [])),
   );
   const readFinished = latestRun(tx, call.caseId)?.status === "succeeded";
@@ -476,14 +482,23 @@ export function reconcileLiveFlags(tx: DbOrTx, transcriptVersionId: string): { c
   const created: string[] = [];
   for (const row of flagged) {
     const record = fromJson<ClaimRecord | null>(row.recordJson, null);
-    const labels = [...new Set((record?.quotes ?? []).map((q) => toTranscriptLabel.get(q.turnLabel) ?? q.turnLabel))];
-    if (labels.some((l) => covered.has(l))) continue;
+    const callLabels = [...new Set((record?.quotes ?? []).map((q) => q.turnLabel))];
+    const mapped = callLabels.flatMap((l) => {
+      const turn = transcriptTurns.get(toTranscriptLabel.get(l) ?? "");
+      return turn ? [turn] : [];
+    });
+    const unmapped = callLabels.filter((l) => !transcriptTurns.has(toTranscriptLabel.get(l) ?? ""));
+    if (callLabels.length === 0 || unmapped.length > 0) raiseUnmapped(tx, call, row, unmapped);
+
+    const uncovered = mapped.filter((t) => !covered.has(t.label));
+    if (uncovered.length === 0) continue;
+    const labels = uncovered.map((t) => t.label);
 
     const ruleIds = fromJson<string[]>(row.ruleIdsJson, []);
     const rules = ruleIds.length > 0 ? joinAnd(ruleIds.map((r) => `rule ${r}`)) : "a rule";
-    const where = `the expert's ${labels.length === 1 ? "statement" : "statements"} in ${joinAnd(labels)}`;
-    const what = row.flagged === "review_required" ? `Live guidance flagged ${where}: it met ${rules} during the call.` : `Live guidance flagged ${where}: it could not rule out ${rules} by the end of the call.`;
     const one = labels.length === 1;
+    const where = `the expert's ${one ? "statement" : "statements"} in ${joinAnd(labels)}`;
+    const what = row.flagged === "review_required" ? `Live guidance flagged ${where}: it met ${rules} during the call.` : `Live guidance flagged ${where}: it could not rule out ${rules} by the end of the call.`;
     const after = readFinished ? `The after-call read raised no policy finding on ${one ? "this turn" : "these turns"}` : "The after-call read did not finish";
     const { finding, created: isNew } = createFinding(tx, {
       caseId: call.caseId,
@@ -500,10 +515,7 @@ export function reconcileLiveFlags(tx: DbOrTx, transcriptVersionId: string): { c
     });
     if (!isNew) continue;
     created.push(finding.id);
-    for (const l of labels) {
-      const turn = transcriptTurns.get(l);
-      if (turn) tx.insert(findingPassages).values({ id: newId("fp"), findingId: finding.id, turnId: turn.id, startChar: 0, endChar: turn.text.length }).run();
-    }
+    for (const turn of uncovered) tx.insert(findingPassages).values({ id: newId("fp"), findingId: finding.id, turnId: turn.id, startChar: 0, endChar: turn.text.length }).run();
     openTask(tx, {
       caseId: call.caseId,
       findingId: finding.id,
@@ -517,4 +529,22 @@ export function reconcileLiveFlags(tx: DbOrTx, transcriptVersionId: string): { c
   }
   if (created.length > 0) syncCaseStatus(tx, call.caseId, { actorId: "system", cause: "live flag kept for compliance" });
   return { created };
+}
+
+/** A live flag whose turns the transcript does not have cannot be hidden: say so, once per flag. */
+function raiseUnmapped(tx: DbOrTx, call: CallRow, row: CallClaimRow, unmapped: readonly string[]): void {
+  const already = tx
+    .select()
+    .from(processingIssues)
+    .where(and(eq(processingIssues.caseId, call.caseId), eq(processingIssues.code, "LIVE_FLAG_UNMAPPED")))
+    .all()
+    .some((i) => fromJson<{ callClaimId?: string }>(i.refJson, {}).callClaimId === row.id);
+  if (already) return;
+  const message =
+    unmapped.length === 0
+      ? `Live flag ${row.id} (claim ${row.logicalKey}) quotes no turn, so no passage could be hidden for it.`
+      : `Live flag ${row.id} (claim ${row.logicalKey}) quotes ${joinAnd(unmapped)}, which the transcript does not have, so ${unmapped.length === 1 ? "that turn" : "those turns"} could not be hidden.`;
+  tx.insert(processingIssues)
+    .values({ id: newId("iss"), caseId: call.caseId, runId: null, severity: "warning", code: "LIVE_FLAG_UNMAPPED", message, refJson: toJson({ callId: call.id, callClaimId: row.id, turns: unmapped }), resolved: false, createdAt: nowIso() })
+    .run();
 }

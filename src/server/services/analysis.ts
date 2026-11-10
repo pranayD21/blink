@@ -82,6 +82,11 @@ function addIssue(tx: DbOrTx, caseId: string, runId: string | null, severity: "b
   tx.insert(processingIssues).values({ id: newId("iss"), caseId, runId, severity, code, message, refJson: toJson(ref), resolved: false, createdAt: nowIso() }).run();
 }
 
+/** A blocking issue that is not tied to a run. */
+export function recordBlockingIssue(tx: DbOrTx, input: { caseId: string; code: string; message: string; ref?: Record<string, unknown> }): void {
+  addIssue(tx, input.caseId, null, "blocking", input.code, input.message, input.ref);
+}
+
 /** A blocking issue for a failed run. Refusals, truncation, and replay misses never fail silently (D5). */
 export function recordAnalysisFailure(tx: DbOrTx, input: { caseId: string; runId: string | null; code: string; message: string }): void {
   addIssue(tx, input.caseId, input.runId, "blocking", input.code, input.message);
