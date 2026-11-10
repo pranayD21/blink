@@ -4,6 +4,7 @@
  * are not production accuracy and the page says so.
  */
 import { desc, eq } from "drizzle-orm";
+import { type Actor, requireRole } from "../auth/actor";
 import { type DbOrTx, fromJson } from "../db/client";
 import { analysisRuns, auditEvents, cases, decisions, evalRuns, findings, llmCalls, reviewSessions } from "../db/schema";
 import { costUsd } from "../llm/client";
@@ -150,4 +151,25 @@ export function loadMetrics(db: DbOrTx) {
     eval: evalResult ? { ...evalResult, storedAt: evalRow!.createdAt } : null,
     missedConcerns: evalResult ? evalResult.fixtures.flatMap((f) => f.missed.map((m) => `${f.id}: ${m}`)) : [],
   };
+}
+
+export type Metrics = ReturnType<typeof loadMetrics>;
+
+/** What the policy owner sees: model cost and latency per stage. No case, no finding. */
+export interface StageMetrics {
+  scope: "stages";
+  llm: Pick<Metrics["llm"], "stages" | "totalCostUsd" | "unpricedCalls" | "anyReplayed">;
+}
+
+/**
+ * The metrics an actor may read (live guidance, section 5). Reviewers get everything. The policy
+ * owner gets only the per-stage cost and latency, which names no case. A banker is refused: the
+ * rest names every case and counts its findings.
+ */
+export function metricsFor(db: DbOrTx, actor: Actor): ({ scope: "full" } & Metrics) | StageMetrics {
+  requireRole(actor, "reviewer", "senior_reviewer", "policy_owner");
+  const m = loadMetrics(db);
+  if (actor.role !== "policy_owner") return { scope: "full", ...m };
+  const { stages, totalCostUsd, unpricedCalls, anyReplayed } = m.llm;
+  return { scope: "stages", llm: { stages, totalCostUsd, unpricedCalls, anyReplayed } };
 }

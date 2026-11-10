@@ -36,11 +36,12 @@ import { GET as getWorkspace } from "@/app/api/cases/[id]/workspace/route";
 import { GET as getCases, POST as postCase } from "@/app/api/cases/route";
 import { POST as postEvent } from "@/app/api/findings/[id]/events/route";
 import { GET as getJobRoute } from "@/app/api/jobs/[id]/route";
+import { GET as getMetrics } from "@/app/api/metrics/route";
 import { POST as approvePolicyRoute } from "@/app/api/policies/[versionId]/approve/route";
 import { hashPassword } from "@/server/auth/password";
 import { optionalPageActor, pageActor } from "@/server/auth/session";
 import { getDb } from "@/server/db/client";
-import { authSessions, decisions, jobs, loginAttempts, releases, users } from "@/server/db/schema";
+import { authSessions, cases, decisions, jobs, llmCalls, loginAttempts, releases, users } from "@/server/db/schema";
 import { enqueueJob } from "@/server/jobs/queue";
 import { getBrief } from "@/server/services/briefs";
 import { analystCaseView } from "@/server/services/cases";
@@ -390,6 +391,53 @@ describe("every request is checked for the case it touches", () => {
       new NextRequest("http://10.0.0.5:3000/api/audit/verify", { method: "POST", headers: { "content-type": "application/json", origin, "x-forwarded-host": "blink.example.com" } });
     expect((await verifyAudit(req("https://blink.example.com"), { params: Promise.resolve({}) })).status).toBe(200);
     expect((await verifyAudit(req("https://evil.example"), { params: Promise.resolve({}) })).status).toBe(403);
+  });
+
+  it("only the first forwarded host counts, and a forwarded scheme must match", async () => {
+    session.user = "user_marcus";
+    const post = (origin: string, extra: Record<string, string>) =>
+      verifyAudit(new NextRequest("http://10.0.0.5:3000/api/audit/verify", { method: "POST", headers: { "content-type": "application/json", origin, ...extra } }), { params: Promise.resolve({}) });
+    // A proxy chain appends: the client-facing host is the first entry, never a later one.
+    expect((await post("https://blink.example.com", { "x-forwarded-host": "blink.example.com, evil.example" })).status).toBe(200);
+    expect((await post("https://evil.example", { "x-forwarded-host": "blink.example.com, evil.example" })).status).toBe(403);
+    // The scheme the client used must be the origin's scheme.
+    expect((await post("https://blink.example.com", { "x-forwarded-host": "blink.example.com", "x-forwarded-proto": "https" })).status).toBe(200);
+    expect((await post("http://blink.example.com", { "x-forwarded-host": "blink.example.com", "x-forwarded-proto": "https" })).status).toBe(403);
+  });
+
+  it("the Host header counts as the app's own when the request URL names another host", async () => {
+    session.user = "user_marcus";
+    const post = (origin: string) =>
+      verifyAudit(new NextRequest("http://127.0.0.1:3000/api/audit/verify", { method: "POST", headers: { "content-type": "application/json", origin, host: "blink.example.com" } }), { params: Promise.resolve({}) });
+    expect((await post("https://blink.example.com")).status).toBe(200);
+    expect((await post("https://evil.example")).status).toBe(403);
+  });
+
+  it("metrics: a banker is refused, the policy owner sees only per-stage costs, a reviewer everything", async () => {
+    const banker = await call(getMetrics, "priya");
+    expect(banker.status).toBe(403);
+    expect(banker.json.error!.code).toBe("FORBIDDEN");
+
+    const title = getDb().select().from(cases).where(eq(cases.id, CASE)).get()!.title;
+    // One model call tied to the case, so the reviewer's per-case cost row names it.
+    getDb()
+      .insert(llmCalls)
+      .values({ id: "llm_metrics_test", stage: "extract", requestHash: "h", model: "claude-opus-5-5", promptVersion: "v1", requestJson: "{}", responseJson: "{}", inputTokens: 1000, outputTokens: 100, latencyMs: 1200, replayed: false, refJson: JSON.stringify({ caseId: CASE }), createdAt: "2026-11-10T00:00:00.000Z" })
+      .run();
+    const reviewer = await call(getMetrics, "marcus");
+    expect(reviewer.status).toBe(200);
+    expect(reviewer.json).toMatchObject({ scope: "full", reviewTime: expect.any(Object), corrections: [expect.objectContaining({ caseId: CASE, title })], llm: { perCase: [expect.objectContaining({ caseId: CASE, title })] } });
+    expect((await call(getMetrics, "jordan")).json.scope).toBe("full");
+
+    const owner = await call(getMetrics, "dana");
+    expect(owner.status).toBe(200);
+    expect(Object.keys(owner.json).sort()).toEqual(["llm", "scope"]);
+    expect(Object.keys(owner.json.llm as object).sort()).toEqual(["anyReplayed", "stages", "totalCostUsd", "unpricedCalls"]);
+    expect((owner.json.llm as { stages: unknown[] }).stages).toEqual((reviewer.json.llm as { stages: unknown[] }).stages);
+    expect((owner.json.llm as { stages: { stage: string }[] }).stages.map((st) => st.stage)).toContain("extract");
+    const body = JSON.stringify(owner.json);
+    expect(body).not.toContain(title);
+    expect(body).not.toContain(CASE);
   });
 
   it("sign-in and sign-out from another site are refused", async () => {

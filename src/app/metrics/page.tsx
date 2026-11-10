@@ -1,16 +1,28 @@
 import { EmptyState, PageShell, Panel, Stat } from "@/components/app/page-shell";
+import { RoleGate } from "@/components/app/role-gate";
 import { Chip } from "@/components/app/status-chip";
 import { formatDateTime, formatMinutes, formatPercent, formatUsd } from "@/lib/format";
 import { cn } from "@/lib/utils";
+import { DEMO_USERS } from "@/server/auth/actor";
 import { pageActor } from "@/server/auth/session";
 import { getDb } from "@/server/db/client";
-import { loadMetrics } from "@/server/services/metrics";
+import { type StageMetrics, metricsFor } from "@/server/services/metrics";
 
 const STAGE_LABEL: Record<string, string> = { extract: "Claim extraction", docfacts: "Document facts", brief: "Brief draft", policy_pass_a: "Policy: clause inventory", policy_pass_b: "Policy: typed rules", policy_assembly: "Policy: monitor assembly", policy_scenarios: "Policy: AI scenarios" };
 
 export default async function MetricsPage() {
-  await pageActor();
-  const m = loadMetrics(getDb());
+  const actor = await pageActor();
+  if (actor.role === "analyst") {
+    return <RoleGate title="Metrics are for compliance" message="They name every case and count its findings, which only compliance reviewers may read." current={actor} switchTo={DEMO_USERS.filter((u) => u.role !== "analyst")} />;
+  }
+  const m = metricsFor(getDb(), actor);
+  if (m.scope === "stages") {
+    return (
+      <PageShell title="Metrics" description="Model cost and latency per stage, measured from the calls the app recorded. Review times and findings are for compliance reviewers.">
+        <CostPanel llm={m.llm} />
+      </PageShell>
+    );
+  }
   const { blink, baseline, savedFraction, moreCallsFraction, target } = m.reviewTime;
   // Cases with an unpriced call are left out of the average rather than counted low.
   const pricedCases = m.llm.perCase.filter((c) => c.unpricedCalls === 0);
@@ -85,39 +97,7 @@ export default async function MetricsPage() {
           <p className="border-t px-3 py-2 text-xs text-slate-500">A proxy for extraction quality: what a reviewer had to fix or add by hand.</p>
         </Panel>
 
-        <Panel title="Cost and latency per stage" bodyClassName="p-0">
-          {m.llm.stages.length === 0 ? (
-            <p className="p-4 text-sm text-slate-500">No model call has been made yet.</p>
-          ) : (
-            <table className="w-full text-sm">
-              <thead className="bg-slate-50 text-left text-xs text-slate-600">
-                <tr>
-                  {["Stage", "Calls", "Input tokens", "Output tokens", "Avg latency", "Avg cost"].map((h) => (
-                    <th key={h} className="px-3 py-1.5 font-medium">{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className="tabular-nums">
-                {m.llm.stages.map((s) => (
-                  <tr key={s.stage} className="border-t border-slate-100">
-                    <td className="px-3 py-1.5 text-slate-800">
-                      {STAGE_LABEL[s.stage] ?? s.stage}
-                      {s.replayed > 0 && <span className="ml-1.5 text-xs text-sky-700">{s.replayed === s.calls ? "replayed" : `${s.replayed} replayed`}</span>}
-                    </td>
-                    <td className="px-3 py-1.5">{s.calls}</td>
-                    <td className="px-3 py-1.5">{s.inputTokens.toLocaleString("en-US")}</td>
-                    <td className="px-3 py-1.5">{s.outputTokens.toLocaleString("en-US")}</td>
-                    <td className="px-3 py-1.5">{(s.avgLatencyMs / 1000).toFixed(1)} s</td>
-                    <td className="px-3 py-1.5">{s.avgCostUsd === null ? "unknown" : formatUsd(s.avgCostUsd)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-          <p className="border-t px-3 py-2 text-xs text-slate-500">
-            Tokens × the list price of each model (Claude Opus 5.5 $4 / $20, Claude Haiku 5.5 $0.10 / $0.50 per million input / output tokens). A model with no listed price shows as unknown. {m.llm.anyReplayed ? "Replayed calls show the tokens and latency of the recorded run; no money was spent replaying them." : ""}
-          </p>
-        </Panel>
+        <CostPanel llm={m.llm} />
 
         <Panel title="Quote validity">
           <div className="text-2xl font-semibold text-slate-900 tabular-nums">{m.quotes.rate === null ? "—" : formatPercent(m.quotes.rate, 1)}</div>
@@ -192,5 +172,44 @@ export default async function MetricsPage() {
         )}
       </Panel>
     </PageShell>
+  );
+}
+
+/** Model cost and latency per stage. Names no case, so the policy owner sees it too. */
+function CostPanel({ llm }: { llm: StageMetrics["llm"] }) {
+  return (
+    <Panel title="Cost and latency per stage" bodyClassName="p-0">
+      {llm.stages.length === 0 ? (
+        <p className="p-4 text-sm text-slate-500">No model call has been made yet.</p>
+      ) : (
+        <table className="w-full text-sm">
+          <thead className="bg-slate-50 text-left text-xs text-slate-600">
+            <tr>
+              {["Stage", "Calls", "Input tokens", "Output tokens", "Avg latency", "Avg cost"].map((h) => (
+                <th key={h} className="px-3 py-1.5 font-medium">{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody className="tabular-nums">
+            {llm.stages.map((s) => (
+              <tr key={s.stage} className="border-t border-slate-100">
+                <td className="px-3 py-1.5 text-slate-800">
+                  {STAGE_LABEL[s.stage] ?? s.stage}
+                  {s.replayed > 0 && <span className="ml-1.5 text-xs text-sky-700">{s.replayed === s.calls ? "replayed" : `${s.replayed} replayed`}</span>}
+                </td>
+                <td className="px-3 py-1.5">{s.calls}</td>
+                <td className="px-3 py-1.5">{s.inputTokens.toLocaleString("en-US")}</td>
+                <td className="px-3 py-1.5">{s.outputTokens.toLocaleString("en-US")}</td>
+                <td className="px-3 py-1.5">{(s.avgLatencyMs / 1000).toFixed(1)} s</td>
+                <td className="px-3 py-1.5">{s.avgCostUsd === null ? "unknown" : formatUsd(s.avgCostUsd)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+      <p className="border-t px-3 py-2 text-xs text-slate-500">
+        Tokens × the list price of each model (Claude Opus 5.5 $4 / $20, Claude Haiku 5.5 $0.10 / $0.50 per million input / output tokens). A model with no listed price shows as unknown. {llm.anyReplayed ? "Replayed calls show the tokens and latency of the recorded run; no money was spent replaying them." : ""}
+      </p>
+    </Panel>
   );
 }

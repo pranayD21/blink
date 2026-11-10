@@ -7,7 +7,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { requireCaseAccess, visibleCaseIds } from "@/server/auth/access";
 import { type Actor, loadActor } from "@/server/auth/actor";
 import { getDb } from "@/server/db/client";
-import { users } from "@/server/db/schema";
+import { transcriptVersions, users } from "@/server/db/schema";
 import { analystCaseView } from "@/server/services/cases";
 import { heartbeat } from "@/server/services/sessions";
 import { requestReanalysis, uploadTranscript } from "@/server/services/transcripts";
@@ -61,7 +61,10 @@ describe("the services a banker can reach check the case", () => {
   });
 
   it("uploadTranscript: another banker gets 404 and nothing is stored", () => {
-    expect(appError(() => uploadTranscript(getDb(), CASE, { text: "Expert: hello there", source: "gold" }, sam())).status).toBe(404);
+    const versions = () => getDb().select().from(transcriptVersions).all().length;
+    const before = versions();
+    expect(appError(() => uploadTranscript(getDb(), CASE, { text: "Expert: Orders were flat in the quarter.", source: "gold" }, sam())).status).toBe(404);
+    expect(versions()).toBe(before);
   });
 
   it("requestReanalysis and heartbeat: the policy owner and bankers are refused", () => {

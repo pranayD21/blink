@@ -12,7 +12,6 @@ const NAV: Record<string, { href: string; label: string }[]> = {
   analyst: [
     { href: "/", label: "Cases" },
     { href: "/analyst", label: "Released briefs" },
-    { href: "/metrics", label: "Metrics" },
   ],
   reviewer: [
     { href: "/", label: "Cases" },

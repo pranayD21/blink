@@ -254,6 +254,8 @@ test("the demo script runs end to end from recordings", async ({ page, baseURL }
 
   // ── 10. Metrics ───────────────────────────────────────────────────────────
   await test.step("10. the metrics page shows the target, measured review time, cost, and the eval table", async () => {
+    // Metrics name every case and count its findings, so they are for compliance, not the banker.
+    await actAs(page, "user_marcus", "Marcus Lee");
     await page.goto("/metrics");
     await expect(page.getByTestId("synthetic-note")).toContainText("They are not production accuracy");
     await expect(page.getByTestId("pilot-target")).toContainText("30% less review time");

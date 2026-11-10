@@ -56,12 +56,16 @@ export function errorResponse(err: unknown): Response {
 
 const BAD_ORIGIN = () => new AppError(403, "BAD_ORIGIN", "this request came from another site, so it was refused");
 
+/** The first entry of a forwarded header, as Next reads it: a proxy chain appends, and the first is the client-facing one. */
+const firstForwarded = (value: string | null): string | null => value?.split(",")[0]?.trim() || null;
+
 /**
  * Refuses a request that can change something (any method but GET and HEAD) when its `Origin`
  * header names a host other than the one the request was sent to: the request URL's host, its
- * `Host` header, or, behind a proxy, `X-Forwarded-Host`. A browser always sets `Origin` on a
- * cross-site POST and a page cannot forge it. A request with no `Origin` is let through: older
- * browsers leave it off same-origin requests, and server-to-server calls and tests never send it.
+ * `Host` header, or, behind a proxy, the first `X-Forwarded-Host`. When `X-Forwarded-Proto` is
+ * present the scheme must match it too. A browser always sets `Origin` on a cross-site POST and a
+ * page cannot forge it. A request with no `Origin` is let through: older browsers leave it off
+ * same-origin requests, and server-to-server calls and tests never send it.
  */
 export function requireSameOrigin(req: Request): void {
   if (req.method === "GET" || req.method === "HEAD") return;
@@ -73,10 +77,12 @@ export function requireSameOrigin(req: Request): void {
   } catch {
     throw BAD_ORIGIN(); // "null" (a sandboxed page or a file) and anything unparseable
   }
-  const named = [req.headers.get("host"), ...(req.headers.get("x-forwarded-host") ?? "").split(",")];
+  const proto = firstForwarded(req.headers.get("x-forwarded-proto"));
+  if (proto && from.protocol !== `${proto.toLowerCase()}:`) throw BAD_ORIGIN();
+
   const hosts = new Set([new URL(req.url).host]);
-  for (const raw of named) {
-    const host = raw?.trim();
+  for (const named of [req.headers.get("host"), firstForwarded(req.headers.get("x-forwarded-host"))]) {
+    const host = named?.trim();
     if (!host) continue;
     try {
       // Parsed with the origin's scheme, so a default port written out ("blink.app:443") still matches.
