@@ -28,17 +28,27 @@ export function spellNumber(n: number): string | null {
 }
 
 /** Lower-cased words; punctuation, apostrophes and hyphens all separate words. */
+// Names with internal punctuation are not matched across spellings: "J.P. Morgan" is "j p morgan", not "jp morgan".
 function words(text: string): string[] {
-  return text.toLowerCase().split(/[^\p{L}\p{N}]+/u).filter((w) => w.length > 0);
+  return text.normalize("NFKC").toLowerCase().split(/[^\p{L}\p{M}\p{N}]+/u).filter((w) => w.length > 0);
 }
 
-/** Whole numbers written with digits, ignoring decimals; thousands commas are removed ("1,200" is 1200). */
+/**
+ * Numbers written with digits, by value: "20.0" is 20, "20.5" is 20.5, "1,200" is 1200. A comma run that is
+ * not valid thousands grouping ("20,25") is separate numbers, and a minus sign is ignored (values are absolute).
+ */
 function digitNumbers(sentence: string): Set<number> {
   const found = new Set<number>();
-  for (const m of sentence.matchAll(/\d+(?:[.,]\d+)*/g)) {
+  for (const m of sentence.normalize("NFKC").matchAll(/\d+(?:[.,]\d+)*/g)) {
     const token = m[0];
-    if (/^\d{1,3}(,\d{3})+$/.test(token)) found.add(Number(token.replace(/,/g, "")));
-    else if (/^\d+$/.test(token)) found.add(Number(token));
+    if (/^\d{1,3}(,\d{3})+(\.\d+)?$/.test(token)) {
+      found.add(Number(token.replace(/,/g, "")));
+      continue;
+    }
+    for (const part of token.split(",")) {
+      if (/^\d+(\.\d+)?$/.test(part)) found.add(Number(part));
+      else for (const piece of part.split(".")) found.add(Number(piece));
+    }
   }
   return found;
 }
@@ -96,6 +106,7 @@ export function findLeaks(
   hidden: readonly HiddenPassage[],
   visible: { numbers: ReadonlySet<number>; names: ReadonlySet<string> },
 ): Leak[] {
+  const visibleNumbers = new Set([...visible.numbers].map(Math.abs));
   const sentenceWords = sentences.map(words);
   const sentenceDigits = sentences.map(digitNumbers);
   const visibleNames = new Set([...visible.names].map((n) => words(n).join(" ")));
@@ -116,8 +127,9 @@ export function findLeaks(
       for (const sw of sentenceWords) for (const run of sharedRuns(sw, grams)) add(p.label, "quote", run);
     }
     for (const n of p.numbers) {
-      if (visible.numbers.has(n)) continue;
-      if (sentenceWords.some((sw, i) => sentenceDigits[i].has(n) || mentionsSpelled(sw, n))) add(p.label, "figure", String(n));
+      const value = Math.abs(n);
+      if (visibleNumbers.has(value)) continue;
+      if (sentenceWords.some((sw, i) => sentenceDigits[i].has(value) || mentionsSpelled(sw, value))) add(p.label, "figure", String(n));
     }
     for (const name of p.names) {
       const nw = words(name);

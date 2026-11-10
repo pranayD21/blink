@@ -17,11 +17,24 @@ export interface RedactedTurn {
   segments: Segment[];
 }
 
-/** Sorts by turn then start and joins spans that overlap or touch. Empty or backwards spans are dropped. */
+/** Makes a span safe to blank with: whole offsets, start before end, widened (never narrowed) by rounding. */
+function normalizeSpan(s: Span): Span {
+  if (!Number.isFinite(s.start) || !Number.isFinite(s.end)) {
+    throw new Error(`Cannot blank span in turn ${s.turnLabel}: start and end must be finite numbers`);
+  }
+  const lo = Math.min(s.start, s.end);
+  const hi = Math.max(s.start, s.end);
+  return { turnLabel: s.turnLabel, start: Math.floor(lo), end: Math.ceil(hi) };
+}
+
+/**
+ * Sorts by turn then start and joins spans that overlap or touch. Spans are made whole and ordered first
+ * (a reversed span is swapped, fractions round outward) and empty ones are dropped; a non-finite offset throws.
+ */
 export function mergeSpans(spans: readonly Span[]): Span[] {
   const sorted = spans
+    .map(normalizeSpan)
     .filter((s) => s.end > s.start)
-    .map((s) => ({ ...s }))
     .sort((a, b) => (a.turnLabel < b.turnLabel ? -1 : a.turnLabel > b.turnLabel ? 1 : a.start - b.start));
   const merged: Span[] = [];
   for (const span of sorted) {
@@ -35,17 +48,28 @@ export function mergeSpans(spans: readonly Span[]): Span[] {
   return merged;
 }
 
+const isHigh = (c: number) => c >= 0xd800 && c <= 0xdbff;
+const isLow = (c: number) => c >= 0xdc00 && c <= 0xdfff;
+
 export function redactTurns(
   turns: readonly { label: string; speaker: string; speakerName: string; timestamp: string | null; text: string }[],
   spans: readonly Span[],
 ): { turns: RedactedTurn[]; hiddenPassages: number } {
-  const lengths = new Map(turns.map((t) => [t.label, t.text.length]));
+  const texts = new Map<string, string>();
+  for (const t of turns) {
+    if (texts.has(t.label)) throw new Error(`Duplicate turn label ${t.label}`);
+    texts.set(t.label, t.text);
+  }
   const clamped: Span[] = [];
-  for (const s of spans) {
-    const length = lengths.get(s.turnLabel);
-    if (length === undefined) continue;
-    const start = Math.max(0, Math.min(s.start, length));
-    const end = Math.max(0, Math.min(s.end, length));
+  for (const raw of spans) {
+    const s = normalizeSpan(raw); // validates every span, even one for an unknown turn
+    const text = texts.get(s.turnLabel);
+    if (text === undefined) continue;
+    let start = Math.max(0, Math.min(s.start, text.length));
+    let end = Math.max(0, Math.min(s.end, text.length));
+    // Never cut a character in half: widen to the whole surrogate pair.
+    if (start > 0 && start < text.length && isLow(text.charCodeAt(start)) && isHigh(text.charCodeAt(start - 1))) start -= 1;
+    if (end > 0 && end < text.length && isLow(text.charCodeAt(end)) && isHigh(text.charCodeAt(end - 1))) end += 1;
     if (end > start) clamped.push({ turnLabel: s.turnLabel, start, end });
   }
   const merged = mergeSpans(clamped);

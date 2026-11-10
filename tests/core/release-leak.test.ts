@@ -59,4 +59,37 @@ describe("summary leak check", () => {
 
   it("a clean summary has no leaks", () =>
     expect(findLeaks(["Distributors are working through inventory."], hidden, none)).toEqual([]));
+
+  it("a decimal hidden figure is found by value, and does not match its whole part", () => {
+    const h = [{ label: "F3", text: "x", numbers: [20.5], names: [] }];
+    expect(findLeaks(["Sales fell 20.5%."], h, none)[0]).toMatchObject({ kind: "figure", detail: "20.5" });
+    expect(findLeaks(["Sales fell 20%."], h, none)).toEqual([]);
+    expect(findLeaks(["Sales fell 20.50 percent."], h, none)[0].kind).toBe("figure");
+  });
+
+  it("20.0 is the figure 20", () => expect(findLeaks(["Margins were 20.0%."], hidden, none)[0].kind).toBe("figure"));
+
+  it("a negative hidden figure matches by absolute value, and the reverse", () => {
+    const neg = [{ label: "F4", text: "x", numbers: [-20], names: [] }];
+    expect(findLeaks(["Orders fell 20%."], neg, none)[0]).toMatchObject({ kind: "figure", detail: "-20" });
+    expect(findLeaks(["Orders moved -20%."], hidden, none)[0].kind).toBe("figure");
+    expect(findLeaks(["Orders fell 20%."], neg, { numbers: new Set([20]), names: new Set() })).toEqual([]);
+  });
+
+  it("a comma run that is not thousands grouping is separate numbers", () => {
+    const h = (n: number) => [{ label: "F5", text: "x", numbers: [n], names: [] }];
+    for (const n of [20, 25, 30]) expect(findLeaks(["Margins 20,25 and 30%."], h(n), none)[0].kind).toBe("figure");
+    expect(findLeaks(["Revenue was 1,200 units."], h(1200), none)[0].kind).toBe("figure");
+    expect(findLeaks(["Revenue was 1,200 units."], h(200), none)).toEqual([]);
+  });
+
+  it("matches after Unicode normalisation: decomposed accents and full-width digits", () => {
+    const h = [{ label: "F6", text: "x", numbers: [20], names: ["Jos\u00e9 Garc\u00eda"] }];
+    expect(findLeaks(["Met Jose\u0301 Garci\u0301a today."], h, none)[0]).toMatchObject({ kind: "name" });
+    expect(findLeaks(["Fell \uff12\uff10%."], h, none)[0]).toMatchObject({ kind: "figure" });
+  });
+
+  // Names with internal punctuation are not matched across spellings.
+  it("J.P. Morgan is not matched by JP Morgan", () =>
+    expect(findLeaks(["JP Morgan reported."], [{ label: "F7", text: "x", numbers: [], names: ["J.P. Morgan"] }], none)).toEqual([]));
 });
