@@ -58,6 +58,7 @@ export function releaseBrief(tx: DbOrTx, briefId: string, input: ReleaseInput, a
     ineligibleCitations: ineligibleCitations(tx, brief),
     newlyStale: newlyStale.map((s) => ({ dependent: s.label, reason: s.reason })),
     leaks,
+    unplacedPassages: restricted.unplaced,
   });
 
   if (failures.length > 0) {
@@ -70,6 +71,7 @@ export function releaseBrief(tx: DbOrTx, briefId: string, input: ReleaseInput, a
   const transcript = currentTranscript(tx, caseId);
   const redacted = redactTurns(transcript ? turnsOfVersion(tx, transcript.id) : [], restricted.spans);
   const redactedJson = toJson(redacted.turns);
+  const redactedHash = sha256Hex(redactedJson);
 
   const releaseId = newId("rel");
   const now = nowIso();
@@ -84,7 +86,7 @@ export function releaseBrief(tx: DbOrTx, briefId: string, input: ReleaseInput, a
       releasedAt: now,
       transcriptVersionId: transcript?.id ?? null,
       redactedTranscriptJson: redactedJson,
-      redactedTranscriptHash: sha256Hex(redactedJson),
+      redactedTranscriptHash: redactedHash,
       hiddenPassages: redacted.hiddenPassages,
     })
     .run();
@@ -97,6 +99,6 @@ export function releaseBrief(tx: DbOrTx, briefId: string, input: ReleaseInput, a
   }
   applyCaseEvent(tx, caseRow, "BRIEF_RELEASED", { actorId: actor.id, cause: `brief v${brief.versionNo} released` }, { strict: true });
   endSession(tx, caseId, actor.id, "blink");
-  appendAudit(tx, { actorId: actor.id, type: "BRIEF_RELEASED", entityType: "brief", entityId: brief.id, caseId, payload: { version: brief.versionNo, brief_hash: brief.contentHash, audience: input.audience, release: releaseId, approval: approval?.id ?? null, transcript_version: transcript?.id ?? null, redacted_transcript_hash: sha256Hex(redactedJson), hidden_passages: redacted.hiddenPassages } });
+  appendAudit(tx, { actorId: actor.id, type: "BRIEF_RELEASED", entityType: "brief", entityId: brief.id, caseId, payload: { version: brief.versionNo, brief_hash: brief.contentHash, audience: input.audience, release: releaseId, approval: approval?.id ?? null, transcript_version: transcript?.id ?? null, redacted_transcript_hash: redactedHash, hidden_passages: redacted.hiddenPassages } });
   return { released: true, releaseId, briefHash: brief.contentHash };
 }

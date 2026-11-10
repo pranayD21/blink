@@ -1,52 +1,29 @@
 /**
  * What compliance keeps hidden on a case, placed on the current transcript (spec section 5).
  *
- * A passage is hidden when it is a quote of a claim restricted by a decision, or a passage a
- * `live` finding hid that compliance has not cleared. Anything not yet cleared stays hidden: an
- * undecided live flag counts, so the function fails closed even if it is called before review ends.
+ * A passage is hidden when it is a quote of a claim that has any finding not cleared (rejected claims
+ * included: a claim retired by a corrected transcript can no longer be cited, but what it quoted is
+ * still restricted), or a passage a `live` finding hid that compliance has not cleared. "Cleared" is
+ * `findingCleared`: DISPOSITIONED cleared_for_research or no_concern on a decision that still stands.
+ * Passages are mapped onto the current transcript through turn lineage (`placement.ts`). One that
+ * cannot be placed is listed in `unplaced` so the release refuses rather than dropping it.
  * The result feeds both the blanked transcript stored at release and the summary leak check.
  */
-import { and, eq } from "drizzle-orm";
 import { type HiddenPassage, namePhrases, numbersIn } from "@/core/release/leak";
 import type { Span } from "@/core/release/redact";
-import { liveFindingCleared } from "@/core/workflow/brief";
+import { findingCleared, hiddenBy } from "@/core/workflow/brief";
 import type { DbOrTx } from "../db/client";
-import { findings } from "../db/schema";
-import { eligibilityForCase, livePassagesForCase } from "./briefs";
-import { findingLabel, latestDecision } from "./findingsCore";
-import { type LoadedClaim, type TurnRow, currentTranscript, turnsOfVersion } from "./loaders";
+import { eligibilityForCase } from "./briefs";
+import type { LoadedClaim } from "./loaders";
+import { turnPlacer } from "./placement";
 
 export interface RestrictedOnCase {
   spans: Span[];
   passages: HiddenPassage[];
   /** Figures and names that eligible claims state, so repeating them in the summary is not a leak. */
   visible: { numbers: Set<number>; names: Set<string> };
-}
-
-interface Source {
-  label: string;
-  textHash: string;
-  start: number;
-  end: number;
-  /** The words that were hidden, to find them again if the turn's text has changed. */
-  text: string;
-}
-
-/**
- * Places a passage recorded on some transcript version onto the current one. Same turn text: the
- * offsets stand. Changed text: the hidden words are looked for in the same turn, then in any turn.
- * Not found: the whole turn with that label is hidden, so a correction never reveals what it moved.
- */
-function place(source: Source, current: readonly TurnRow[]): { turn: TurnRow; start: number; end: number } | null {
-  const same = current.find((t) => t.label === source.label);
-  if (same && same.textHash === source.textHash) return { turn: same, start: source.start, end: source.end };
-  if (source.text.length > 0) {
-    for (const turn of same ? [same, ...current.filter((t) => t !== same)] : current) {
-      const at = turn.text.indexOf(source.text);
-      if (at >= 0) return { turn, start: at, end: at + source.text.length };
-    }
-  }
-  return same ? { turn: same, start: 0, end: same.text.length } : null;
+  /** Labels ("F1 · T5") of hidden passages that could not be placed on the current transcript. */
+  unplaced: string[];
 }
 
 /** Every string and number in a claim's fields, for the visible set. */
@@ -63,36 +40,35 @@ function fieldNames(claim: LoadedClaim): string[] {
 }
 
 export function restrictedOnCase(tx: DbOrTx, caseId: string): RestrictedOnCase {
-  const transcript = currentTranscript(tx, caseId);
-  const current = transcript ? turnsOfVersion(tx, transcript.id) : [];
-  const eligibility = eligibilityForCase(tx, caseId);
+  const placer = turnPlacer(tx, caseId);
+  const eligibility = eligibilityForCase(tx, caseId, placer);
 
   const spans: Span[] = [];
   const passages: HiddenPassage[] = [];
-  const hide = (findingLbl: string, source: Source, names: readonly string[]) => {
-    const placed = place(source, current);
-    if (!placed) return;
+  const unplaced: string[] = [];
+  const hide = (findingLbl: string, turnId: string, start: number, end: number, names: readonly string[]) => {
+    const placed = placer.place(turnId, start, end);
+    if (!placed) {
+      const label = `${findingLbl} · ${placer.sourceLabel(turnId)}`;
+      if (!unplaced.includes(label)) unplaced.push(label);
+      return;
+    }
     const text = placed.turn.text.slice(placed.start, placed.end);
     spans.push({ turnLabel: placed.turn.label, start: placed.start, end: placed.end });
     passages.push({ label: `${findingLbl} · ${placed.turn.label}`, text, numbers: numbersIn(text), names: [...new Set([...names, ...namePhrases(text)])] });
   };
 
-  // Quotes of claims a decision restricted (including claims on a turn a live finding keeps hidden).
-  for (const { claim, eligibility: e } of eligibility.claims) {
-    if (e.eligible || e.reason !== "restricted") continue;
-    for (const q of claim.quotes) {
-      hide(e.finding ?? claim.row.logicalKey, { label: q.turnLabel, textHash: q.turnTextHash, start: q.start, end: q.end, text: q.quote }, fieldNames(claim));
-    }
+  // Quotes of every claim, rejected or not, that a finding not yet cleared keeps hidden.
+  for (const { claim, turnLabels } of eligibility.claims) {
+    const by = hiddenBy({ logicalKey: claim.row.logicalKey, status: claim.row.status, turnLabels }, eligibility.findings);
+    if (!by) continue;
+    for (const q of claim.quotes) hide(by, q.turnId, q.start, q.end, fieldNames(claim));
   }
 
   // Passages of live findings compliance has not cleared.
-  const live = livePassagesForCase(tx, caseId);
-  for (const f of tx.select().from(findings).where(and(eq(findings.caseId, caseId), eq(findings.origin, "live"))).all()) {
-    const decision = latestDecision(tx, f.id);
-    if (liveFindingCleared({ claimLogicalKey: null, label: findingLabel(f), state: f.state, decision: decision ? { outcome: decision.outcome, stale: decision.stale } : null })) continue;
-    for (const p of live.get(f.id) ?? []) {
-      hide(findingLabel(f), { label: p.turn.label, textHash: p.turn.textHash, start: p.start, end: p.end, text: p.turn.text.slice(p.start, p.end) }, []);
-    }
+  for (const f of eligibility.findings) {
+    if (f.origin !== "live" || findingCleared(f)) continue;
+    for (const p of f.passages) hide(f.label, p.turnId, p.start, p.end, []);
   }
 
   const numbers = new Set<number>();
@@ -108,5 +84,5 @@ export function restrictedOnCase(tx: DbOrTx, caseId: string): RestrictedOnCase {
     }
     for (const name of fieldNames(claim)) names.add(name);
   }
-  return { spans, passages, visible: { numbers, names } };
+  return { spans, passages, visible: { numbers, names }, unplaced };
 }

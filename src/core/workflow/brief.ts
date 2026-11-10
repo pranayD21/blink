@@ -52,16 +52,28 @@ export interface EligibilityFinding {
   turnLabels?: readonly string[];
 }
 
-export type Eligibility =
-  | { eligible: true }
-  /** `finding` is the label of the finding that made the claim ineligible, when one did. */
-  | { eligible: false; reason: "rejected" | "finding_open" | "decision_stale" | "restricted"; detail: string; finding?: string };
+export type Eligibility = { eligible: true } | { eligible: false; reason: "rejected" | "finding_open" | "decision_stale" | "restricted"; detail: string };
 
 const RELEASABLE_OUTCOMES = new Set(["cleared_for_research", "no_concern"]);
 
-/** A live flag releases its turns only once compliance has cleared them, on a decision that still stands. */
-export function liveFindingCleared(f: EligibilityFinding): boolean {
+/** Compliance has cleared a finding: DISPOSITIONED cleared_for_research or no_concern, on a decision that still stands. */
+export function findingCleared(f: EligibilityFinding): boolean {
   return f.state === "DISPOSITIONED" && !!f.decision && !f.decision.stale && !!f.decision.outcome && RELEASABLE_OUTCOMES.has(f.decision.outcome);
+}
+
+/**
+ * Whether a claim's quoted passages stay hidden from the banker, and by which finding (its label), or
+ * null. Separate from citation eligibility on purpose: a claim that is rejected, for example retired by
+ * a corrected transcript, cannot be cited, but what it quoted stays hidden until every finding on it is
+ * cleared. A claim also stays hidden while it quotes a turn of a live finding that is not cleared.
+ */
+export function hiddenBy(claim: EligibilityClaim, findings: readonly EligibilityFinding[]): string | null {
+  const quoted = new Set(claim.turnLabels ?? []);
+  for (const f of findings) {
+    if (findingCleared(f)) continue;
+    if (f.claimLogicalKey === claim.logicalKey || (f.turnLabels ?? []).some((t) => quoted.has(t))) return f.label;
+  }
+  return null;
 }
 
 /**
@@ -76,18 +88,18 @@ export function claimEligibility(claim: EligibilityClaim, findings: readonly Eli
   const quoted = new Set(claim.turnLabels ?? []);
   for (const f of findings) {
     const shared = (f.turnLabels ?? []).filter((t) => quoted.has(t));
-    if (shared.length > 0 && !liveFindingCleared(f)) {
-      return { eligible: false, reason: "restricted", detail: `it quotes ${shared.join(", ")}, which live finding ${f.label} keeps hidden`, finding: f.label };
+    if (shared.length > 0 && !findingCleared(f)) {
+      return { eligible: false, reason: "restricted", detail: `it quotes ${shared.join(", ")}, which live finding ${f.label} keeps hidden` };
     }
   }
   for (const f of findings) {
     if (f.claimLogicalKey !== claim.logicalKey) continue;
     if (f.state !== "DISPOSITIONED" || !f.decision) {
-      return { eligible: false, reason: "finding_open", detail: `finding ${f.label} is ${f.state}`, finding: f.label };
+      return { eligible: false, reason: "finding_open", detail: `finding ${f.label} is ${f.state}` };
     }
-    if (f.decision.stale) return { eligible: false, reason: "decision_stale", detail: `the decision on finding ${f.label} is stale`, finding: f.label };
+    if (f.decision.stale) return { eligible: false, reason: "decision_stale", detail: `the decision on finding ${f.label} is stale` };
     if (!f.decision.outcome || !RELEASABLE_OUTCOMES.has(f.decision.outcome)) {
-      return { eligible: false, reason: "restricted", detail: `finding ${f.label} was dispositioned ${f.decision.outcome}`, finding: f.label };
+      return { eligible: false, reason: "restricted", detail: `finding ${f.label} was dispositioned ${f.decision.outcome}` };
     }
   }
   return { eligible: true };
@@ -171,6 +183,8 @@ export interface ReleaseCheckInput {
   newlyStale: { dependent: string; reason: string }[];
   /** What `findLeaks` found when comparing the summary with every hidden passage. */
   leaks: { passage: string; kind: string; detail: string }[];
+  /** Labels of hidden passages that could not be located on the current transcript, so cannot be blanked. */
+  unplacedPassages: string[];
 }
 
 export interface ReleaseFailure {
@@ -191,7 +205,8 @@ export interface ReleaseFailure {
     | "NO_TRANSCRIPT"
     | "CLAIM_NOT_ELIGIBLE"
     | "STALE_DEPENDENCY"
-    | "SUMMARY_LEAK";
+    | "SUMMARY_LEAK"
+    | "HIDDEN_PASSAGE_UNPLACED";
   message: string;
   ref?: string;
 }
@@ -245,6 +260,10 @@ export function checkRelease(input: ReleaseCheckInput): ReleaseFailure[] {
     if (leakMessages.has(message)) continue;
     leakMessages.add(message);
     failures.push({ code: "SUMMARY_LEAK", message, ref: l.passage });
+  }
+  // Fail closed: a passage that cannot be found on the transcript would be released unblanked.
+  for (const label of input.unplacedPassages) {
+    failures.push({ code: "HIDDEN_PASSAGE_UNPLACED", message: `hidden passage ${label} could not be placed on the current transcript, so it cannot be blanked`, ref: label });
   }
   return failures;
 }

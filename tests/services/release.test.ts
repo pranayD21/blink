@@ -5,12 +5,13 @@
  */
 import { desc, eq } from "drizzle-orm";
 import { sha256Hex } from "@/core/deps/hash";
-import type { RedactedTurn } from "@/core/release/redact";
+import { type RedactedTurn, redactTurns } from "@/core/release/redact";
 import { beforeEach, describe, expect, it } from "vitest";
 import { listAudit, verifyAuditChain } from "@/server/audit/log";
 import { getDb, transact } from "@/server/db/client";
 import { approvals, attestations, briefs, decisions, findingPassages, processingIssues, releases } from "@/server/db/schema";
 import { newId } from "@/server/ids";
+import { drainJobs } from "@/server/jobs/runner";
 import { approveBrief, briefWorkspace, editBrief, eligibilityForCase, getBrief, releasedBriefs } from "@/server/services/briefs";
 import { latestAttestation } from "@/server/services/caseStatus";
 import { createReviewerFinding } from "@/server/services/findings";
@@ -18,6 +19,8 @@ import { type FindingRow, createFinding } from "@/server/services/findingsCore";
 import { currentTranscript, loadCurrentClaims, turnsOfVersion } from "@/server/services/loaders";
 import { restrictedOnCase } from "@/server/services/redaction";
 import { releaseBrief } from "@/server/services/release";
+import { readFixtureText } from "@/server/services/seed";
+import { uploadTranscript } from "@/server/services/transcripts";
 import { CASE, G1, G2, G3, STEEL, appError, approve, attest, completeReview, dispose, draftTemplate, findingOn, findingsOf, release, reviewAndApprove, seedAnalyzed, statusOf, uploadV2, user } from "../helpers/db";
 
 beforeEach(seedAnalyzed);
@@ -314,6 +317,81 @@ describe("release snapshots the blanked transcript and refuses a leaking summary
     const turns = JSON.parse(releaseRow().redactedTranscriptJson!) as RedactedTurn[];
     expect(turns.find((t) => t.label === "T21")!.segments).toEqual([{ hidden: expect.any(Number) }]);
     expect(releaseRow().redactedTranscriptJson).toContain("Municipal water is fine");
+  });
+
+  /** Uploads a corrected transcript made from v1 by `edit`, and re-analyzes it from the hand-labeled claims. */
+  async function uploadEdited(edit: (v1: string) => string): Promise<void> {
+    const text = edit(readFixtureText("cases", "halvorsen", "transcript-v1.txt"));
+    transact((tx) => uploadTranscript(tx, CASE, { text, filename: "corrected.txt", source: "gold" }, user("priya")));
+    await drainJobs();
+  }
+
+  it("a restricted claim retired by a corrected transcript still has its passages blanked", async () => {
+    completeReview();
+    // T5 is reworded so the hand-labeled quote no longer matches: C1 is retired (rejected) and F1 reopens.
+    await uploadEdited((v1) => v1.replace("orders fell off a cliff. They're down about twenty percent.", "orders fell off. They're down about twenty-five percent."));
+    const c1 = loadCurrentClaims(getDb(), CASE).find((c) => c.row.logicalKey === G1)!;
+    expect(c1.row.status).toBe("rejected");
+    dispose(findingOn(G1).id, "restricted_exclude", "jordan");
+    attest();
+    // A decision on a retired claim's finding goes stale in the release check ("claim removed"), so this
+    // case cannot be released yet; build the snapshot exactly as the release does.
+    const r = restrictedOnCase(getDb(), CASE);
+    expect(r.unplaced).toEqual([]);
+    expect(r.passages.map((p) => p.label)).toEqual(expect.arrayContaining(["F1 · T5", "F1 · T11"]));
+    const current = turnsOfVersion(getDb(), currentTranscript(getDb(), CASE)!.id);
+    const snapshot = redactTurns(current, r.spans).turns;
+    const text = JSON.stringify(snapshot);
+    expect(text).not.toContain("I still have a login"); // T11 is unchanged: the quote is blanked where it stands
+    expect(text).not.toContain("twenty-five percent"); // T5 changed under the quote: the whole turn is blanked
+    expect(snapshot.find((t) => t.label === "T5")!.segments).toEqual([{ hidden: expect.any(Number) }]);
+  });
+
+  it("a turn inserted before a hidden passage moves the blank with the turn it was on", async () => {
+    const kept = liveFindingOn("T21");
+    completeReview();
+    dispose(kept.id, "restricted_exclude", "marcus");
+    const before = turnsOfVersion(getDb(), currentTranscript(getDb(), CASE)!.id);
+    const t21 = before.find((t) => t.label === "T21")!.text;
+    // A new analyst turn between T20 and T21: the flagged statement is now T22.
+    await uploadEdited((v1) => v1.replace("[00:04:56] Expert", "[00:04:55] Analyst (Priya): Sorry, one more on pricing.\n[00:04:56] Expert"));
+    const r = restrictedOnCase(getDb(), CASE);
+    const current = turnsOfVersion(getDb(), currentTranscript(getDb(), CASE)!.id);
+    expect(current.find((t) => t.label === "T22")!.text).toBe(t21);
+    expect(r.spans).toContainEqual({ turnLabel: "T22", start: 0, end: t21.length });
+    expect(r.spans.some((s) => s.turnLabel === "T21")).toBe(false);
+    expect(r.passages.map((p) => p.label)).toContain(`F${kept.seqNo} · T22`);
+    expect(r.unplaced).toEqual([]);
+  });
+
+  it("a hidden passage that cannot be placed on the current transcript refuses the release", () => {
+    const lost = transact((tx) => {
+      const { finding } = createFinding(tx, { caseId: CASE, claimLogicalKey: null, origin: "live", title: "Flagged during the call", severity: "high", state: "REVIEW_REQUIRED", dedupeKey: "live-test:lost", createdBy: "system" });
+      tx.insert(findingPassages).values({ id: newId("fp"), findingId: finding.id, turnId: "tv_gone:T3", startChar: 0, endChar: 40 }).run();
+      return finding;
+    });
+    completeReview();
+    dispose(lost.id, "restricted_exclude", "marcus");
+    const brief = draftTemplate();
+    approve(brief.id);
+    const result = release(brief.id);
+    expect(result.released).toBe(false);
+    expect(codes(result)).toEqual(["HIDDEN_PASSAGE_UNPLACED"]);
+    expect(messages(result)).toEqual([`hidden passage F${lost.seqNo} · T3 could not be placed on the current transcript, so it cannot be blanked`]);
+    expect(getDb().select().from(releases).all()).toEqual([]);
+  });
+
+  it("a restricted figure in a section heading is a leak too", () => {
+    completeReview();
+    const draft = draftTemplate();
+    const sections = briefWorkspace(getDb(), CASE, user("marcus")).brief!.sections;
+    sections.push({ heading: "Orders down twenty percent", sentences: [{ text: "Distributors are soft.", claim_ids: ["C2"] }] });
+    const edited = transact((tx) => editBrief(tx, draft.id, { sections, expectedVersion: draft.version }, user("marcus")));
+    approve(edited.id);
+    const result = release(edited.id);
+    expect(codes(result).length).toBeGreaterThan(0);
+    expect(codes(result).every((c) => c === "SUMMARY_LEAK")).toBe(true);
+    expect(messages(result)).toContain("the summary repeats a figure from hidden passage F1 · T5");
   });
 
   it("restrictedOnCase labels each hidden passage by finding and turn, and keeps eligible names visible", () => {

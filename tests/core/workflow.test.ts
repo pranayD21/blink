@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { type ReleaseCheckInput, checkRelease, citedClaimKeys, claimEligibility, enforceBriefCitations, renderBriefMarkdown, transitionBrief } from "@/core/workflow/brief";
+import { type ReleaseCheckInput, checkRelease, citedClaimKeys, claimEligibility, enforceBriefCitations, hiddenBy, renderBriefMarkdown, transitionBrief } from "@/core/workflow/brief";
 import { reviewBlockers, transitionCase } from "@/core/workflow/case";
 import { type FindingGuardContext, aggregateMonitorStates, initialFindingState, statePath, transitionFinding } from "@/core/workflow/finding";
 import { isImmutable, transitionPolicyVersion } from "@/core/workflow/policyVersion";
@@ -225,6 +225,7 @@ describe("brief workflow, eligibility, and release check", () => {
     ineligibleCitations: [],
     newlyStale: [],
     leaks: [],
+    unplacedPassages: [],
   };
 
   it("passes when everything holds", () => expect(checkRelease(okRelease)).toEqual([]));
@@ -251,6 +252,24 @@ describe("brief workflow, eligibility, and release check", () => {
     const quote = checkRelease({ ...okRelease, leaks: [{ passage: "F2 · T15", kind: "quote", detail: "the cardinal utilities contract is being" }] });
     expect(quote[0].message).toBe("the summary repeats a quote from hidden passage F2 · T15");
     expect(quote[0].message).not.toContain("cardinal");
+  });
+
+  it("a hidden passage that cannot be placed fails with HIDDEN_PASSAGE_UNPLACED, naming only its label", () => {
+    expect(checkRelease({ ...okRelease, unplacedPassages: ["F4 · T3"] })).toEqual([
+      { code: "HIDDEN_PASSAGE_UNPLACED", message: "hidden passage F4 · T3 could not be placed on the current transcript, so it cannot be blanked", ref: "F4 · T3" },
+    ]);
+  });
+
+  it("a claim's passages stay hidden while any finding on it is not cleared, even once the claim is rejected", () => {
+    const rejected = { ...claim, status: "rejected" as const, turnLabels: ["T5"] };
+    expect(hiddenBy(rejected, [finding("DISPOSITIONED", "restricted_exclude")])).toBe("F1");
+    expect(hiddenBy(rejected, [finding("REVIEW_REQUIRED", null)])).toBe("F1");
+    expect(hiddenBy(rejected, [finding("DISPOSITIONED", "no_concern", true)])).toBe("F1");
+    expect(hiddenBy(rejected, [finding("DISPOSITIONED", "no_concern")])).toBeNull();
+    expect(hiddenBy(rejected, [])).toBeNull();
+    const live = { claimLogicalKey: null, turnLabels: ["T5"], label: "F4", state: "REVIEW_REQUIRED", decision: null };
+    expect(hiddenBy({ ...claim, turnLabels: ["T5"] }, [live])).toBe("F4");
+    expect(hiddenBy({ ...claim, turnLabels: ["T9"] }, [live])).toBeNull();
   });
 
   it("a claim quoting a turn of an undecided live finding is restricted", () => {

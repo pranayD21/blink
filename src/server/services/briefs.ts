@@ -5,18 +5,19 @@
 import { and, desc, eq, inArray } from "drizzle-orm";
 import { z } from "zod";
 import { type BriefSection, briefHash } from "@/core/deps/hash";
-import { type Eligibility, citedClaimKeys, claimEligibility, enforceBriefCitations, renderBriefMarkdown, transitionBrief } from "@/core/workflow/brief";
+import { type Eligibility, type EligibilityFinding, citedClaimKeys, claimEligibility, enforceBriefCitations, renderBriefMarkdown, transitionBrief } from "@/core/workflow/brief";
 import { type Actor, isReviewer, requireReviewer } from "../auth/actor";
 import { appendAudit } from "../audit/log";
 import { nowIso } from "../clock";
 import { type DbOrTx, fromJson, toJson } from "../db/client";
-import { approvals, briefs, cases, dependencies, findingPassages, findings, jobs, llmCalls, releases, turns } from "../db/schema";
+import { approvals, briefs, cases, dependencies, findingPassages, findings, jobs, llmCalls, releases } from "../db/schema";
 import { conflict, forbidden, notFound, unprocessable, versionConflict } from "../errors";
 import { newId } from "../ids";
 import { enqueueJob } from "../jobs/queue";
 import { applyCaseEvent, computeReviewBlockers } from "./caseStatus";
-import { findingLabel, latestDecision } from "./findingsCore";
-import { type LoadedClaim, type TurnRow, getCase, isEvaluable, loadCurrentClaims, loadPolicy } from "./loaders";
+import { type FindingRow, findingLabel, latestDecision } from "./findingsCore";
+import { type LoadedClaim, getCase, isEvaluable, loadCurrentClaims, loadPolicy } from "./loaders";
+import { type TurnPlacer, turnPlacer } from "./placement";
 import { type LabeledEdge, claimLabel, recordDependencies } from "./staleness";
 
 export type BriefRow = typeof briefs.$inferSelect;
@@ -42,57 +43,62 @@ export function latestBrief(tx: DbOrTx, caseId: string): BriefRow | null {
 
 // ── Eligibility (§12.5) ─────────────────────────────────────────────────────
 
-export interface CaseEligibility {
-  claims: { claim: LoadedClaim; eligibility: Eligibility }[];
-  eligible: LoadedClaim[];
-  eligibleKeys: Set<string>;
-  /** Claims a reviewer restricted. The brief footer states this number, never the content. */
-  withheldCount: number;
-}
-
 export interface LivePassage {
   findingId: string;
-  /** The turn the passage was recorded on; it may belong to an earlier transcript version. */
-  turn: TurnRow;
+  /** The turn row the passage was recorded on; it may belong to an earlier transcript version. */
+  turnId: string;
   start: number;
   end: number;
 }
 
-/** The passages every `live` finding on the case hid, by finding id. */
-export function livePassagesForCase(tx: DbOrTx, caseId: string): Map<string, LivePassage[]> {
-  const live = tx.select().from(findings).where(and(eq(findings.caseId, caseId), eq(findings.origin, "live"))).all();
-  const out = new Map<string, LivePassage[]>(live.map((f) => [f.id, []]));
-  if (live.length === 0) return out;
-  const rows = tx.select().from(findingPassages).where(inArray(findingPassages.findingId, live.map((f) => f.id))).all();
-  const turnIds = [...new Set(rows.map((r) => r.turnId))];
-  const turnById = new Map((turnIds.length > 0 ? tx.select().from(turns).where(inArray(turns.id, turnIds)).all() : []).map((t) => [t.id, t]));
-  for (const r of rows) {
-    const turn = turnById.get(r.turnId);
-    // A passage whose turn row is gone cannot be placed; Task 13 raises unmapped flags as issues instead.
-    if (turn) out.get(r.findingId)!.push({ findingId: r.findingId, turn, start: r.startChar, end: r.endChar });
-  }
-  return out;
+/** A finding as the eligibility check sees it, with what the release needs to hide its passages. */
+export interface CaseFinding extends EligibilityFinding {
+  id: string;
+  origin: FindingRow["origin"];
+  /** For a `live` finding, the passages it hid; empty for every other finding. */
+  passages: LivePassage[];
 }
 
-export function eligibilityForCase(tx: DbOrTx, caseId: string): CaseEligibility {
+export interface CaseEligibility {
+  /** `turnLabels` are the claim's quoted turns as labelled on the current transcript. */
+  claims: { claim: LoadedClaim; eligibility: Eligibility; turnLabels: string[] }[];
+  eligible: LoadedClaim[];
+  eligibleKeys: Set<string>;
+  /** Claims a reviewer restricted. The brief footer states this number, never the content. */
+  withheldCount: number;
+  /** Every finding on the case with its latest decision, as the check used it. */
+  findings: CaseFinding[];
+}
+
+export function eligibilityForCase(tx: DbOrTx, caseId: string, placer?: TurnPlacer): CaseEligibility {
   const findingRows = tx.select().from(findings).where(eq(findings.caseId, caseId)).all();
-  const live = livePassagesForCase(tx, caseId);
-  const forCheck = findingRows.map((f) => {
+  const liveIds = findingRows.filter((f) => f.origin === "live").map((f) => f.id);
+  const passageRows = liveIds.length > 0 ? tx.select().from(findingPassages).where(inArray(findingPassages.findingId, liveIds)).all() : [];
+  const loaded = loadCurrentClaims(tx, caseId).filter((c) => c.fields.speaker === "expert");
+  // Live passages and claim quotes may sit on different transcript versions: compare them on the current one.
+  const place = liveIds.length > 0 ? (placer ?? turnPlacer(tx, caseId, [...passageRows.map((p) => p.turnId), ...loaded.flatMap((c) => c.quotes.map((q) => q.turnId))])) : null;
+  const labelOf = (turnId: string, fallback: string) => (place ? (place.currentLabel(turnId) ?? fallback) : fallback);
+
+  const forCheck: CaseFinding[] = findingRows.map((f) => {
     const decision = latestDecision(tx, f.id);
-    const passages = live.get(f.id);
+    const passages = passageRows.filter((p) => p.findingId === f.id).map((p) => ({ findingId: f.id, turnId: p.turnId, start: p.startChar, end: p.endChar }));
     return {
+      id: f.id,
+      origin: f.origin,
       claimLogicalKey: f.claimLogicalKey,
       label: findingLabel(f),
       state: f.state,
       decision: decision ? { outcome: decision.outcome, stale: decision.stale } : null,
-      ...(passages ? { turnLabels: [...new Set(passages.map((p) => p.turn.label))] } : {}),
+      passages,
+      ...(f.origin === "live" ? { turnLabels: [...new Set(passages.map((p) => labelOf(p.turnId, p.turnId.slice(p.turnId.lastIndexOf(":") + 1))))] } : {}),
     };
   });
-  const claims = loadCurrentClaims(tx, caseId)
-    .filter((c) => c.fields.speaker === "expert")
-    .map((claim) => ({ claim, eligibility: claimEligibility({ logicalKey: claim.row.logicalKey, status: claim.row.status, turnLabels: claim.turnLabels }, forCheck) }));
+  const claims = loaded.map((claim) => {
+    const turnLabels = [...new Set(claim.quotes.map((q) => labelOf(q.turnId, q.turnLabel)))];
+    return { claim, turnLabels, eligibility: claimEligibility({ logicalKey: claim.row.logicalKey, status: claim.row.status, turnLabels }, forCheck) };
+  });
   const eligible = claims.filter((c) => c.eligibility.eligible).map((c) => c.claim);
-  return { claims, eligible, eligibleKeys: new Set(eligible.map((c) => c.row.logicalKey)), withheldCount: claims.filter((c) => !c.eligibility.eligible && c.eligibility.reason === "restricted").length };
+  return { claims, eligible, eligibleKeys: new Set(eligible.map((c) => c.row.logicalKey)), withheldCount: claims.filter((c) => !c.eligibility.eligible && c.eligibility.reason === "restricted").length, findings: forCheck };
 }
 
 // ── Drafting ────────────────────────────────────────────────────────────────
