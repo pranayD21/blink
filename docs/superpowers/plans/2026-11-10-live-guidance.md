@@ -208,7 +208,7 @@ The extraction and policy prompts quote the fixtures they are scored on (HANDOFF
 **Interfaces:**
 - Produces: `FIELD_GUIDE: string` (the "# Fields" section, used by both readers); `EXTRACT_PROMPT_VERSION = "extract-v2"`; `PASS_A_PROMPT_VERSION = "inventory-v2"`, `PASS_B_PROMPT_VERSION = "rules-v2"`, `ASSEMBLY_PROMPT_VERSION = "assemble-v2"` for each whose text changes; `promptSources(): string[]` and `fixtureSources(): string[]` exported from the leak test's helper `tests/helpers/prompt-leak.ts`.
 
-- [ ] **Step 1: Write the failing leak test.**
+- [x] **Step 1: Write the failing leak test.**
 
 ```ts
 // Any run of five consecutive words shared by a prompt and a fixture is a leak.
@@ -220,7 +220,7 @@ it.each(promptSources().map((p, i) => [i, p] as const))("prompt %i shares no fiv
 
 `fixtureSources()` returns the two Halvorsen transcripts, every `transcript` in `fixtures/cases/variants/*.json`, both policy files, and, once Task 35 exists, every `fixtures/real/**/transcript.txt`. `ALLOWED` starts empty; an entry needs a comment saying why the phrase is unavoidable.
 
-- [ ] **Step 2: Write the failing predicate test** in `tests/core/predicates.test.ts`, with the file's own `state` and `claim` helpers:
+- [x] **Step 2: Write the failing predicate test** in `tests/core/predicates.test.ts`, with the file's own `state` and `claim` helpers:
 
 ```ts
 it("an uncategorised company figure is unknown, never refuted", () => {
@@ -228,12 +228,12 @@ it("an uncategorised company figure is unknown, never refuted", () => {
 });
 ```
 
-- [ ] **Step 3: Run both and see them fail.** Run: `pnpm exec vitest run tests/core/prompt-leak.test.ts tests/core/predicates.test.ts`. Expected: the leak test names phrases such as "i still have a login"; the predicate test gets `refuted`.
-- [ ] **Step 4: Fix the predicate.** In `company_specific_operating_metric`, a metric of category `other` at scope `company_wide`, `segment_or_region` or `single_customer` returns `unknown` with the explanation `"<label>" fits no known category; a reviewer should say whether it is an operating result`.
-- [ ] **Step 5: Rewrite the examples.** Move the field definitions into `FIELD_GUIDE`. Replace every example taken from a fixture with one from an unrelated business you invent (a software company, an airline), in both prompt files. Keep every instruction; change only examples and any sentence that mirrors the demo policy's wording. Bump the versions.
-- [ ] **Step 6: Re-record.** Run: `git rm -q fixtures/llm-recordings/*.json && pnpm record && BLINK_LLM_MODE=record pnpm eval`. Expected: `pnpm record` ends with every gold check passing; the eval prints nine fixtures. Log the spend.
-- [ ] **Step 7: Run the full checks.** Run: `pnpm test && pnpm demo:check`. Expected: PASS. If a fixture's outcome changed, improve the prompt with general guidance only (the leak test still has to pass) and re-record, at most three rounds. If it still differs, stop, write the difference in the notes file, and ask the owner.
-- [ ] **Step 8: Commit.**
+- [x] **Step 3: Run both and see them fail.** Run: `pnpm exec vitest run tests/core/prompt-leak.test.ts tests/core/predicates.test.ts`. Expected: the leak test names phrases such as "i still have a login"; the predicate test gets `refuted`.
+- [x] **Step 4: Fix the predicate.** In `company_specific_operating_metric`, a metric of category `other` at scope `company_wide`, `segment_or_region` or `single_customer` returns `unknown` with the explanation `"<label>" fits no known category; a reviewer should say whether it is an operating result`.
+- [x] **Step 5: Rewrite the examples.** Move the field definitions into `FIELD_GUIDE`. Replace every example taken from a fixture with one from an unrelated business you invent (a software company, an airline), in both prompt files. Keep every instruction; change only examples and any sentence that mirrors the demo policy's wording. Bump the versions.
+- [x] **Step 6: Re-record.** Run: `git rm -q fixtures/llm-recordings/*.json && pnpm record && BLINK_LLM_MODE=record pnpm eval`. Expected: `pnpm record` ends with every gold check passing; the eval prints nine fixtures. Log the spend.
+- [x] **Step 7: Run the full checks.** Run: `pnpm test && pnpm demo:check`. Expected: PASS. If a fixture's outcome changed, improve the prompt with general guidance only (the leak test still has to pass) and re-record, at most three rounds. If it still differs, stop, write the difference in the notes file, and ask the owner.
+- [x] **Step 8: Commit.**
 
 ```bash
 git add src/server/llm/prompts src/core/predicates/registry.ts tests/core/prompt-leak.test.ts tests/helpers/prompt-leak.ts tests/core/predicates.test.ts fixtures/llm-recordings

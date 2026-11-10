@@ -141,7 +141,7 @@ const defs: PredicateDef[] = [
     name: "about_covered_issuer",
     phrase: "the statement is about the covered issuer",
     description:
-      "True when the statement is about the specific issuer covered by this case (matched by name or alias). False when it is about the industry as a whole, a competitor, or another named company. Unknown when the statement does not say which company it concerns.",
+      "True when the statement is about the specific issuer covered by this case (matched by name or alias). False when it is about a whole industry, a competitor, or another named company. Unknown when the statement does not say which company it concerns.",
     params: {},
     inputs: ["subject_entity"],
     clarifyQuestion: "Which company is this statement about?",
@@ -163,7 +163,7 @@ const defs: PredicateDef[] = [
     name: "company_specific_operating_metric",
     phrase: "the statement describes company-specific operating results",
     description:
-      "True when the statement gives a company-specific operating result: orders, bookings, revenue, margin, pricing, inventory, headcount, guidance, or capex. False when the figure is an industry aggregate or comes from a sample of companies (this is how the industry-observation exception is expressed), or when the statement is not about an operating result. Unknown when the metric or its scope is unclear.",
+      "True when the statement gives a company-specific operating result: orders, bookings, revenue, margin, pricing, inventory, headcount, guidance, or capex. False when the figure is an industry aggregate or comes from a sample of companies (this is how the industry-observation exception is expressed), or when the statement is not about an operating result. Unknown when the metric or its scope is unclear, or when a company figure fits none of the metric categories.",
     params: {},
     inputs: ["metric", "scope", "event_kind"],
     clarifyQuestion: "Is this a figure for one company, or an industry-wide or sample observation?",
@@ -176,6 +176,11 @@ const defs: PredicateDef[] = [
           return { state: "refuted", explanation: "the statement describes an event, not an operating metric" };
         }
         return { state: "unknown", explanation: "no operating metric could be identified" };
+      }
+      // A company figure the categories do not fit may still be an operating result
+      // (churn, utilisation, backlog): refuting it would hide it, so a person decides.
+      if (fields.metric.category === "other" && (fields.scope === "company_wide" || fields.scope === "segment_or_region" || fields.scope === "single_customer")) {
+        return { state: "unknown", explanation: `"${fields.metric.label}" fits no known category; a reviewer should say whether it is an operating result` };
       }
       if (!OPERATING_METRICS.has(fields.metric.category)) {
         return { state: "refuted", explanation: `"${fields.metric.label}" (${fields.metric.category}) is not a company operating result` };
@@ -222,7 +227,7 @@ const defs: PredicateDef[] = [
     name: "internal_source_claimed",
     phrase: "the expert attributes the information to an internal company source",
     description:
-      "True when the expert attributes the information to internal company systems (dashboards, CRM, ERP), internal documents, or conversations with company insiders. False when the expert attributes it to a public source, an industry survey, or their own outside observation. Unknown when the source is not stated or is speculation.",
+      "True when the expert says the information came from inside the company: its systems (reporting tools, CRM, ERP), its internal documents, or people who work there. False when the expert credits a public source, an industry survey, or their own outside observation. Unknown when the source is not stated or is speculation.",
     params: {},
     inputs: ["knowledge_basis"],
     clarifyQuestion: "How does the expert know this? (internal system or document, a conversation with employees, a public source, or their own observation)",
@@ -237,7 +242,7 @@ const defs: PredicateDef[] = [
     name: "post_employment_access",
     phrase: "the expert accessed the information after their employment ended",
     description:
-      "True when the expert indicates they obtained the information from a former employer's systems, documents, or people after their employment there ended. False when the information dates from their employment or the question does not arise. Unknown when the timing of access is unclear.",
+      "True when the expert says they got the information from a previous employer (its systems, files, or staff) after leaving that job. False when the information dates from while they worked there, or the question does not arise. Unknown when the timing of access is unclear.",
     params: {},
     inputs: ["access_timing"],
     clarifyQuestion: "Did the expert obtain this while still employed there, or after leaving?",
@@ -301,7 +306,7 @@ const defs: PredicateDef[] = [
     name: "confidentiality_signal_present",
     phrase: "the expert signals the information is confidential or not yet announced",
     description:
-      "True when the expert used words signalling confidentiality or non-public status (for example \"between us\", \"not announced yet\", \"keep it quiet\"). False when the statement was quoted and carries no such signal. Unknown when the statement could not be grounded in a quote.",
+      "True when the expert used words signalling confidentiality or non-public status (for example \"off the record\", \"not public until the launch\", \"don't repeat this\"). False when the statement was quoted and carries no such signal. Unknown when the statement could not be grounded in a quote.",
     params: {},
     inputs: ["confidentiality_signals"],
     clarifyQuestion: "Did the expert indicate this information is confidential or not yet public?",

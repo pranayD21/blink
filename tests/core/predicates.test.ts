@@ -89,6 +89,9 @@ describe("company_specific_operating_metric", () => {
     expect(state("company_specific_operating_metric", claim({ metric: null }))).toBe("unknown");
     expect(state("company_specific_operating_metric", claim({ scope: "unspecified" }))).toBe("unknown");
   });
+  it("an uncategorised company figure is unknown, never refuted", () => {
+    expect(state("company_specific_operating_metric", claim({ metric: { category: "other", label: "customer churn" }, scope: "company_wide" }))).toBe("unknown");
+  });
   it("conflict when the scope statements conflict", () => expect(state("company_specific_operating_metric", claim({}, { conflictFields: ["scope"] }))).toBe("conflict"));
 });
 
