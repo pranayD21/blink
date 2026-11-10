@@ -77,7 +77,11 @@ export function eligibilityForCase(tx: DbOrTx, caseId: string, placer?: TurnPlac
   const loaded = loadCurrentClaims(tx, caseId).filter((c) => c.fields.speaker === "expert");
   // Live passages and claim quotes may sit on different transcript versions: compare them on the current one.
   const place = liveIds.length > 0 ? (placer ?? turnPlacer(tx, caseId, [...passageRows.map((p) => p.turnId), ...loaded.flatMap((c) => c.quotes.map((q) => q.turnId))])) : null;
-  const labelOf = (turnId: string, fallback: string) => (place ? (place.currentLabel(turnId) ?? fallback) : fallback);
+  // A claim quote that cannot be placed keeps its own label (it can only restrict more). A live passage
+  // that cannot be placed adds none: its old label could name an unrelated current turn, and the release
+  // is refused through HIDDEN_PASSAGE_UNPLACED anyway.
+  const quoteLabel = (turnId: string, start: number, end: number, own: string) => (place ? (place.place(turnId, start, end)?.[0]?.turn.label ?? own) : own);
+  const passageLabels = (p: LivePassage) => (place?.place(p.turnId, p.start, p.end) ?? []).map((x) => x.turn.label);
 
   const forCheck: CaseFinding[] = findingRows.map((f) => {
     const decision = latestDecision(tx, f.id);
@@ -90,11 +94,11 @@ export function eligibilityForCase(tx: DbOrTx, caseId: string, placer?: TurnPlac
       state: f.state,
       decision: decision ? { outcome: decision.outcome, stale: decision.stale } : null,
       passages,
-      ...(f.origin === "live" ? { turnLabels: [...new Set(passages.map((p) => labelOf(p.turnId, p.turnId.slice(p.turnId.lastIndexOf(":") + 1))))] } : {}),
+      ...(f.origin === "live" ? { turnLabels: [...new Set(passages.flatMap(passageLabels))] } : {}),
     };
   });
   const claims = loaded.map((claim) => {
-    const turnLabels = [...new Set(claim.quotes.map((q) => labelOf(q.turnId, q.turnLabel)))];
+    const turnLabels = [...new Set(claim.quotes.map((q) => quoteLabel(q.turnId, q.start, q.end, q.turnLabel)))];
     return { claim, turnLabels, eligibility: claimEligibility({ logicalKey: claim.row.logicalKey, status: claim.row.status, turnLabels }, forCheck) };
   });
   const eligible = claims.filter((c) => c.eligibility.eligible).map((c) => c.claim);

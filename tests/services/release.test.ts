@@ -9,7 +9,7 @@ import { type RedactedTurn, redactTurns } from "@/core/release/redact";
 import { beforeEach, describe, expect, it } from "vitest";
 import { listAudit, verifyAuditChain } from "@/server/audit/log";
 import { getDb, transact } from "@/server/db/client";
-import { approvals, attestations, briefs, decisions, findingPassages, processingIssues, releases } from "@/server/db/schema";
+import { approvals, attestations, briefs, decisions, findingPassages, processingIssues, releases, turnLineage } from "@/server/db/schema";
 import { newId } from "@/server/ids";
 import { drainJobs } from "@/server/jobs/runner";
 import { approveBrief, briefWorkspace, editBrief, eligibilityForCase, getBrief, releasedBriefs } from "@/server/services/briefs";
@@ -362,6 +362,51 @@ describe("release snapshots the blanked transcript and refuses a leaking summary
     expect(r.spans.some((s) => s.turnLabel === "T21")).toBe(false);
     expect(r.passages.map((p) => p.label)).toContain(`F${kept.seqNo} · T22`);
     expect(r.unplaced).toEqual([]);
+    // With no stored lineage (an older database), the turns are aligned directly and land the same way.
+    getDb().delete(turnLineage).run();
+    expect(restrictedOnCase(getDb(), CASE).spans).toEqual(r.spans);
+  });
+
+  it("a correction that splits a hidden turn in two blanks both halves in the released snapshot", async () => {
+    const kept = liveFindingOn("T21");
+    completeReview();
+    dispose(kept.id, "restricted_exclude", "marcus");
+    // T21 becomes two turns: lineage pairs the first half with T21 (edited) and reports the second as added.
+    await uploadEdited((v1) =>
+      v1.replace(
+        "Mostly yes. The industry pushed two price increases this year, and distributors accepted them because lead times were so long last year.",
+        "Mostly yes. The industry pushed two price increases this year.\n[00:05:15] Expert (R. Castellano): Distributors accepted them because lead times were so long last year.",
+      ),
+    );
+    attest();
+    const brief = draftTemplate();
+    approve(brief.id);
+    const result = release(brief.id);
+    expect(result.released ? [] : result.failures).toEqual([]);
+    const text = releaseRow().redactedTranscriptJson!;
+    expect(text).not.toContain("two price increases"); // the half lineage pairs with T21
+    expect(text).not.toContain("lead times were so long"); // the half split off into the added T22
+    const turns = JSON.parse(text) as RedactedTurn[];
+    expect(turns.find((t) => t.label === "T21")!.segments).toEqual([{ hidden: expect.any(Number) }]);
+    expect(turns.find((t) => t.label === "T22")!.segments).toEqual([{ hidden: expect.any(Number) }]);
+    expect(JSON.stringify(turns.find((t) => t.label === "T23"))).toContain("That's all my questions"); // the next turn is shown
+  });
+
+  it("a hidden quote that moved to another turn verbatim is blanked where it now stands", async () => {
+    const kept = liveFindingOn("T9");
+    completeReview();
+    dispose(kept.id, "restricted_exclude", "marcus");
+    // T9 is reworded, and its words reappear verbatim (with different spacing) in the analyst's T10.
+    await uploadEdited((v1) =>
+      v1
+        .replace("Municipal water is fine. Oil and gas midstream is the weak spot, and general industrial is flat.", "Municipal water is fine. Oil and gas midstream is weak, and industrial is flat.")
+        .replace("Going back to the twenty percent,", "You said Municipal water is   fine. Oil and gas midstream is the weak spot, and general industrial is flat. Going back to the twenty percent,"),
+    );
+    const r = restrictedOnCase(getDb(), CASE);
+    const current = turnsOfVersion(getDb(), currentTranscript(getDb(), CASE)!.id);
+    const text = JSON.stringify(redactTurns(current, r.spans).turns);
+    expect(text).not.toContain("midstream is the weak spot");
+    expect(text).toContain("Going back to the twenty percent"); // only the matched run of T10 is blanked
   });
 
   it("a hidden passage that cannot be placed on the current transcript refuses the release", () => {

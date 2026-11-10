@@ -46,6 +46,7 @@ export function restrictedOnCase(tx: DbOrTx, caseId: string): RestrictedOnCase {
   const spans: Span[] = [];
   const passages: HiddenPassage[] = [];
   const unplaced: string[] = [];
+  const passage = (label: string, text: string, names: readonly string[]) => passages.push({ label, text, numbers: numbersIn(text), names: [...new Set([...names, ...namePhrases(text)])] });
   const hide = (findingLbl: string, turnId: string, start: number, end: number, names: readonly string[]) => {
     const placed = placer.place(turnId, start, end);
     if (!placed) {
@@ -53,9 +54,13 @@ export function restrictedOnCase(tx: DbOrTx, caseId: string): RestrictedOnCase {
       if (!unplaced.includes(label)) unplaced.push(label);
       return;
     }
-    const text = placed.turn.text.slice(placed.start, placed.end);
-    spans.push({ turnLabel: placed.turn.label, start: placed.start, end: placed.end });
-    passages.push({ label: `${findingLbl} · ${placed.turn.label}`, text, numbers: numbersIn(text), names: [...new Set([...names, ...namePhrases(text)])] });
+    for (const p of placed) {
+      spans.push({ turnLabel: p.turn.label, start: p.start, end: p.end });
+      passage(`${findingLbl} · ${p.turn.label}`, p.turn.text.slice(p.start, p.end), names);
+    }
+    // When the text moved or changed, the summary must not repeat the words as they were hidden either.
+    const original = placer.sourceText(turnId, start, end);
+    if (original !== null && !placed.some((p) => p.turn.text.slice(p.start, p.end) === original)) passage(`${findingLbl} · ${placed[0].turn.label}`, original, names);
   };
 
   // Quotes of every claim, rejected or not, that a finding not yet cleared keeps hidden.
