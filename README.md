@@ -25,7 +25,7 @@ Every step is written to a hash-chained audit log.
 
 ## Quickstart
 
-Needs Node 22 or newer and pnpm.
+Needs Node 26, the version the spec pins (`.nvmrc` has it), and pnpm. Tested on Node 26.13 and 24.10; `better-sqlite3` needs 22 or newer.
 
 ```bash
 pnpm i
@@ -65,6 +65,16 @@ Then follow the ten steps in [section 19 of the spec](BLINK_BUILD_SPEC.md#19-dem
 8. Audit → Verify chain. Then Metrics.
 
 `pnpm demo:check` runs the same flow through the services in a scratch database and checks each step against the gold labels. `pnpm e2e` runs it through the browser.
+
+### Proving it needs no network
+
+```bash
+pnpm demo:offline
+```
+
+This runs `pnpm db:reset` and `pnpm demo` inside a macOS sandbox that denies every network connection except loopback, then drives all ten steps through a browser against that server and verifies the audit chain. It first requests three outside addresses, one of them a raw IP, and stops if any of them answers. The browser test also fails if a page requests anything from a host other than the app.
+
+It uses a sandbox instead of switching Wi-Fi off, so the rest of the machine stays online. It resets `data/blink.db`, as the demo runbook does. On other systems, turn the network off and run `pnpm db:reset && pnpm demo`, then `BLINK_E2E_BASE_URL=http://localhost:3000 pnpm e2e` in a second terminal.
 
 The AI brief draft is replayed from a recording made for one exact set of decisions (the ones above). If you decide the findings differently, the draft has no recording and says so; "Template draft" produces a brief with no model.
 
@@ -143,6 +153,7 @@ Evidence has four states (supported, refuted, unknown, conflict). A rule's guard
 | `pnpm test` | 353 unit and service tests, no network |
 | `pnpm e2e` | The demo flow in a browser against a production build |
 | `pnpm demo:check` | The demo flow through the services, checked against gold labels, from recordings |
+| `pnpm demo:offline` | `pnpm db:reset` and `pnpm demo` with the network denied by a sandbox, then the demo flow in a browser (macOS) |
 | `pnpm record` | The same flow in record mode (calls the API for anything not yet recorded) |
 | `pnpm eval` | Score extraction against gold labels on nine fixtures |
 | `pnpm audit:verify` | Recompute the audit hash chain |
