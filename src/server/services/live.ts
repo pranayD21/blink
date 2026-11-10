@@ -25,7 +25,7 @@ import { type Actor, requireRole } from "../auth/actor";
 import { nowIso, nowMs } from "../clock";
 import { type DbOrTx, fromJson, getDb, toJson, transact } from "../db/client";
 import { callClaims, callOutages, callTurns, calls, cases, findingPassages, findings, processingIssues } from "../db/schema";
-import { badRequest, conflict, notFound, unprocessable } from "../errors";
+import { AppError, badRequest, conflict, notFound, unprocessable } from "../errors";
 import { newId } from "../ids";
 import { LIVE_MODEL, type LiveReader, type ReadTurnResult, readTurn } from "../live/reader";
 import { LIVE_PROMPT_VERSION } from "../llm/prompts/live";
@@ -547,4 +547,39 @@ function raiseUnmapped(tx: DbOrTx, call: CallRow, row: CallClaimRow, unmapped: r
   tx.insert(processingIssues)
     .values({ id: newId("iss"), caseId: call.caseId, runId: null, severity: "warning", code: "LIVE_FLAG_UNMAPPED", message, refJson: toJson({ callId: call.id, callClaimId: row.id, turns: unmapped }), resolved: false, createdAt: nowIso() })
     .run();
+}
+
+// ── Speech-to-text token ────────────────────────────────────────────────────
+
+const STT_GRANT_URL = "https://api.deepgram.com/v1/auth/grant";
+const sttUnavailable = (why: string) => new AppError(502, "STT_UNAVAILABLE", `Speech-to-text is unavailable: ${why}.`);
+
+/**
+ * A 30-second Deepgram token for the banker's live call, so the Mac app never holds the key. The
+ * upstream body is never passed on, and the key never appears in an error.
+ */
+export async function mintSttToken(callId: string, actor: Actor): Promise<{ accessToken: string; expiresIn: number }> {
+  const call = getCallForActor(getDb(), callId, actor);
+  if (call.status !== "live") throw conflict("This call has ended; it takes no more speech.", "CALL_NOT_LIVE");
+  const key = process.env.DEEPGRAM_API_KEY;
+  if (!key) throw sttUnavailable("no key is configured");
+  let res: Response;
+  try {
+    res = await fetch(STT_GRANT_URL, {
+      method: "POST",
+      headers: { Authorization: `Token ${key}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ ttl_seconds: 30 }),
+    });
+  } catch {
+    throw sttUnavailable("the service could not be reached");
+  }
+  if (res.status !== 200) throw sttUnavailable(`the service answered ${res.status}`);
+  let data: { access_token?: unknown; expires_in?: unknown };
+  try {
+    data = (await res.json()) as typeof data;
+  } catch {
+    throw sttUnavailable("the service sent an unreadable answer");
+  }
+  if (typeof data.access_token !== "string" || !data.access_token) throw sttUnavailable("the service sent no token");
+  return { accessToken: data.access_token, expiresIn: typeof data.expires_in === "number" ? data.expires_in : 30 };
 }

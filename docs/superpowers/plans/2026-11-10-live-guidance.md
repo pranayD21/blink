@@ -702,7 +702,7 @@ git commit   # feat(live): end a call into the after-call read and keep every li
 
 - `export function mintSttToken(callId: string, actor: Actor): Promise<{ accessToken: string; expiresIn: number }>` in `live.ts`.
 
-- [ ] **Step 1: Write the failing tests** with the `call()` helper pattern of `tests/services/api.test.ts` (mock `next/headers`; call the handlers directly).
+- [x] **Step 1: Write the failing tests** with the `call()` helper pattern of `tests/services/api.test.ts` (mock `next/headers`; call the handlers directly).
 
 ```ts
 it("a banker starts a call on their own case and posts a turn", async () => { /* 201, then 200 with pill.level "listening" */ });
@@ -716,10 +716,10 @@ it("the token route returns Deepgram's token and never the key", async () => {
 it("a token request after the call ended is a 409", async () => { /* CALL_NOT_LIVE */ });
 ```
 
-- [ ] **Step 2: Run it and see it fail.** Run: `pnpm exec vitest run tests/services/api-calls.test.ts`. Expected: FAIL, routes not found.
-- [ ] **Step 3: Write the routes** with the `api()` wrapper, one service call each. `mintSttToken` posts to `https://api.deepgram.com/v1/auth/grant` with `{ ttl_seconds: 30 }`; a non-200 from Deepgram becomes a 502 with code `STT_UNAVAILABLE` and no upstream body.
-- [ ] **Step 4: Run the tests.** Run: `pnpm test`. Expected: PASS.
-- [ ] **Step 5: Commit.**
+- [x] **Step 2: Run it and see it fail.** Run: `pnpm exec vitest run tests/services/api-calls.test.ts`. Expected: FAIL, routes not found.
+- [x] **Step 3: Write the routes** with the `api()` wrapper, one service call each. `mintSttToken` posts to `https://api.deepgram.com/v1/auth/grant` with `{ ttl_seconds: 30 }`; a non-200 from Deepgram becomes a 502 with code `STT_UNAVAILABLE` and no upstream body.
+- [x] **Step 4: Run the tests.** Run: `pnpm test`. Expected: PASS.
+- [x] **Step 5: Commit.**
 
 ```bash
 git add src/app/api/calls src/server/services/live.ts tests/services/api-calls.test.ts
