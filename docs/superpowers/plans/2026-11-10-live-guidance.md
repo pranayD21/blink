@@ -584,7 +584,7 @@ export function ingestTurn(callId: string, input: z.infer<typeof TurnSchema>, ac
 export function getCallForActor(db: DbOrTx, callId: string, actor: Actor): CallRow;   // 404 unless the actor started it
 ```
 
-- [ ] **Step 1: Write the failing tests.** `beforeEach`: `resetDbForTests()`, `seedDatabase({ manualPolicy: true, enqueueDocFacts: false, goldDocFacts: true })`. `feed(n)` posts `halvorsenLiveTurns()` 1 to n in order with `goldReader()`.
+- [x] **Step 1: Write the failing tests.** `beforeEach`: `resetDbForTests()`, `seedDatabase({ manualPolicy: true, enqueueDocFacts: false, goldDocFacts: true })`. `feed(n)` posts `halvorsenLiveTurns()` 1 to n in order with `goldReader()`.
 
 ```ts
 it("the first statement shows nothing; the source remark six turns later is red", async () => {
@@ -605,8 +605,8 @@ it("a gap in seq is refused", async () => expect((await postErr(3)).code).toBe("
 it("only the banker who owns the case can start, and only once it has no transcript", () => { /* another analyst → 404; a case past INTAKE → 422 CALL_NOT_ALLOWED; no active policy → 422 NO_ACTIVE_POLICY; starting twice returns the same call */ });
 ```
 
-- [ ] **Step 2: Run it and see it fail.** Run: `pnpm exec vitest run tests/services/live.test.ts`. Expected: FAIL, module not found.
-- [ ] **Step 3: Implement `startCall` and `ingestTurn`.**
+- [x] **Step 2: Run it and see it fail.** Run: `pnpm exec vitest run tests/services/live.test.ts`. Expected: FAIL, module not found.
+- [x] **Step 3: Implement `startCall` and `ingestTurn`.**
   - `startCall` pins the case's policy version, or the active one when the case has none, and records `LIVE_MODEL()` and `LIVE_PROMPT_VERSION` on the call.
   - One in-memory promise chain per call id serialises `ingestTurn`, so turn n is always read after turn n minus 1 is stored.
   - Inside the chain: return the stored decision when `seq` already exists; refuse when `seq` is not last plus 1; read outside any transaction; then, in one `transact`, store everything.
@@ -614,8 +614,8 @@ it("only the banker who owns the case can start, and only once it has no transcr
   - For an analyst turn, `probeRuleIds(question, ...)`.
   - `decidePill`, with `msSinceLastAmber` from `calls.last_amber_at` and the server clock; update `last_amber_at` when amber is shown.
   - Store the `call_turns` row: everything the table in Task 9 lists, with `evaluations_json` holding, per claim and monitor, the rule id, both states, the result and the guard trace, plus the policy version id.
-- [ ] **Step 4: Run the tests.** Expected: PASS.
-- [ ] **Step 5: Commit.**
+- [x] **Step 4: Run the tests.** Expected: PASS.
+- [x] **Step 5: Commit.**
 
 ```bash
 git add src/server/services/live.ts tests/services/live.test.ts
