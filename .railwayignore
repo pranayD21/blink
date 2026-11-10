@@ -1,0 +1,13 @@
+# What `railway up` leaves out of the upload (on top of .gitignore). The image build applies
+# .dockerignore again, so this only keeps local working files from leaving the machine.
+.env*
+.superpowers/
+data/
+spike/
+desktop/
+tests/
+test-results/
+playwright-report/
+blob-report/
+.next/
+node_modules/

@@ -23,6 +23,10 @@ A fund's analyst talks to an industry expert. Before anything from that call is 
 
 Every step is written to a hash-chained audit log.
 
+## Deployed
+
+**https://blink-production.up.railway.app** (Railway trial, until 2026-12-10). Sign in with a demo account's email and password. Emails are the first name at `blink.demo`, for example `priya@blink.demo`. Passwords are not in the repository. The owner holds them in `.env.local` as `BLINK_SEED_PASSWORDS`, and the same value is in the Railway service's variables. The deployment uses live models (`BLINK_LLM_MODE=live`), password sign-in and no role switcher. Its SQLite database sits on a 0.5 GB volume at `/data`, so data survives a restart or a redeploy. To check it, run `pnpm smoke --url https://blink-production.up.railway.app`.
+
 ## Quickstart
 
 Needs Node 26, the version the spec pins (`.nvmrc` has it), and pnpm. Tested on Node 26.13 and 24.10; `better-sqlite3` needs 22 or newer.
@@ -179,4 +183,4 @@ Blink never says a call "is compliant" or that information "is MNPI". It says wh
 - "Not found in public documents" means not found in the six curated documents. It never means the information is proven nonpublic.
 - The policy vocabulary is ten predicates. A clause it cannot express is listed as "not automated" for a reviewer to apply by hand.
 - Authentication is a cookie naming a seeded user. Role checks are real; identity is not.
-- It runs on one machine with a SQLite file and one worker. There is no deployment, SSO, live audio, or expert-network integration.
+- It runs as one container with a SQLite file and one worker: the web server and the worker share the volume. There is no SSO and no expert-network integration.

@@ -1599,13 +1599,13 @@ git commit   # build(deploy): add a container, a start script and a health check
 **Files:**
 - Modify: `README.md`, `docs/superpowers/plans/2026-11-10-live-guidance-notes.md`
 
-- [ ] **Step 1: Read the CLI's current commands.** Run `pnpm dlx @railway/cli --help` and check project, volume, variable, deploy and domain commands against Railway's documentation with context7. The token is `RAILWAY_API_TOKEN` in `.env.local`; export it for the commands without echoing it.
-- [ ] **Step 2: Create the project, one service, and a volume mounted at `/data`** (0.5 GB is the trial's limit).
-- [ ] **Step 3: Set the variables** without printing values: `ANTHROPIC_API_KEY`, `DEEPGRAM_API_KEY`, `BLINK_LLM_MODE=live`, `BLINK_AUTH_MODE=password`, `BLINK_DB_PATH=/data/blink.db`, `BLINK_LIVE_MODEL=claude-haiku-5-5`, `NODE_ENV=production`, and `BLINK_SEED_PASSWORDS` holding four passwords generated with `openssl rand -base64 18`. Write the same passwords to `.env.local` as `BLINK_SEED_PASSWORDS` so the smoke script and the owner can use them.
-- [ ] **Step 4: Deploy and get the address.** Deploy from the working tree with the CLI (not from GitHub: the repository belongs to someone else). Expected: the build finishes and the health check passes.
-- [ ] **Step 5: Smoke-test the deployment.** Run: `pnpm smoke --url <the address>`. Expected: PASS.
-- [ ] **Step 6: Record it.** Put the address in `README.md`; in the notes file write the trial's end date (2026-12-10), the credit used so far, and that the service should be stopped after the finals to save credit.
-- [ ] **Step 7: Commit.**
+- [x] **Step 1: Read the CLI's current commands.** Run `pnpm dlx @railway/cli --help` and check project, volume, variable, deploy and domain commands against Railway's documentation with context7. The token is `RAILWAY_API_TOKEN` in `.env.local`; export it for the commands without echoing it.
+- [x] **Step 2: Create the project, one service, and a volume mounted at `/data`** (0.5 GB is the trial's limit).
+- [x] **Step 3: Set the variables** without printing values: `ANTHROPIC_API_KEY`, `DEEPGRAM_API_KEY`, `BLINK_LLM_MODE=live`, `BLINK_AUTH_MODE=password`, `BLINK_DB_PATH=/data/blink.db`, `BLINK_LIVE_MODEL=claude-haiku-5-5`, `NODE_ENV=production`, and `BLINK_SEED_PASSWORDS` holding four passwords generated with `openssl rand -base64 18`. Write the same passwords to `.env.local` as `BLINK_SEED_PASSWORDS` so the smoke script and the owner can use them.
+- [x] **Step 4: Deploy and get the address.** Deploy from the working tree with the CLI (not from GitHub: the repository belongs to someone else). Expected: the build finishes and the health check passes.
+- [x] **Step 5: Smoke-test the deployment.** Run: `pnpm smoke --url <the address>`. Expected: PASS.
+- [x] **Step 6: Record it.** Put the address in `README.md`; in the notes file write the trial's end date (2026-12-10), the credit used so far, and that the service should be stopped after the finals to save credit.
+- [x] **Step 7: Commit.**
 
 ```bash
 git add README.md docs/superpowers/plans/2026-11-10-live-guidance-notes.md
