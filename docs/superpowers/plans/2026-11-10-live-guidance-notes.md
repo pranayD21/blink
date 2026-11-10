@@ -253,3 +253,11 @@ Step 1 is done: `pnpm live:prepare` (`scripts/prepare-live-call.sh`) resets `dat
   - **Policy owner.** For the policy owner, `problems` carry `callId: null` and `title: ""`.
   - **Reviewed wording.** When the findings covering a turn's hidden passages stand at different outcomes, Reviewed states each one with its label, for example "F1: Jordan Ellis sent both to legal. F99: Marcus Lee unhid it.". Passages no finding covers are named too.
   - **Abandoned calls.** They are left out of `typicalCostUsd`.
+
+## Task 30: the three observability screens
+
+- **No date window.** Per the controller's ruling, the overview covers every call. Its figures are labelled "Calls", "Slowest" (not "Calls this week" or "Slowest this week"), and the page says "The figures cover every call so far". The stage row is labelled "over the last hour", which is what the data covers.
+- **Headline and caption units.** The headline is always seconds to one decimal ("1.1 s"), as the browser test requires. The caption's 19-in-20 and slowest use the finer span format ("17 ms" below a tenth of a second). In replay the scripted call runs in milliseconds, so the headline reads "0.0 s" while the caption says "within 17 ms". On a real call the two read alike ("1.1 s", "1.9 s").
+- **The opened moment sits inline.** Clicking a turn opens its steps under the row, inside the list, and only one at a time. An outage has no steps, so it does not open. The rules step's detail is shown one rule per line.
+- **Who sees what.** `/calls`: reviewers, senior reviewers and the policy owner. A banker gets the role gate. The policy owner sees no call names and no links, and a note says why. `/calls/[id]`: reviewers and senior reviewers only. The banker and the policy owner both get the role gate, because the record shows what was said.
+- **calls.spec.ts.** It runs after `call.spec.ts` (Playwright orders files by name: `call.` sorts before `calls.`). A `beforeAll` also plays the scripted call itself when no call exists, so the file can run alone. Two tests go beyond the brief's three: neither a banker nor the policy owner can open one call, and the case header's "Call record" link opens the record.

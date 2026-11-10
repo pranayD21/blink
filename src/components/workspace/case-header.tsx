@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertTriangle, CheckCircle2, ClipboardCheck, FileText, History, PlayCircle, RotateCcw, Timer } from "lucide-react";
+import { AlertTriangle, AudioLines, CheckCircle2, ClipboardCheck, FileText, History, PlayCircle, RotateCcw, Timer } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -132,6 +132,13 @@ export function CaseHeader({ payload, samples, allowGold, refresh }: { payload: 
               <Timer /> Baseline
             </Link>
           </Button>
+          {payload.callId && (
+            <Button asChild size="sm" variant="ghost">
+              <Link href={`/calls/${payload.callId}`} data-testid="link-call-record" title="The live call, moment by moment: what was heard, read, checked and shown">
+                <AudioLines /> Call record
+              </Link>
+            </Button>
+          )}
           <Button asChild size="sm" variant="ghost">
             <Link href={`/cases/${payload.case.id}/audit`} data-testid="link-audit">
               <History /> Audit

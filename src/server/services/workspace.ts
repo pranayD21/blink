@@ -16,7 +16,7 @@ import { aggregateMonitorStates, statePath } from "@/core/workflow/finding";
 import { type Actor, isReviewer } from "../auth/actor";
 import { type AuditEventView, listAudit } from "../audit/log";
 import { type DbOrTx, fromJson } from "../db/client";
-import { analysisRuns, decisions, dependencies, findings, jobs, llmCalls, monitorEvaluations, monitorInstances, predicateAssessments, processingIssues, tasks, transcriptVersions, turnLineage, turns, users } from "../db/schema";
+import { analysisRuns, calls, decisions, dependencies, findings, jobs, llmCalls, monitorEvaluations, monitorInstances, predicateAssessments, processingIssues, tasks, transcriptVersions, turnLineage, turns, users } from "../db/schema";
 import { forbidden } from "../errors";
 import { type JobView, toJobView } from "../jobs/queue";
 import { llmMode } from "../llm/client";
@@ -132,6 +132,8 @@ export interface WorkspacePayload {
   issues: { id: string; severity: string; code: string; message: string; ref: Record<string, unknown>; resolved: boolean; createdAt: string }[];
   attestation: { id: string; actorId: string; transcriptVersionId: string; stale: boolean; staleReason: string | null; createdAt: string; evidenceHash: string; current: boolean } | null;
   brief: { id: string; versionNo: number; status: string } | null;
+  /** The newest live call on the case, whose record the header links to; null when the case had none. */
+  callId: string | null;
   blockers: ReadinessBlocker[];
   users: Record<string, string>;
 }
@@ -367,6 +369,7 @@ export function loadWorkspace(tx: DbOrTx, caseId: string, actor: Actor): Workspa
     issues: tx.select().from(processingIssues).where(eq(processingIssues.caseId, caseId)).orderBy(desc(processingIssues.createdAt)).all().map((i) => ({ id: i.id, severity: i.severity, code: i.code, message: i.message, ref: fromJson<Record<string, unknown>>(i.refJson, {}), resolved: i.resolved, createdAt: i.createdAt })),
     attestation: attestation ? { id: attestation.id, actorId: attestation.actorId, transcriptVersionId: attestation.transcriptVersionId, stale: attestation.stale, staleReason: attestation.staleReason, createdAt: attestation.createdAt, evidenceHash: attestation.evidenceHash, current: !attestation.stale && attestation.transcriptVersionId === transcript?.id } : null,
     brief: brief ? { id: brief.id, versionNo: brief.versionNo, status: brief.status } : null,
+    callId: tx.select({ id: calls.id }).from(calls).where(eq(calls.caseId, caseId)).orderBy(desc(calls.startedAt), desc(calls.id)).limit(1).get()?.id ?? null,
     blockers: computeReviewBlockers(tx, caseId),
     users: Object.fromEntries(tx.select().from(users).all().map((u) => [u.id, u.name])),
   };

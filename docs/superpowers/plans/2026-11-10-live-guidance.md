@@ -1313,7 +1313,7 @@ Follow the dataviz skill for the figures: one headline figure per view at 48 px 
 **Interfaces:**
 - Consumes: `callTrace`, `callsOverview` (Task 29); `StatusDot` (Task 4). Layout: sections 3, 4 and 5 of the mockups file.
 
-- [ ] **Step 1: Write the failing browser test**, which runs after the scripted call of `call.spec.ts` in the same database.
+- [x] **Step 1: Write the failing browser test**, which runs after the scripted call of `call.spec.ts` in the same database.
 
 ```ts
 test("one call reads top to bottom, and the red moment opens into its steps", async ({ page }) => {
@@ -1332,13 +1332,13 @@ test("the overview leads with the typical time from words to warning", async ({ 
 test("a banker cannot open either screen", async ({ page }) => { await actAs(page, "user_priya", "Priya Raman"); await page.goto("/calls"); await expect(page.getByTestId("role-gate")).toBeVisible(); });
 ```
 
-- [ ] **Step 2: Run it and see it fail.** Expected: FAIL, 404 on `/calls`.
-- [ ] **Step 3: Build the one-call screen and the opened moment** (mockup sections 3 and 4): counts across the top; five stage dots; one row per moment with time, dot, what was said, the conclusion, and the total on the right; clicking a row opens its steps, each with a thin single-colour bar at its offset. A cost of null reads "unknown", with "N steps have no price" beneath when relevant.
-- [ ] **Step 4: Run the first and third tests.** Expected: PASS.
-- [ ] **Step 5: Build the overview** (mockup section 5): the headline figure with its caption "19 in 20 warnings arrive within X s. Slowest: Y s."; four tiles (calls, turns with a problem, unhidden by compliance, typical cost per call); stage status; recent problems, each a link to its call; then recent calls, one line each with `data-testid="call-link-<id>"`, shown only to the roles that may open a call. With no calls yet, the headline is "—" and the caption says so.
-- [ ] **Step 6: Look at it.** Screenshot both screens in light and dark at 1440 by 900 into `test-results/observability/` and check them against the mockups and the rules in Global Constraints. Fix what is off.
-- [ ] **Step 7: Run the checks.** Run: `pnpm test && pnpm e2e`. Expected: PASS.
-- [ ] **Step 8: Commit.**
+- [x] **Step 2: Run it and see it fail.** Expected: FAIL, 404 on `/calls`.
+- [x] **Step 3: Build the one-call screen and the opened moment** (mockup sections 3 and 4): counts across the top; five stage dots; one row per moment with time, dot, what was said, the conclusion, and the total on the right; clicking a row opens its steps, each with a thin single-colour bar at its offset. A cost of null reads "unknown", with "N steps have no price" beneath when relevant.
+- [x] **Step 4: Run the first and third tests.** Expected: PASS.
+- [x] **Step 5: Build the overview** (mockup section 5): the headline figure with its caption "19 in 20 warnings arrive within X s. Slowest: Y s."; four tiles (calls, turns with a problem, unhidden by compliance, typical cost per call); stage status; recent problems, each a link to its call; then recent calls, one line each with `data-testid="call-link-<id>"`, shown only to the roles that may open a call. With no calls yet, the headline is "—" and the caption says so.
+- [x] **Step 6: Look at it.** Screenshot both screens in light and dark at 1440 by 900 into `test-results/observability/` and check them against the mockups and the rules in Global Constraints. Fix what is off.
+- [x] **Step 7: Run the checks.** Run: `pnpm test && pnpm e2e`. Expected: PASS.
+- [x] **Step 8: Commit.**
 
 ```bash
 git add src/app/calls src/components/calls src/components/app/app-header.tsx src/server/services/workspace.ts src/components/workspace/case-header.tsx tests/e2e-live/calls.spec.ts tests/helpers/ui-scope.ts

@@ -17,17 +17,20 @@ const NAV: Record<string, { href: string; label: string }[]> = {
     { href: "/", label: "Cases" },
     { href: "/documents", label: "Documents" },
     { href: "/policies", label: "Policy" },
+    { href: "/calls", label: "Calls" },
     { href: "/metrics", label: "Metrics" },
   ],
   senior_reviewer: [
     { href: "/", label: "Cases" },
     { href: "/documents", label: "Documents" },
     { href: "/policies", label: "Policy" },
+    { href: "/calls", label: "Calls" },
     { href: "/metrics", label: "Metrics" },
   ],
   policy_owner: [
     { href: "/", label: "Cases" },
     { href: "/policies", label: "Policy" },
+    { href: "/calls", label: "Calls" },
     { href: "/metrics", label: "Metrics" },
   ],
 };
