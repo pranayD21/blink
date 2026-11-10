@@ -229,3 +229,12 @@ Step 1 is done: `pnpm live:prepare` (`scripts/prepare-live-call.sh`) resets `dat
 - The sign-in route also requires `Content-Type: application/json` (415 otherwise), so a cross-site HTML form cannot sign a visitor into another account. It purges attempts older than fifteen minutes and expired sessions on every sign-in, and signing in again ends the browser's earlier session.
 - In password mode the role gate offers nobody to switch to; it says which roles may open the page. `RoleGate` is now a server component, and the switch buttons moved to `src/components/app/switch-user-buttons.tsx`.
 - Files outside the brief's list: `src/lib/session.ts` (`PATH_HEADER`, `LOGIN_PATH`, `safeNextPath`), `src/server/services/seed.ts` (unknown-key check), `src/components/app/switch-user-buttons.tsx`, and the plan and notes files.
+
+## Task 28: break-in tests over every route
+
+`tests/services/breakin.test.ts` differs from the brief in three places, each on purpose:
+
+- **The cleared margin statement is not hidden text.** `hiddenTexts()` leaves out the live turn of a flagged call claim when compliance has cleared every finding on that claim's key. Only C8 (T17, "margins were under pressure well before I left", F3) is affected. The live call flags it `needs_context`, compliance clears F3 (`no_concern`), and the release then shows T17 in full by design: a banker reads a call once compliance has released it. Counting it as hidden would fail the test on correct behaviour.
+- **An extra flag only the live call raises.** The gold reader is wrapped so that T1 (the opening remark) also carries a dashboard claim, L1, that the after-call read does not raise. Ending the call turns it into a live finding whose passage is all of T1, and compliance keeps it hidden (`restricted_exclude`). Without it, `finding_passages` is empty: every gold live flag is covered by the after-call read. T1 is used because no after-call claim quotes it, so only the live finding hides it. Removing the live-finding loop in `restrictedOnCase` makes the hidden-text tests fail on `/api/analyst/releases/:id`. T3 would hide "Halvorsen Pumps", which the template summary repeats, so the release would be blocked as a leak.
+- **Sign-out answers 200 with no session.** `POST /api/session/logout` is 200 whether or not anyone is signed in (Task 26), so its table row gives `noSession: 200`. The brief's list of exceptions does not name it.
+- Task 42 must add the health-check route to the table with `noSession: 200`, or the first test fails.

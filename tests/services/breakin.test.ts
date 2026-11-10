@@ -32,7 +32,7 @@ import { EVIDENCE_FIELDS } from "@/core/types";
 import { findingCleared } from "@/core/workflow/brief";
 import { hashPassword } from "@/server/auth/password";
 import { fromJson, getDb, resetDbForTests, transact } from "@/server/db/client";
-import { callClaims, callTurns, calls, claims, documents, findingPassages, findings, tasks, turns, users } from "@/server/db/schema";
+import { callClaims, callTurns, calls, claimQuotes, claims, documents, findingPassages, findings, tasks, turns, users } from "@/server/db/schema";
 import { drainJobs } from "@/server/jobs/runner";
 import type { LiveReader } from "@/server/live/reader";
 import { eligibilityForCase, getBrief } from "@/server/services/briefs";
@@ -64,6 +64,8 @@ interface Row {
   method: Method;
   /** The route acts on Priya's case (or something of it): another banker must get 403 or 404. */
   caseScoped: boolean;
+  /** On a case-scoped row, who may use it: Priya, or Marcus for a reviewer's route. They must not be refused. */
+  owner?: "priya" | "marcus";
   /** What a caller with no session gets. 401 when not given. */
   noSession?: number;
   params?: () => Record<string, string>;
@@ -88,20 +90,30 @@ const turnInput = (seq: number) => {
 };
 
 /**
- * The gold reader, plus one flag the after-call read does not raise: the dashboard claim said in T7
- * as claim L1. Ending the call turns it into a live finding with a passage, so `finding_passages`
- * holds hidden text too.
+ * The turn only the live call flags: the opening remark, which no after-call claim quotes, so the
+ * release would otherwise show it in full. It names nothing the summary repeats; T3, the expert's
+ * background, would hide "Halvorsen Pumps" and so block the template summary's release.
+ */
+const LIVE_ONLY_TURN = 1;
+const LIVE_ONLY_QUOTE = "This call is being recorded for compliance purposes.";
+
+/**
+ * The gold reader, plus one flag the after-call read does not raise: the dashboard claim said in T1
+ * as claim L1. Ending the call turns it into a live finding whose passage is all of T1, so
+ * `finding_passages` holds hidden text that only the live finding hides.
  */
 function readerWithLiveOnlyFlag(): LiveReader {
   const gold = goldReader();
   const extraction = LlmExtractionSchema.parse(readJson<{ extraction: unknown }>("cases", "halvorsen", "gold.json").extraction);
   const c1 = extraction.claims.find((c) => c.logical_key === "C1")!;
-  const claim: LlmExtraction["claims"][number] = { ...c1, logical_key: "L1", quotes: [{ turn_id: "T7", quote: "Distributors broadly are soft right now.", role: "primary", supports_fields: [...EVIDENCE_FIELDS] }] };
-  const atT7: GroundingTurn[] = halvorsen.slice(0, 7).map((t) => ({ label: `T${t.seq}`, idx: t.seq, speaker: t.speaker, text: t.text, textHash: turnHash(t.text) }));
-  const extra = groundExtraction({ claims: [claim], suggested_concerns: [], missing_context_questions: [], call_summary: "" }, atT7).claims;
+  const label = `T${LIVE_ONLY_TURN}`;
+  const claim: LlmExtraction["claims"][number] = { ...c1, logical_key: "L1", quotes: [{ turn_id: label, quote: LIVE_ONLY_QUOTE, role: "primary", supports_fields: [...EVIDENCE_FIELDS] }] };
+  const heard: GroundingTurn[] = halvorsen.slice(0, LIVE_ONLY_TURN).map((t) => ({ label: `T${t.seq}`, idx: t.seq, speaker: t.speaker, text: t.text, textHash: turnHash(t.text) }));
+  const extra = groundExtraction({ claims: [claim], suggested_concerns: [], missing_context_questions: [], call_summary: "" }, heard).claims;
+  if (extra.length !== 1) throw new Error("the live-only claim did not ground");
   return async (input) => {
     const result = await gold(input);
-    if (input.newTurnLabel !== "T7" || result.status !== "read") return result;
+    if (input.newTurnLabel !== label || result.status !== "read") return result;
     return { ...result, claims: [...result.claims, ...extra] };
   };
 }
@@ -134,7 +146,7 @@ async function buildState(): Promise<void> {
   const brief = draftTemplate();
   approve(brief.id);
   const released = release(brief.id);
-  if (!released.released) throw new Error(`the release failed: ${released.failures.map((f) => f.code).join(", ")}`);
+  if (!released.released) throw new Error(`the release failed: ${released.failures.map((f) => f.message).join("; ")}`);
 
   const db = getDb();
   const callRow = db.select().from(calls).where(eq(calls.id, call.id)).get()!;
@@ -196,64 +208,68 @@ const LATER = "2026-11-10T15:30:00.000Z";
 
 const TABLE: Row[] = [
   { file: "src/app/api/analyst/briefs/route.ts", method: "GET", caseScoped: false },
-  { file: "src/app/api/analyst/releases/[id]/route.ts", method: "GET", caseScoped: true, params: () => ({ id: ids.release }) },
+  { file: "src/app/api/analyst/releases/[id]/route.ts", method: "GET", caseScoped: true, owner: "priya", params: () => ({ id: ids.release }) },
   { file: "src/app/api/audit/route.ts", method: "GET", caseScoped: false },
-  { file: "src/app/api/audit/route.ts", method: "GET", caseScoped: true, query: () => `caseId=${CASE}` },
+  { file: "src/app/api/audit/route.ts", method: "GET", caseScoped: true, owner: "marcus", query: () => `caseId=${CASE}` },
   { file: "src/app/api/audit/verify/route.ts", method: "POST", caseScoped: false },
   {
     file: "src/app/api/briefs/[id]/approve/route.ts",
     method: "POST",
     caseScoped: true,
+    owner: "marcus",
     params: () => ({ id: ids.brief }),
     body: () => {
       const b = getBrief(getDb(), ids.brief);
       return { briefHash: b.contentHash, audience: "analyst", expectedVersion: b.version };
     },
   },
-  { file: "src/app/api/briefs/[id]/release/route.ts", method: "POST", caseScoped: true, params: () => ({ id: ids.brief }), body: () => ({ audience: "analyst", expectedVersion: getBrief(getDb(), ids.brief).version }) },
+  { file: "src/app/api/briefs/[id]/release/route.ts", method: "POST", caseScoped: true, owner: "marcus", params: () => ({ id: ids.brief }), body: () => ({ audience: "analyst", expectedVersion: getBrief(getDb(), ids.brief).version }) },
   {
     file: "src/app/api/briefs/[id]/route.ts",
     method: "PATCH",
     caseScoped: true,
+    owner: "marcus",
     params: () => ({ id: ids.brief }),
     body: () => ({ sections: [{ heading: "Halvorsen", sentences: [{ text: "Demand is soft.", claim_ids: ["C4"] }] }], expectedVersion: getBrief(getDb(), ids.brief).version }),
   },
-  { file: "src/app/api/calls/[id]/acks/route.ts", method: "POST", caseScoped: true, params: () => ({ id: ids.call }), body: () => ({ seq: 1, responseReceivedAt: LATER, shownAt: LATER }) },
-  { file: "src/app/api/calls/[id]/end/route.ts", method: "POST", caseScoped: true, params: () => ({ id: ids.call }), body: () => ({}) },
+  { file: "src/app/api/calls/[id]/acks/route.ts", method: "POST", caseScoped: true, owner: "priya", params: () => ({ id: ids.call }), body: () => ({ seq: 1, responseReceivedAt: LATER, shownAt: LATER }) },
+  { file: "src/app/api/calls/[id]/end/route.ts", method: "POST", caseScoped: true, owner: "priya", params: () => ({ id: ids.call }), body: () => ({}) },
   {
     file: "src/app/api/calls/[id]/outages/route.ts",
     method: "POST",
     caseScoped: true,
+    owner: "priya",
     params: () => ({ id: ids.call }),
     body: () => ({ stage: "hearing", startedAt: LATER, endedAt: null, cause: "microphone unplugged", shownToBanker: true }),
   },
-  { file: "src/app/api/calls/[id]/stt-token/route.ts", method: "POST", caseScoped: true, params: () => ({ id: ids.call }), body: () => ({}) },
-  { file: "src/app/api/calls/[id]/turns/route.ts", method: "POST", caseScoped: true, params: () => ({ id: ids.call }), body: () => turnInput(1) },
-  { file: "src/app/api/calls/route.ts", method: "POST", caseScoped: true, body: () => ({ caseId: CASE }) },
-  { file: "src/app/api/cases/[id]/analyze/route.ts", method: "POST", caseScoped: true, params: () => ({ id: CASE }), body: () => ({}) },
-  { file: "src/app/api/cases/[id]/attest/route.ts", method: "POST", caseScoped: true, params: () => ({ id: CASE }), body: () => ({ transcriptVersionId: ids.transcript }) },
-  { file: "src/app/api/cases/[id]/baseline/route.ts", method: "POST", caseScoped: true, params: () => ({ id: CASE }), body: () => ({ outcome: "no_concern", notes: "Nothing in this call needs action." }) },
-  { file: "src/app/api/cases/[id]/briefs/route.ts", method: "GET", caseScoped: true, params: () => ({ id: CASE }) },
-  { file: "src/app/api/cases/[id]/briefs/route.ts", method: "POST", caseScoped: true, params: () => ({ id: CASE }), body: () => ({ mode: "template" }) },
-  { file: "src/app/api/cases/[id]/session/route.ts", method: "POST", caseScoped: true, params: () => ({ id: CASE }), body: () => ({}) },
-  { file: "src/app/api/cases/[id]/transcripts/route.ts", method: "POST", caseScoped: true, params: () => ({ id: CASE }), body: () => ({ text: "Expert: Orders were flat in the quarter.", filename: "breakin.txt" }) },
-  { file: "src/app/api/cases/[id]/workspace/route.ts", method: "GET", caseScoped: true, params: () => ({ id: CASE }) },
+  { file: "src/app/api/calls/[id]/stt-token/route.ts", method: "POST", caseScoped: true, owner: "priya", params: () => ({ id: ids.call }), body: () => ({}) },
+  { file: "src/app/api/calls/[id]/turns/route.ts", method: "POST", caseScoped: true, owner: "priya", params: () => ({ id: ids.call }), body: () => turnInput(1) },
+  { file: "src/app/api/calls/route.ts", method: "POST", caseScoped: true, owner: "priya", body: () => ({ caseId: CASE }) },
+  { file: "src/app/api/cases/[id]/analyze/route.ts", method: "POST", caseScoped: true, owner: "marcus", params: () => ({ id: CASE }), body: () => ({}) },
+  { file: "src/app/api/cases/[id]/attest/route.ts", method: "POST", caseScoped: true, owner: "marcus", params: () => ({ id: CASE }), body: () => ({ transcriptVersionId: ids.transcript }) },
+  { file: "src/app/api/cases/[id]/baseline/route.ts", method: "POST", caseScoped: true, owner: "marcus", params: () => ({ id: CASE }), body: () => ({ outcome: "no_concern", notes: "Nothing in this call needs action." }) },
+  { file: "src/app/api/cases/[id]/briefs/route.ts", method: "GET", caseScoped: true, owner: "marcus", params: () => ({ id: CASE }) },
+  { file: "src/app/api/cases/[id]/briefs/route.ts", method: "POST", caseScoped: true, owner: "marcus", params: () => ({ id: CASE }), body: () => ({ mode: "template" }) },
+  { file: "src/app/api/cases/[id]/session/route.ts", method: "POST", caseScoped: true, owner: "marcus", params: () => ({ id: CASE }), body: () => ({}) },
+  { file: "src/app/api/cases/[id]/transcripts/route.ts", method: "POST", caseScoped: true, owner: "priya", params: () => ({ id: CASE }), body: () => ({ text: "Expert: Orders were flat in the quarter.", filename: "breakin.txt" }) },
+  { file: "src/app/api/cases/[id]/workspace/route.ts", method: "GET", caseScoped: true, owner: "marcus", params: () => ({ id: CASE }) },
   { file: "src/app/api/cases/route.ts", method: "GET", caseScoped: false },
   { file: "src/app/api/cases/route.ts", method: "POST", caseScoped: false, body: () => ({ ...halvorsenCaseInput(), title: "Break-in case" }) },
-  { file: "src/app/api/claims/[id]/public-match/route.ts", method: "POST", caseScoped: true, params: () => ({ id: ids.claim }), body: () => ({ verdict: "clear", expectedVersion: 1 }) },
-  { file: "src/app/api/claims/[id]/route.ts", method: "PATCH", caseScoped: true, params: () => ({ id: ids.claim }), body: () => ({ verified: {}, expectedVersion: 1 }) },
+  { file: "src/app/api/claims/[id]/public-match/route.ts", method: "POST", caseScoped: true, owner: "marcus", params: () => ({ id: ids.claim }), body: () => ({ verdict: "clear", expectedVersion: 1 }) },
+  { file: "src/app/api/claims/[id]/route.ts", method: "PATCH", caseScoped: true, owner: "marcus", params: () => ({ id: ids.claim }), body: () => ({ verified: {}, expectedVersion: 1 }) },
   { file: "src/app/api/dev/script-turns/route.ts", method: "GET", caseScoped: false, noSession: 404 },
   { file: "src/app/api/documents/[id]/verify/route.ts", method: "POST", caseScoped: false, params: () => ({ id: ids.document }), body: () => ({ factId: "F1", verified: true, expectedVersion: 1 }) },
   { file: "src/app/api/documents/route.ts", method: "GET", caseScoped: false },
-  { file: "src/app/api/findings/[id]/events/route.ts", method: "POST", caseScoped: true, params: () => ({ id: ids.finding }), body: () => ({ type: "PROMOTE", rationale: "Looks restricted to me.", expectedVersion: 1 }) },
-  { file: "src/app/api/findings/[id]/tasks/route.ts", method: "POST", caseScoped: true, params: () => ({ id: ids.finding }), body: () => ({ question: "Where did this figure come from?" }) },
+  { file: "src/app/api/findings/[id]/events/route.ts", method: "POST", caseScoped: true, owner: "marcus", params: () => ({ id: ids.finding }), body: () => ({ type: "PROMOTE", rationale: "Looks restricted to me.", expectedVersion: 1 }) },
+  { file: "src/app/api/findings/[id]/tasks/route.ts", method: "POST", caseScoped: true, owner: "marcus", params: () => ({ id: ids.finding }), body: () => ({ question: "Where did this figure come from?" }) },
   {
     file: "src/app/api/findings/route.ts",
     method: "POST",
     caseScoped: true,
+    owner: "marcus",
     body: () => ({ caseId: CASE, title: "Raised by hand", severity: "high", explanation: "The expert named a customer.", turnLabel: "T15" }),
   },
-  { file: "src/app/api/jobs/[id]/route.ts", method: "GET", caseScoped: true, params: () => ({ id: ids.job }) },
+  { file: "src/app/api/jobs/[id]/route.ts", method: "GET", caseScoped: true, owner: "priya", params: () => ({ id: ids.job }) },
   { file: "src/app/api/metrics/route.ts", method: "GET", caseScoped: false },
   { file: "src/app/api/policies/[versionId]/approve/route.ts", method: "POST", caseScoped: false, params: () => ({ versionId: ids.policy }), body: () => ({ bundleHash: "0".repeat(64) }) },
   { file: "src/app/api/policies/[versionId]/compile/route.ts", method: "POST", caseScoped: false, params: () => ({ versionId: ids.policy }) },
@@ -266,7 +282,7 @@ const TABLE: Row[] = [
   { file: "src/app/api/session/login/route.ts", method: "POST", caseScoped: false, noSession: 400, body: () => ({}) },
   // Signing out answers 200 whether or not there was a session.
   { file: "src/app/api/session/logout/route.ts", method: "POST", caseScoped: false, noSession: 200, body: () => ({}) },
-  { file: "src/app/api/tasks/[id]/answer/route.ts", method: "POST", caseScoped: true, params: () => ({ id: ids.task }), body: () => ({ answer: "From the public filing.", expectedVersion: 1 }) },
+  { file: "src/app/api/tasks/[id]/answer/route.ts", method: "POST", caseScoped: true, owner: "marcus", params: () => ({ id: ids.task }), body: () => ({ answer: "From the public filing.", expectedVersion: 1 }) },
   { file: "src/app/api/transcripts/preview/route.ts", method: "POST", caseScoped: false, body: () => ({ text: "Expert: Orders were flat in the quarter." }) },
 ];
 
@@ -303,10 +319,17 @@ async function hit(r: Row, who: Who | null, override: { body?: unknown } = {}): 
 
 const GETS = TABLE.filter((r) => r.method === "GET");
 
-/** Fails naming the route and the hidden text's first words when `json` contains any of `hidden`. */
+/**
+ * Phrases of the restricted passages, written here from the fixture rather than taken from
+ * `redaction.ts`, so a change there that hid less would still be caught. ("twenty percent" alone
+ * is not one: Priya's own question in T10 says it, and the release shows her question.)
+ */
+const PINNED = ["down about twenty percent", "tracking down twenty percent", "Salesforce", "Cardinal Utilities", LIVE_ONLY_QUOTE];
+
+/** Fails naming the route and the hidden text's first words when `json` contains any of `hidden` or a pinned phrase. */
 function expectNoHiddenText(json: unknown, where: string, hidden: readonly string[]): void {
   const body = typeof json === "string" ? json : JSON.stringify(json);
-  for (const q of hidden) {
+  for (const q of [...hidden, ...PINNED]) {
     expect(body, `${where} repeats "${q.slice(0, 30)}…"`).not.toContain(q);
     expect(body, `${where} repeats "${q.slice(0, 30)}…"`).not.toContain(asJson(q));
   }
@@ -343,6 +366,10 @@ describe("break-in: every route, as a banker (live guidance, section 5)", () => 
     expect(restrictedOnCase(db, CASE).passages.length).toBeGreaterThanOrEqual(4);
     expect(db.select().from(findingPassages).all()).toHaveLength(1);
     expect(db.select().from(callClaims).where(eq(callClaims.callId, ids.call)).all().filter((c) => c.flagged !== "none").length).toBeGreaterThanOrEqual(3);
+    // Only the live finding hides this turn: no after-call claim quotes it, yet all of it is hidden.
+    const liveOnly = halvorsen[LIVE_ONLY_TURN - 1].text;
+    expect(db.select().from(claimQuotes).all().filter((q) => q.turnId.endsWith(`:T${LIVE_ONLY_TURN}`))).toEqual([]);
+    expect(hiddenTexts()).toContain(liveOnly);
     // The check can fire: compliance's own workspace carries the hidden passages.
     const workspace = JSON.stringify((await hit(TABLE.find((r) => r.file.endsWith("cases/[id]/workspace/route.ts"))!, "marcus")).json);
     expect(hiddenTexts().filter((q) => workspace.includes(q) || workspace.includes(asJson(q))).length).toBeGreaterThan(0);
@@ -351,6 +378,8 @@ describe("break-in: every route, as a banker (live guidance, section 5)", () => 
   it.each(TABLE)("$method $file answers a caller with no session as the table says", async (r) => expect((await hit(r, null)).status).toBe(r.noSession ?? 401));
 
   it.each(TABLE.filter((r) => r.caseScoped))("$method $file refuses another banker", async (r) => expect([403, 404]).toContain((await hit(r, "sam")).status));
+
+  it("every case-scoped row names who may use it", () => expect(TABLE.filter((r) => r.caseScoped && !r.owner).map((r) => r.file)).toEqual([]));
 
   it("another banker's lists name nothing of Priya's case", async () => {
     const cases = (await hit(TABLE.find((r) => r.file === "src/app/api/cases/route.ts" && r.method === "GET")!, "sam")).json as { cases: unknown[] };
@@ -368,7 +397,7 @@ describe("break-in: every route, as a banker (live guidance, section 5)", () => 
   it("no response to the owning banker contains hidden text, anywhere", async () => {
     for (const r of TABLE.filter((r) => r.method === "GET")) {
       const body = JSON.stringify((await hit(r, "priya")).json);
-      for (const q of hiddenTexts()) expect(body, r.file).not.toContain(q);
+      expectNoHiddenText(body, r.file, hiddenTexts());
     }
   });
 
@@ -398,9 +427,26 @@ describe("break-in: every route, as a banker (live guidance, section 5)", () => 
     expect(failures.map((f) => f.code)).toContain("SUMMARY_LEAK");
     expectNoHiddenText(blocked.json, "the leak failure", hidden);
 
+    // An error that echoes what the banker sent: T5 re-sent with other words is refused as a conflict.
+    const conflict = await hit(row("calls/[id]/turns/route.ts"), "priya", { body: { ...turnInput(5), text: "Orders were flat, nothing more to say." } });
+    expect(conflict.status).toBe(409);
+    expect((conflict.json as { error: { code: string } }).error.code).toBe("TURN_CONFLICT");
+    expectNoHiddenText(conflict.json, "the turn conflict", hidden);
+
     // Priya tries every route that is not her own sign-in or sign-out, then reads every route again.
     for (const r of TABLE.filter((r) => !r.file.includes("/session/"))) expectNoHiddenText((await hit(r, "priya")).json, `${r.method} ${r.file} as priya`, hidden);
     const after = [...new Set([...hidden, ...hiddenTexts()])];
-    for (const r of GETS) expectNoHiddenText((await hit(r, "priya")).json, `GET ${r.file} as priya, afterwards`, after);
+    for (const r of GETS) {
+      const res = await hit(r, "priya");
+      if (r.file.includes("/analyst/")) expect(res.status, `GET ${r.file} as priya, afterwards`).toBe(200);
+      expectNoHiddenText(res.json, `GET ${r.file} as priya, afterwards`, after);
+    }
   });
+});
+
+// Uses each route as the person it is for, which changes the database, so on a state of its own.
+describe("break-in: the refusals above are about the banker, not the route", () => {
+  beforeAll(buildState, 60_000);
+
+  it.each(TABLE.filter((r) => r.caseScoped))("$method $file lets $owner through", async (r) => expect([401, 403, 404]).not.toContain((await hit(r, r.owner!)).status));
 });
