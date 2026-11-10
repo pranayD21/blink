@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import type { PillView } from "@/core/live/client";
 import { STAGES, type Stage } from "@/core/live/health";
 import { api, errorMessage } from "@/lib/api";
+import type { ControlSource } from "@/lib/live/control-source";
 import { type ScriptTurn, scriptTurnSource } from "@/lib/live/script-source";
 import { type TurnSource, liveTurnSource, runCall } from "@/lib/live/session";
 
@@ -23,8 +24,6 @@ export interface ControlCase {
   issuer: string;
   ticker: string;
 }
-
-export type ControlSource = { kind: "live" } | { kind: "script"; paceMs: number };
 
 type Phase = "idle" | "starting" | "live" | "stopping" | "ended";
 

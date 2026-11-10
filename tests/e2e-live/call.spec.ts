@@ -18,6 +18,8 @@ test("a scripted call turns the pill red at the source remark and ends with a co
   const pill = await context.newPage(); await pill.goto("/desktop/pill");
   await page.goto("/desktop?source=script&pace=150");
   await page.getByTestId("start-call-case_halvorsen").click();
+  // Replay ignores the live 2.5 s limit: T11's read took 5.3 s when recorded, so a live call would not show this red.
+  // See "Task 17" in docs/superpowers/plans/2026-11-10-live-guidance-notes.md.
   await expect(pill.getByTestId("pill")).toHaveAttribute("data-level", "red", { timeout: 30_000 });
   await expect(page.getByTestId("call-ended")).toBeVisible({ timeout: 60_000 });
   await expect(pill.getByTestId("pill")).toHaveText(/^Call ended\. \d+ passages? hidden and sent to compliance\.$/);

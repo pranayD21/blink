@@ -132,6 +132,8 @@ describe("the scripted live call replays (pnpm live:check)", () => {
     await turnsSettled(call.id);
 
     expect(decisions.map((d) => d.readStatus).filter((s) => s !== "read")).toEqual([]);
+    // Replay ignores the live 2.5 s limit: 9 of these reads (T11 among them) took longer when recorded,
+    // so live they would not have been read. See "Task 17" in docs/superpowers/plans/2026-11-10-live-guidance-notes.md.
     expect(decisions[10]).toMatchObject({ seq: 11, pill: { level: "red" } });
     expect(decisions.slice(0, 10).map((d) => d.pill.level)).not.toContain("red");
 

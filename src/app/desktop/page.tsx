@@ -1,15 +1,8 @@
 import { CallControl } from "@/components/live/call-control";
+import { controlSourceOf } from "@/lib/live/control-source";
 import { pageActor } from "@/server/auth/session";
 import { getDb } from "@/server/db/client";
 import { callableCases, scriptedCallsAllowed } from "@/server/services/live";
-
-const DEFAULT_PACE_MS = 1500;
-
-/** `?pace=` for the scripted call, held to something a person or a test can follow. */
-function paceOf(raw: string | string[] | undefined): number {
-  const n = Number(Array.isArray(raw) ? raw[0] : raw);
-  return Number.isFinite(n) && n > 0 ? Math.min(Math.max(Math.round(n), 50), 10_000) : DEFAULT_PACE_MS;
-}
 
 /**
  * The control window of the banker's app: start a call on a case, stop it, and see that every
@@ -31,6 +24,5 @@ export default async function DesktopPage({ searchParams }: { searchParams: Prom
     );
   }
 
-  const scripted = params.source === "script" && scriptedCallsAllowed();
-  return <CallControl banker={actor.name} cases={callableCases(getDb(), actor)} source={scripted ? { kind: "script", paceMs: paceOf(params.pace) } : { kind: "live" }} />;
+  return <CallControl banker={actor.name} cases={callableCases(getDb(), actor)} source={controlSourceOf(params, scriptedCallsAllowed())} />;
 }
