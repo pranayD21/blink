@@ -4,9 +4,11 @@
  * No assertion message here prints a password or a token.
  */
 import { eq } from "drizzle-orm";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { safeNextPath } from "@/lib/session";
+import { authMode } from "@/server/auth/mode";
 import { hashPassword, verifyPassword } from "@/server/auth/password";
-import { SESSION_TTL_HOURS, createSession, destroySession, recordAttempt, sessionActor, tooManyAttempts } from "@/server/auth/sessions";
+import { SESSION_TTL_HOURS, createSession, destroySession, purgeExpired, recordAttempt, sessionActor, tooManyAttempts } from "@/server/auth/sessions";
 import { setClockForTests } from "@/server/clock";
 import { getDb, resetDbForTests } from "@/server/db/client";
 import { authSessions, loginAttempts, users } from "@/server/db/schema";
@@ -30,6 +32,7 @@ beforeEach(() => {
 afterEach(() => {
   setClockForTests(null);
   delete process.env.BLINK_SEED_PASSWORDS;
+  vi.unstubAllEnvs();
 });
 
 const sessionRows = () => getDb().select().from(authSessions).all();
@@ -137,6 +140,54 @@ describe("sign-in attempts", () => {
   });
 });
 
+describe("old records are purged", () => {
+  it("drops attempts older than the window and sessions that have expired, and keeps the rest", () => {
+    recordAttempt(getDb(), "old@blink.demo", false);
+    const expired = createSession(getDb(), "user_priya");
+    advance(SESSION_TTL_HOURS * HOUR + MINUTE);
+    recordAttempt(getDb(), "new@blink.demo", false);
+    const live = createSession(getDb(), "user_marcus");
+    purgeExpired(getDb());
+    expect(getDb().select().from(loginAttempts).all().map((a) => a.email)).toEqual(["new@blink.demo"]);
+    expect(sessionActor(getDb(), expired.token)).toBeNull();
+    expect(sessionActor(getDb(), live.token)?.id).toBe("user_marcus");
+    expect(sessionRows()).toHaveLength(1);
+  });
+});
+
+describe("auth mode", () => {
+  const mode = (env: Record<string, string>) => {
+    vi.stubEnv("BLINK_AUTH_MODE", "");
+    vi.stubEnv("BLINK_ALLOW_SWITCHER", "");
+    for (const [k, v] of Object.entries(env)) vi.stubEnv(k, v);
+    return authMode();
+  };
+
+  it("in production the switcher needs an explicit allowance", () => {
+    expect(mode({ NODE_ENV: "production", BLINK_AUTH_MODE: "switcher" })).toBe("password");
+    expect(mode({ NODE_ENV: "production", BLINK_AUTH_MODE: "switcher", BLINK_ALLOW_SWITCHER: "1" })).toBe("switcher");
+    expect(mode({ NODE_ENV: "production", BLINK_AUTH_MODE: "switcher", BLINK_ALLOW_SWITCHER: "true" })).toBe("password");
+  });
+
+  it("outside production the switcher is used only when asked for", () => {
+    expect(mode({ NODE_ENV: "development", BLINK_AUTH_MODE: "switcher" })).toBe("switcher");
+    expect(mode({ NODE_ENV: "test", BLINK_AUTH_MODE: "switcher" })).toBe("switcher");
+    expect(mode({ NODE_ENV: "development" })).toBe("password");
+    expect(mode({ NODE_ENV: "development", BLINK_AUTH_MODE: "Switcher" })).toBe("password");
+    expect(mode({ NODE_ENV: "development", BLINK_ALLOW_SWITCHER: "1" })).toBe("password");
+  });
+});
+
+describe("where sign-in may send you next", () => {
+  it("keeps a path on this site and turns anything else into the home page", () => {
+    expect(safeNextPath("/desktop")).toBe("/desktop");
+    expect(safeNextPath("/cases/case_1?tab=brief")).toBe("/cases/case_1?tab=brief");
+    for (const bad of [undefined, null, "", "desktop", "//evil.example", "/\\evil.example", "https://evil.example/", "/login", "/login?next=/x", ["/a", "/b"]]) {
+      expect(safeNextPath(bad as string | undefined)).toBe("/");
+    }
+  });
+});
+
 describe("seeding accounts", () => {
   const rows = () => Object.fromEntries(getDb().select().from(users).all().map((u) => [u.id, u]));
 
@@ -171,7 +222,7 @@ describe("seeding accounts", () => {
   });
 
   it("fails without echoing the value when BLINK_SEED_PASSWORDS is not a JSON object of strings", () => {
-    for (const bad of ["not json with secret-value", '["secret-value"]', '{"user_priya": 5}']) {
+    for (const bad of ["not json with secret-value", '["secret-value"]', '{"user_priya": 5}', '{"secret-value": "x"}', '{"user_priya": "secret-value", "user_mallory": "secret-value"}']) {
       process.env.BLINK_SEED_PASSWORDS = bad;
       let message = "";
       try {

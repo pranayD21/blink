@@ -1163,7 +1163,7 @@ git commit   # feat(auth): add password accounts and server-side sessions
 - In `password` mode: `POST /api/session/act-as` is 404; `requireSessionActor` and `pageActor` read `blink_session`; a page request with no valid session redirects to `/login?next=<path>`.
 - `optionalPageActor(): Promise<Actor | null>` in `src/server/auth/session.ts` never redirects. `AppHeader` uses it and shows only the name "Blink" when nobody is signed in, so `/login` and `/desktop/pill` cannot loop.
 
-- [ ] **Step 1: Write the failing tests**, switching mode with `vi.stubEnv`.
+- [x] **Step 1: Write the failing tests**, switching mode with `vi.stubEnv`.
 
 ```ts
 it("signing in sets an HttpOnly session and the session reaches the API", async () => { /* login as priya → 200; cookie attrs include HttpOnly and SameSite=Lax; GET /api/cases with that cookie → 200 */ });
@@ -1173,10 +1173,10 @@ it("a banker's session cannot be turned into a reviewer's by sending blink_user"
 it("in production the switcher needs an explicit allowance", () => { /* NODE_ENV production, BLINK_AUTH_MODE switcher, no BLINK_ALLOW_SWITCHER → authMode() is "password" */ });
 ```
 
-- [ ] **Step 2: Run it and see it fail.**
-- [ ] **Step 3: Implement.** Set `BLINK_AUTH_MODE: "switcher"` in `vitest.config.mts`; add `BLINK_AUTH_MODE=switcher` to the `dev` script and, with `BLINK_ALLOW_SWITCHER=1`, to `demo` and `e2e:serve`. The header shows the role switcher in `switcher` mode and an account menu with "Sign out" in `password` mode. The proxy only checks that a session cookie is present; the page's `pageActor()` does the real check and redirects.
-- [ ] **Step 4: Run the tests.** Run: `pnpm test && pnpm e2e`. Expected: PASS.
-- [ ] **Step 5: Commit.**
+- [x] **Step 2: Run it and see it fail.**
+- [x] **Step 3: Implement.** Set `BLINK_AUTH_MODE: "switcher"` in `vitest.config.mts`; add `BLINK_AUTH_MODE=switcher` to the `dev` script and, with `BLINK_ALLOW_SWITCHER=1`, to `demo` and `e2e:serve`. The header shows the role switcher in `switcher` mode and an account menu with "Sign out" in `password` mode. The proxy only checks that a session cookie is present; the page's `pageActor()` does the real check and redirects.
+- [x] **Step 4: Run the tests.** Run: `pnpm test && pnpm e2e`. Expected: PASS.
+- [x] **Step 5: Commit.**
 
 ```bash
 git add src/server/auth src/app/api/session src/app/login src/components/app src/proxy.ts vitest.config.mts package.json .env.example tests/services/api.test.ts tests/services/auth.test.ts

@@ -5,19 +5,26 @@
  */
 import { eq } from "drizzle-orm";
 import { NextRequest } from "next/server";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-const session: { user: string | null; set: [string, string][] } = { user: null, set: [] };
+const session: { user: string | null; token: string | null; path: string | null; set: [string, string][] } = { user: null, token: null, path: null, set: [] };
 vi.mock("next/headers", () => ({
   cookies: async () => ({
-    get: (name: string) => (name === "blink_user" && session.user ? { name, value: session.user } : undefined),
+    get: (name: string) => {
+      if (name === "blink_user" && session.user) return { name, value: session.user };
+      if (name === "blink_session" && session.token) return { name, value: session.token };
+      return undefined;
+    },
     set: (name: string, value: string) => {
       session.set.push([name, value]);
     },
   }),
+  headers: async () => new Headers(session.path ? { "x-blink-path": session.path } : {}),
 }));
 
 import { POST as actAs } from "@/app/api/session/act-as/route";
+import { POST as login } from "@/app/api/session/login/route";
+import { POST as logout } from "@/app/api/session/logout/route";
 import { GET as getAnalystBriefs } from "@/app/api/analyst/briefs/route";
 import { GET as getAnalystRelease } from "@/app/api/analyst/releases/[id]/route";
 import { GET as getAudit } from "@/app/api/audit/route";
@@ -29,8 +36,10 @@ import { GET as getCases, POST as postCase } from "@/app/api/cases/route";
 import { POST as postEvent } from "@/app/api/findings/[id]/events/route";
 import { GET as getJobRoute } from "@/app/api/jobs/[id]/route";
 import { POST as approvePolicyRoute } from "@/app/api/policies/[versionId]/approve/route";
+import { hashPassword } from "@/server/auth/password";
+import { optionalPageActor, pageActor } from "@/server/auth/session";
 import { getDb } from "@/server/db/client";
-import { decisions, jobs, releases, users } from "@/server/db/schema";
+import { authSessions, decisions, jobs, loginAttempts, releases, users } from "@/server/db/schema";
 import { getBrief } from "@/server/services/briefs";
 import { CASE, G1, G2, G3, RATIONALE, approve, completeReview, draftTemplate, findingOn, release, seedAnalyzed } from "../helpers/db";
 
@@ -47,7 +56,12 @@ async function call<P>(handler: Handler<P>, as: string | null, init: { method?: 
 
 beforeEach(async () => {
   session.set = [];
+  session.token = null;
+  session.path = null;
   await seedAnalyzed();
+});
+afterEach(() => {
+  vi.unstubAllEnvs();
 });
 
 describe("session", () => {
@@ -57,12 +71,140 @@ describe("session", () => {
     expect(res.json.error).toMatchObject({ code: "NO_SESSION" });
   });
 
+  it("in switcher mode a page falls back to the default demo user and never redirects", async () => {
+    session.user = null;
+    expect((await pageActor()).id).toBe("user_marcus");
+    expect((await optionalPageActor())?.id).toBe("user_marcus");
+    session.user = "user_priya";
+    expect((await pageActor()).id).toBe("user_priya");
+  });
+
   it("act-as sets the cookie for a seeded user and refuses an unknown one", async () => {
     const ok = await call(actAs, null, { method: "POST", body: { userId: "user_jordan" } });
     expect(ok.status).toBe(200);
     expect(ok.json.user).toMatchObject({ id: "user_jordan", role: "senior_reviewer", roleLabel: "Senior compliance officer" });
     expect(session.set).toEqual([["blink_user", "user_jordan"]]);
     expect((await call(actAs, null, { method: "POST", body: { userId: "user_mallory" } })).status).toBe(401);
+  });
+});
+
+/** A sign-in through the real route. The response's own Set-Cookie header is read, not the mock. */
+async function signIn(email: string, password: string, cookie?: string) {
+  const headers: Record<string, string> = { "content-type": "application/json" };
+  if (cookie) headers.cookie = cookie;
+  const res = await login(new NextRequest("http://localhost/api/session/login", { method: "POST", headers, body: JSON.stringify({ email, password }) }));
+  const setCookie = res.headers.get("set-cookie") ?? "";
+  const token = /blink_session=([^;]*)/.exec(setCookie)?.[1] ?? null;
+  return { status: res.status, setCookie, token, json: (await res.json()) as { user?: { id: string; role: string }; error?: { code: string; message: string } } };
+}
+
+describe("signing in (password mode)", () => {
+  const PASSWORD = "priya-test-password";
+  beforeEach(() => {
+    vi.stubEnv("BLINK_AUTH_MODE", "password");
+    getDb().update(users).set({ passwordHash: hashPassword(PASSWORD) }).where(eq(users.id, "user_priya")).run();
+  });
+
+  it("signing in sets an HttpOnly session and the session reaches the API", async () => {
+    const res = await signIn("priya@blink.demo", PASSWORD);
+    expect(res.status).toBe(200);
+    expect(res.json.user).toMatchObject({ id: "user_priya", role: "analyst" });
+    expect(res.token).toMatch(/^[A-Za-z0-9_-]{43}$/);
+    expect(res.setCookie).toMatch(/HttpOnly/i);
+    expect(res.setCookie).toMatch(/SameSite=Lax/i);
+    expect(res.setCookie).toMatch(/Path=\//);
+    expect(res.setCookie).toMatch(/Max-Age=43200/);
+    expect(res.setCookie).not.toMatch(/Secure/i); // only in production
+    expect(JSON.stringify(res.json)).not.toContain(res.token!);
+
+    expect((await call(getCases, null)).status).toBe(401);
+    session.token = res.token;
+    expect((await call(getCases, null)).status).toBe(200);
+  });
+
+  it("the cookie is Secure in production", async () => {
+    vi.stubEnv("NODE_ENV", "production");
+    expect((await signIn("priya@blink.demo", PASSWORD)).setCookie).toMatch(/Secure/i);
+  });
+
+  it("the email is matched without regard to case or surrounding spaces", async () => {
+    expect((await signIn("  Priya@Blink.Demo ", PASSWORD)).status).toBe(200);
+  });
+
+  it("a wrong password and an unknown email give the same answer", async () => {
+    const wrong = await signIn("priya@blink.demo", "not-the-password");
+    const unknown = await signIn("nobody@blink.demo", PASSWORD);
+    const noPassword = await signIn("marcus@blink.demo", "anything");
+    for (const res of [wrong, unknown, noPassword]) {
+      expect(res.status).toBe(401);
+      expect(res.json.error!.code).toBe("BAD_CREDENTIALS");
+      expect(res.token).toBeNull();
+    }
+    expect(unknown.json.error!.message).toBe(wrong.json.error!.message);
+    expect(noPassword.json.error!.message).toBe(wrong.json.error!.message);
+  });
+
+  it("five failures lock the email out, even for the right password", async () => {
+    for (let i = 0; i < 5; i++) expect((await signIn("priya@blink.demo", "wrong")).status).toBe(401);
+    const locked = await signIn("priya@blink.demo", PASSWORD);
+    expect(locked.status).toBe(429);
+    expect(locked.json.error!.code).toBe("TOO_MANY_ATTEMPTS");
+    expect(locked.token).toBeNull();
+  });
+
+  it("an over-long email is refused before anything is recorded", async () => {
+    const res = await signIn(`${"a".repeat(250)}@blink.demo`, PASSWORD);
+    expect(res.status).toBe(400);
+    expect(getDb().select().from(loginAttempts).all()).toHaveLength(0);
+  });
+
+  it("the role switcher is gone in password mode", async () => {
+    expect((await call(actAs, null, { method: "POST", body: { userId: "user_marcus" } })).status).toBe(404);
+    expect(session.set).toEqual([]);
+  });
+
+  it("a banker's session cannot be turned into a reviewer's by sending blink_user", async () => {
+    session.token = (await signIn("priya@blink.demo", PASSWORD)).token;
+    const workspace = await call(getWorkspace, "marcus", { params: { id: CASE } });
+    expect(workspace.status).toBe(403);
+    // And blink_user alone is no session at all.
+    session.token = null;
+    expect((await call(getWorkspace, "marcus", { params: { id: CASE } })).status).toBe(401);
+  });
+
+  it("signing out ends the session and clears the cookie", async () => {
+    const { token } = await signIn("priya@blink.demo", PASSWORD);
+    const res = await logout(new NextRequest("http://localhost/api/session/logout", { method: "POST", headers: { cookie: `blink_session=${token}` } }));
+    expect(res.status).toBe(200);
+    expect(res.headers.get("set-cookie")).toMatch(/blink_session=;.*Max-Age=0/i);
+    session.token = token;
+    expect((await call(getCases, null)).status).toBe(401);
+    expect(getDb().select().from(authSessions).all()).toHaveLength(0);
+  });
+
+  it("a page with no valid session sends the visitor to sign in and back", async () => {
+    session.path = "/desktop";
+    session.user = "user_marcus";
+    const digest = await pageActor().then(
+      () => "no redirect",
+      (e: { digest?: string }) => e.digest ?? String(e),
+    );
+    expect(digest).toMatch(/^NEXT_REDIRECT;[a-z]+;\/login\?next=%2Fdesktop;/);
+    expect(await optionalPageActor()).toBeNull();
+
+    session.token = (await signIn("priya@blink.demo", PASSWORD)).token;
+    expect((await pageActor()).id).toBe("user_priya");
+    expect((await optionalPageActor())?.id).toBe("user_priya");
+  });
+
+  it("signing in again replaces the browser's earlier session", async () => {
+    const first = await signIn("priya@blink.demo", PASSWORD);
+    const second = await signIn("priya@blink.demo", PASSWORD, `blink_session=${first.token}`);
+    expect(second.status).toBe(200);
+    session.token = first.token;
+    expect((await call(getCases, null)).status).toBe(401);
+    session.token = second.token;
+    expect((await call(getCases, null)).status).toBe(200);
   });
 });
 

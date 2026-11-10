@@ -98,6 +98,12 @@ function seedPasswords(): Record<string, string> {
   if (!parsed || typeof parsed !== "object" || Array.isArray(parsed) || !Object.values(parsed).every((v) => typeof v === "string" && v.length > 0)) {
     throw new Error('BLINK_SEED_PASSWORDS must be a JSON object of non-empty strings keyed by user id, like {"user_priya": "..."}');
   }
+  // A key that is not a demo user is a typo (or a password pasted as a key), so it is named by count, never quoted.
+  const known = new Set(DEMO_USERS.map((u) => u.id));
+  const unknown = Object.keys(parsed).filter((k) => !known.has(k)).length;
+  if (unknown > 0) {
+    throw new Error(`BLINK_SEED_PASSWORDS has ${unknown} key${unknown === 1 ? "" : "s"} that ${unknown === 1 ? "is" : "are"} not a demo user id; the ids are ${[...known].join(", ")}`);
+  }
   return parsed as Record<string, string>;
 }
 

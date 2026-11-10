@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { DEMO_USERS } from "@/server/auth/actor";
-import { pageActor } from "@/server/auth/session";
+import { authMode } from "@/server/auth/mode";
+import { optionalPageActor } from "@/server/auth/session";
 import { llmMode } from "@/server/llm/client";
+import { AccountMenu } from "./account-menu";
 import { NavLinks } from "./nav-links";
 import { RoleSwitcher } from "./role-switcher";
 import { StatusDot } from "./status-dot";
@@ -31,13 +33,32 @@ const NAV: Record<string, { href: string; label: string }[]> = {
   ],
 };
 
+const HEADER_CLASS = "sticky top-0 z-40 flex h-12 shrink-0 items-center gap-4 border-b bg-background px-4";
+const BRAND_CLASS = "flex items-center gap-2 font-semibold tracking-tight text-foreground";
+const Mark = () => <span className="grid size-6 place-items-center rounded-md bg-primary text-[13px] font-bold text-primary-foreground">B</span>;
+
+/**
+ * Never redirects, so the sign-in page cannot loop. With nobody signed in (password mode, on the
+ * sign-in page) it shows only the name. Otherwise the role switcher in switcher mode, or the
+ * signed-in account with "Sign out" in password mode.
+ */
 export async function AppHeader() {
-  const actor = await pageActor();
+  const actor = await optionalPageActor();
+  if (!actor) {
+    return (
+      <header className={HEADER_CLASS}>
+        <span className={BRAND_CLASS}>
+          <Mark />
+          Blink
+        </span>
+      </header>
+    );
+  }
   const mode = llmMode();
   return (
-    <header className="sticky top-0 z-40 flex h-12 shrink-0 items-center gap-4 border-b bg-background px-4">
-      <Link href="/" className="flex items-center gap-2 font-semibold tracking-tight text-foreground">
-        <span className="grid size-6 place-items-center rounded-md bg-primary text-[13px] font-bold text-primary-foreground">B</span>
+    <header className={HEADER_CLASS}>
+      <Link href="/" className={BRAND_CLASS}>
+        <Mark />
         Blink
       </Link>
       <NavLinks links={NAV[actor.role] ?? NAV.reviewer} />
@@ -55,7 +76,7 @@ export async function AppHeader() {
         <span data-testid="synthetic-pill" className="text-xs text-muted-foreground">
           <StatusDot tone="warn">Synthetic data</StatusDot>
         </span>
-        <RoleSwitcher current={actor} users={[...DEMO_USERS]} />
+        {authMode() === "switcher" ? <RoleSwitcher current={actor} users={[...DEMO_USERS]} /> : <AccountMenu current={actor} />}
       </div>
     </header>
   );
