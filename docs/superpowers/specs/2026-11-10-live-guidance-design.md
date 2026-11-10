@@ -141,7 +141,9 @@ Mac app                                    Blink server                    Mac a
 
 **On using a small model as a classifier (owner asked).** This is that, in the form that keeps Blink explainable. The model classifies each turn into fixed categories; code turns the categories into "nothing", "steer away" or "move on". A model trained to output "move on" directly was considered and rejected for now, for three reasons: there is no real labeled data to train it on ([section 11](#11-honest-testing)); it would bake in one firm's policy, and policies differ per firm; and it could not say why it fired, which breaks the observability goal. Once real calls accumulate, the recorded decisions are training data for exactly such a model, used as a first-pass filter. That is future work.
 
-**Model choice.** Measured on day one, not assumed. Candidates: `claude-haiku-5-5` with thinking off, low effort and the fixed part of the prompt cached; and, if the owner approves one, an open model on a fast host that has a free plan ([section 10](#10-services)). Pick by measured 95th-percentile time and by agreement with the after-call reader on the development test calls. If nothing is measured, use Haiku 5.5, since the key already exists. The after-call reader stays on `claude-opus-5-5`.
+**Model choice.** The live reader is `claude-haiku-5-5`, with thinking off, low effort and the fixed part of the prompt cached. It runs on the key the owner already has. Day one measures its time from the end of a sentence to a decision against the target in [section 4](#4-what-the-banker-sees). The after-call reader stays on `claude-opus-5-5`.
+
+A second candidate was considered and put in the backlog by the owner on 2026-11-10: an open model served by Groq, a company that hosts open models on very fast hardware and has a free plan. It is worth trying only if Haiku 5.5 misses the speed target. (Groq is not Grok, the chatbot from xAI; the names are easily confused.)
 
 **When something goes wrong.** A turn the reader cannot finish in 2.5 seconds is recorded as "not read live" and is covered by the after-call read. A model refusal is treated the same way. A dropped transcription connection reconnects; the gap is recorded with its start, end and cause, the pill shows "Blink can't hear the call" while it lasts, and the missed audio is not silently skipped in the record.
 
@@ -191,7 +193,7 @@ The owner approved Deepgram and Railway on 2026-11-10, with one condition: **eve
 | Hosting | Railway | A 30-day trial with $5 of credit and no card. 1 GB of memory, a 0.5 GB disk. | One service running the web app and the worker together, with one persistent disk. The trial covers the finals. Afterwards the free plan gives $1 a month, which will not keep the app running. Deploy late and keep memory low: a service holding 1 GB all month would use the $5 in about 15 days. |
 | Database | SQLite on that disk | Included | Owner: "if SQLite is already on Railway, I guess it works." Supabase would mean rewriting every database call for no visible change. |
 | Models | Anthropic API | **Not free.** | The one paid item, on the owner's existing key. Haiku 5.5 live, Opus 5.5 after the call. A few cents for the live path of a call; under fifty cents for the after-call read. |
-| Fast model host | Not chosen | Cerebras gives its credit only with a payment method on file, so it is out. | The day-one comparison uses a host with a free plan and no card, such as Groq, or is skipped. Not approved by the owner yet. |
+| A faster host for the live reader | None. Backlog. | Groq has a free plan with no card. Cerebras gives its credit only with a payment method on file, so it is out. | Owner: "Keep it in the backlog." No account is created unless Haiku 5.5 proves too slow. |
 
 **Accounts, as of 2026-11-10.** Both were created at the owner's request, under the owner's personal Google account, with no card.
 
@@ -245,7 +247,7 @@ Without In Practise's permission there is no fair real "should stay quiet" set, 
 
 ## 12. Order of work, and what gets cut
 
-**Day one is a spike** on the owner's Mac, and its code may be thrown away. It answers three questions: can the Mac app hear both sides of a call in Zoom; does the pill float above Zoom; how long from the end of a sentence to a decision, with each candidate model. The owner's hands are needed for a few minutes, to grant permissions and speak into a call.
+**Day one is a spike** on the owner's Mac, and its code may be thrown away. It answers three questions: can the Mac app hear both sides of a call in Zoom; does the pill float above Zoom; how long from the end of a sentence to a decision. The owner's hands are needed for a few minutes, to grant permissions and speak into a call.
 
 Then, in order:
 
@@ -272,6 +274,15 @@ The demo on the 19th is a real call between two people, with Blink running live.
 - **The banker's view:** a banker now reads the released transcript as well as the summary.
 - **Section 15, design language:** replaced by [section 9](#9-the-look).
 - **Section 19, demo script:** to be rewritten around a live call once the live path works.
+
+### Backlog
+
+Not part of this work. Kept so the ideas are not lost.
+
+- Groq as a faster host for the live reader, if Haiku 5.5 misses the speed target.
+- A small trained classifier as a first-pass filter, trained on the decisions Blink records ([section 6](#6-how-the-live-path-works)).
+- A Windows version of the banker's app.
+- Single sign-on.
 
 ## 14. Left to the builder
 
