@@ -174,7 +174,12 @@ describe("signing in (password mode)", () => {
 
   it("signing out ends the session and clears the cookie", async () => {
     const { token } = await signIn("priya@blink.demo", PASSWORD);
-    const res = await logout(new NextRequest("http://localhost/api/session/logout", { method: "POST", headers: { cookie: `blink_session=${token}` } }));
+    const formPost = await logout(new NextRequest("http://localhost/api/session/logout", { method: "POST", headers: { cookie: `blink_session=${token}`, "content-type": "application/x-www-form-urlencoded" } }));
+    expect(formPost.status).toBe(415);
+    session.token = token;
+    expect((await call(getCases, null)).status).toBe(200);
+
+    const res = await logout(new NextRequest("http://localhost/api/session/logout", { method: "POST", headers: { cookie: `blink_session=${token}`, "content-type": "application/json" }, body: "{}" }));
     expect(res.status).toBe(200);
     expect(res.headers.get("set-cookie")).toMatch(/blink_session=;.*Max-Age=0/i);
     session.token = token;

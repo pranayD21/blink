@@ -3,6 +3,8 @@
  * is a random token of which only the SHA-256 is kept, and five failures lock an email out for a while.
  * No assertion message here prints a password or a token.
  */
+import { readFileSync, readdirSync } from "node:fs";
+import { join } from "node:path";
 import { eq } from "drizzle-orm";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { safeNextPath } from "@/lib/session";
@@ -182,9 +184,28 @@ describe("where sign-in may send you next", () => {
   it("keeps a path on this site and turns anything else into the home page", () => {
     expect(safeNextPath("/desktop")).toBe("/desktop");
     expect(safeNextPath("/cases/case_1?tab=brief")).toBe("/cases/case_1?tab=brief");
-    for (const bad of [undefined, null, "", "desktop", "//evil.example", "/\\evil.example", "https://evil.example/", "/login", "/login?next=/x", ["/a", "/b"]]) {
+    for (const bad of [undefined, null, "", "desktop", "//evil.example", "/\\evil.example", "https://evil.example/", "/\t/evil.example", "/\n/evil.example", "/\r/evil.example", decodeURIComponent("/%09/evil.example"), "/a\u0000b", "/a\u007fb", "/login", "/login?next=/x", ["/a", "/b"]]) {
       expect(safeNextPath(bad as string | undefined)).toBe("/");
     }
+  });
+});
+
+describe("every page checks the session itself", () => {
+  // The proxy only sees that a cookie exists; pageActor() is what refuses a stale or forged one.
+  const PUBLIC = new Set(["login/page.tsx", "desktop/pill/page.tsx"]);
+  const pages = readdirSync("src/app", { recursive: true, encoding: "utf8" })
+    .map((f) => f.split("\\").join("/"))
+    .filter((f) => f === "page.tsx" || f.endsWith("/page.tsx"))
+    .sort();
+
+  it("finds the pages, including the public ones", () => {
+    expect(pages.length).toBeGreaterThan(10);
+    for (const p of PUBLIC) expect(pages).toContain(p);
+  });
+
+  it("each page except /login and /desktop/pill calls pageActor", () => {
+    const missing = pages.filter((p) => !PUBLIC.has(p) && !/\bpageActor\(/.test(readFileSync(join("src/app", p), "utf8")));
+    expect(missing).toEqual([]);
   });
 });
 

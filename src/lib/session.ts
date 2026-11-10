@@ -17,12 +17,23 @@ export const PATH_HEADER = "x-blink-path";
 
 export const LOGIN_PATH = "/login";
 
+const LOCAL_ORIGIN = "http://local.invalid";
+
 /**
- * Where to go after signing in: a path on this site, or the home page. Anything that a browser could
- * read as another host (`//host`, `/\host`, a full URL) is refused, and so is the sign-in page itself.
+ * Where to go after signing in: a path on this site, or the home page. `next` is resolved the way a
+ * browser would resolve it, against a dummy origin, and refused unless it stays on that origin, so
+ * `//host`, `/\\host`, a full URL, or one hidden behind a tab or newline (which URL parsing strips)
+ * cannot leave the site. Control characters are refused outright, and so is the sign-in page itself.
  */
 export function safeNextPath(next: string | string[] | undefined | null): string {
-  if (typeof next !== "string" || !next.startsWith("/") || next.startsWith("//") || next.includes("\\")) return "/";
-  if (next === LOGIN_PATH || next.startsWith(`${LOGIN_PATH}?`) || next.startsWith(`${LOGIN_PATH}/`)) return "/";
-  return next;
+  if (typeof next !== "string" || !next.startsWith("/") || /[\u0000-\u001f\u007f\\]/.test(next)) return "/";
+  let url: URL;
+  try {
+    url = new URL(next, LOCAL_ORIGIN);
+  } catch {
+    return "/";
+  }
+  if (url.origin !== LOCAL_ORIGIN) return "/";
+  if (url.pathname === LOGIN_PATH || url.pathname.startsWith(`${LOGIN_PATH}/`)) return "/";
+  return `${url.pathname}${url.search}${url.hash}`;
 }

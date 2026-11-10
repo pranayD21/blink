@@ -44,7 +44,12 @@ async function switcherActor(): Promise<Actor> {
   }
 }
 
-/** For pages. In password mode a request with no valid session is sent to sign in, and back here afterwards. */
+/**
+ * For pages. In password mode a request with no valid session is sent to sign in, and back here
+ * afterwards. Every page except `/login` and `/desktop/pill` must call this before it reads any
+ * data: the proxy only checks that a session cookie exists, not that it is valid. A test in
+ * `tests/services/auth.test.ts` fails for a page that does not.
+ */
 export async function pageActor(): Promise<Actor> {
   if (authMode() === "switcher") return switcherActor();
   const actor = await signedInActor();
