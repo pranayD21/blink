@@ -35,7 +35,7 @@ export function GlassNav({ links }: { links: { href: string; label: string }[] }
       {links.map((link) => {
         const on = active(link.href);
         return (
-          <Link key={link.href} href={link.href} data-active={on} className={on ? "relative z-10 px-3.5 py-1.5 text-foreground" : "relative z-10 px-3.5 py-1.5 text-muted-foreground"}>
+          <Link key={link.href} href={link.href} data-active={on} className={on ? "glass-press relative z-10 px-3.5 py-1.5 text-foreground" : "glass-press relative z-10 px-3.5 py-1.5 text-muted-foreground"}>
             {link.label}
           </Link>
         );

@@ -49,7 +49,7 @@ export async function AppHeader() {
   if (!actor) {
     return (
       <header className={HEADER_CLASS}>
-        <Link href="/" className="text-foreground" aria-label="Blink home">
+        <Link href="/" className="glass-press text-foreground" aria-label="Blink home">
           <BlinkMark />
         </Link>
       </header>
@@ -58,7 +58,7 @@ export async function AppHeader() {
   const mode = llmMode();
   return (
     <header className={HEADER_CLASS}>
-      <Link href="/" className="text-foreground" aria-label="Blink home">
+      <Link href="/" className="glass-press text-foreground" aria-label="Blink home">
         <BlinkMark />
       </Link>
       <GlassNav links={NAV[actor.role] ?? NAV.reviewer} />
