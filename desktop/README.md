@@ -22,4 +22,8 @@ Always run the packaged app, never `electron .`: macOS credits the system-audio 
 
 `BLINK_URL` (or `--server=<url>`) names the Blink server; the default is `http://localhost:3000`. For example: `open -n desktop/out/Blink-darwin-arm64/Blink.app --args --server=https://blink.example.com`.
 
+macOS asks again for microphone and system-audio permission after each rebuild, because ad-hoc signing gives the app a new identity every time.
+
+Closing the control window quits the app, so the pill never stays on screen without it.
+
 macOS 14.2 or later. Apple silicon only.

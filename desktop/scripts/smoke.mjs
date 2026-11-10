@@ -32,12 +32,13 @@ for (const line of run.stdout.split("\n")) {
 }
 if (!parsed) fail("no JSON line with a pill in the output");
 
+// The first five pill fields and the control URL are the plan's contract; the rest pin the window rules.
 const expected = {
-  pill: { alwaysOnTop: true, ignoresMouse: true, width: 600, height: 56, centred: true },
+  pill: { alwaysOnTop: true, ignoresMouse: true, width: 600, height: 56, centred: true, visible: false, top: 8 },
   control: { url: `${baseUrl}/desktop` },
+  navigation: { offOriginRefused: true, onOriginAllowed: true },
 };
-const same = JSON.stringify(parsed.pill) === JSON.stringify(expected.pill) &&
-  JSON.stringify(parsed.control) === JSON.stringify(expected.control);
+const same = Object.keys(expected).every((key) => JSON.stringify(parsed[key]) === JSON.stringify(expected[key]));
 if (!same) fail(`unexpected values\n  got:      ${JSON.stringify(parsed)}\n  expected: ${JSON.stringify(expected)}`);
 
 console.log(`desktop smoke ok: ${JSON.stringify(parsed)}`);

@@ -6,7 +6,7 @@ export default defineConfig({
     alias: { "@": fileURLToPath(new URL("./src", import.meta.url)) },
   },
   test: {
-    include: ["tests/core/**/*.test.ts", "tests/services/**/*.test.ts"],
+    include: ["tests/core/**/*.test.ts", "tests/services/**/*.test.ts", "tests/desktop/**/*.test.ts"],
     environment: "node",
     // Unit and service tests must never reach the network (§18.1).
     env: { BLINK_LLM_MODE: "replay", BLINK_DB_PATH: ":memory:" },
