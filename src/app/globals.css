@@ -7,9 +7,10 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: "Inter Variable", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-sans: var(--font-instrument-sans), "Avenir Next", "Segoe UI", sans-serif;
+  --font-serif: var(--font-instrument-serif), "Iowan Old Style", Palatino, serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  --font-heading: "Inter Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-heading: var(--font-instrument-serif), "Iowan Old Style", Palatino, serif;
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -54,36 +55,36 @@
 }
 
 :root {
-  /* Quiet and monochrome. Colour is kept for status: warning, destructive and success. */
-  --background: #ffffff;
-  --foreground: #0b0b0c;
-  --card: #ffffff;
-  --card-foreground: #0b0b0c;
-  --popover: #ffffff;
-  --popover-foreground: #0b0b0c;
-  --primary: #0b0b0c;
-  --primary-foreground: #ffffff;
-  --secondary: #f4f4f5;
-  --secondary-foreground: #0b0b0c;
-  --muted: #f4f4f5;
-  --muted-foreground: #6b6b70;
-  --accent: #f4f4f5;
-  --accent-foreground: #0b0b0c;
+  /* Warm paper, not a blank white page. Colour stays reserved for status. */
+  --background: #f3f0e8;
+  --foreground: #1c1914;
+  --card: #faf7f1;
+  --card-foreground: #1c1914;
+  --popover: #faf7f1;
+  --popover-foreground: #1c1914;
+  --primary: #1c1914;
+  --primary-foreground: #f3f0e8;
+  --secondary: #e7e1d4;
+  --secondary-foreground: #1c1914;
+  --muted: #e7e1d4;
+  --muted-foreground: #5c574e;
+  --accent: #e7e1d4;
+  --accent-foreground: #1c1914;
   --warning: #d97706;
   --warning-foreground: #ffffff;
   --destructive: #dc2626;
   --destructive-foreground: #ffffff;
   --success: #059669;
   --success-foreground: #ffffff;
-  --border: #e6e6e9;
-  --input: #d4d4d8;
-  --ring: #a1a1aa;
+  --border: #d9d2c3;
+  --input: #c9c1b0;
+  --ring: #8a8376;
   --chart-1: #0b0b0c;
   --chart-2: #6b6b70;
   --chart-3: #a1a1aa;
   --chart-4: #d4d4d8;
   --chart-5: #e6e6e9;
-  --radius: 10px;
+  --radius: 6px;
   --sidebar: #f4f4f5;
   --sidebar-foreground: #0b0b0c;
   --sidebar-primary: #0b0b0c;
@@ -95,29 +96,29 @@
 }
 
 .dark {
-  --background: #0b0b0c;
-  --foreground: #ededee;
-  --card: #101011;
-  --card-foreground: #ededee;
-  --popover: #141415;
-  --popover-foreground: #ededee;
-  --primary: #ededee;
-  --primary-foreground: #0b0b0c;
-  --secondary: #1a1a1c;
-  --secondary-foreground: #ededee;
-  --muted: #151516;
-  --muted-foreground: #8a8a90;
-  --accent: #1a1a1c;
-  --accent-foreground: #ededee;
+  --background: #141310;
+  --foreground: #ece6da;
+  --card: #1c1b17;
+  --card-foreground: #ece6da;
+  --popover: #1c1b17;
+  --popover-foreground: #ece6da;
+  --primary: #ece6da;
+  --primary-foreground: #141310;
+  --secondary: #26241f;
+  --secondary-foreground: #ece6da;
+  --muted: #26241f;
+  --muted-foreground: #a39c90;
+  --accent: #26241f;
+  --accent-foreground: #ece6da;
   --warning: #f5a524;
   --warning-foreground: #0b0b0c;
   --destructive: #ef4444;
   --destructive-foreground: #0b0b0c;
   --success: #2fb37a;
   --success-foreground: #0b0b0c;
-  --border: #232326;
-  --input: #2e2e32;
-  --ring: #56565c;
+  --border: #322f29;
+  --input: #3a362f;
+  --ring: #8a8376;
   --chart-1: #ededee;
   --chart-2: #8a8a90;
   --chart-3: #56565c;
@@ -155,4 +156,101 @@
 }
 .flash-once {
   animation: blink-flash 1.4s ease-out 1;
+}
+
+/* A slow wash behind the sign-in page and the live trace. Two inks, no extra colours. */
+.aurora-field {
+  position: absolute;
+  inset: -12%;
+  pointer-events: none;
+  background-image: repeating-linear-gradient(
+    104deg,
+    transparent 0%,
+    color-mix(in srgb, var(--foreground) 7%, transparent) 14%,
+    transparent 28%,
+    color-mix(in srgb, var(--warning) 14%, transparent) 42%,
+    transparent 56%
+  );
+  background-size: 220% 220%;
+  animation: aurora-shift 72s linear infinite;
+  filter: blur(36px);
+  opacity: 0.85;
+}
+
+@keyframes aurora-shift {
+  from { background-position: 0% 40%; }
+  to { background-position: 100% 60%; }
+}
+
+.glass-button {
+  border: 1px solid color-mix(in srgb, var(--foreground) 16%, transparent);
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--foreground) 5%, transparent);
+  backdrop-filter: blur(10px);
+}
+
+.glass-button:disabled {
+  opacity: 0.5;
+}
+
+.glass-button-sheen {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow:
+    inset 1px 1px 0 color-mix(in srgb, var(--foreground) 18%, transparent),
+    inset -1px -1px 0 color-mix(in srgb, var(--background) 40%, transparent);
+  backdrop-filter: url("#container-glass");
+}
+
+.auth-field {
+  display: block;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--foreground) 4%, transparent);
+}
+
+.auth-field:focus-within {
+  border-color: var(--ring);
+}
+
+.auth-input {
+  width: 100%;
+  background: transparent;
+  padding: 0.8rem 0.9rem;
+  font-size: 0.875rem;
+  outline: none;
+}
+
+.agent-dot,
+.agent-mark {
+  width: 6px;
+  height: 6px;
+  flex: none;
+  background: var(--foreground);
+}
+
+[data-tone="warn"] .agent-dot,
+[data-tone="warn"] .agent-mark {
+  background: var(--warning);
+}
+
+[data-tone="stop"] .agent-dot,
+[data-tone="stop"] .agent-mark {
+  background: var(--destructive);
+}
+
+.agent-mark {
+  animation: agent-breathe 1.8s ease-in-out infinite;
+}
+
+@keyframes agent-breathe {
+  50% { opacity: 0.2; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .aurora-field,
+  .agent-mark {
+    animation: none;
+  }
 }

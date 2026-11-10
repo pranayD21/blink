@@ -142,6 +142,12 @@ interface TurnBody {
 interface TurnReply {
   seq: number;
   pill: { level: PillLevel; text: string };
+  note?: string;
+}
+
+export interface AgentBeat {
+  text: string;
+  tone: "quiet" | "work" | "warn" | "stop";
 }
 
 interface OpenOutage {
@@ -178,6 +184,8 @@ export async function runCall(opts: {
   source: TurnSource | ((callId: string) => TurnSource);
   onView: (v: PillView) => void;
   onStage?: (stage: Stage, up: boolean) => void;
+  /** A line for the live trace. It never includes what anyone said. */
+  onBeat?: (beat: AgentBeat) => void;
 }): Promise<{ callId: string; end(): Promise<void> }> {
   const { call } = await api<{ call: { id: string } }>("/api/calls", { body: { caseId: opts.caseId } });
   const base = `/api/calls/${encodeURIComponent(call.id)}`;
@@ -261,11 +269,15 @@ export async function runCall(opts: {
   const postOutage = (stage: Stage, o: OpenOutage, endedAtMs: number | null) =>
     postRecord(`${stage} outage`, `${base}/outages`, { stage, startedAt: iso(o.startedAtMs), endedAt: endedAtMs === null ? null : iso(endedAtMs), cause: o.cause, shownToBanker: o.shownToBanker });
 
+  const beat = (text: string, tone: AgentBeat["tone"]) => opts.onBeat?.({ text, tone });
+
   const onStage = (stage: Stage, up: boolean, cause?: string) => {
     if (halted) return;
     const now = Date.now();
+    const audible = stage === "hearing" || stage === "transcribing";
     if (!up) {
       if (outages.has(stage)) return;
+      if (audible) beat("The call cannot be heard.", "warn");
       outages.set(stage, { startedAtMs: now, cause: cause ?? `${stage} stopped`, shownToBanker: false });
       dispatch({ type: "stage_down", stage, atMs: now });
       opts.onStage?.(stage, false);
@@ -273,6 +285,7 @@ export async function runCall(opts: {
     }
     const open = outages.get(stage);
     if (!open) return;
+    if (audible) beat("Hearing the call again.", "quiet");
     dispatch({ type: "tick", nowMs: now }); // settles shownToBanker up to this moment
     outages.delete(stage);
     dispatch({ type: "stage_up", stage });
@@ -292,6 +305,7 @@ export async function runCall(opts: {
   const sendTurn = async (body: TurnBody) => {
     const idempotencyKey = crypto.randomUUID(); // the same key on every retry of this turn
     let wait = RECONNECT_FIRST_MS;
+    beat("Reading this turn.", "work");
     while (!halted) {
       const abort = new AbortController();
       let timedOut = false;
@@ -313,6 +327,8 @@ export async function runCall(opts: {
           const receivedAtMs = Date.now();
           onStage("reading", true);
           dispatch({ type: "decision", level: reply.pill.level, atMs: receivedAtMs });
+          const failed = reply.note?.startsWith("The reader stopped") || reply.note?.startsWith("The read ran out of time");
+          beat(reply.note ?? "Checked against the policy. No rule applies.", reply.pill.level === "red" ? "stop" : reply.pill.level === "amber" || failed ? "warn" : "quiet");
           const shownAtMs = Date.now();
           void postRecord(`acknowledgement of turn ${body.seq}`, `${base}/acks`, { seq: body.seq, responseReceivedAt: iso(receivedAtMs), shownAt: iso(shownAtMs) });
           return;
@@ -360,6 +376,7 @@ export async function runCall(opts: {
   };
 
   dispatch({ type: "started" });
+  beat("Listening.", "quiet");
   originMs = Date.now();
   try {
     await source.start(onTurn, onStage);

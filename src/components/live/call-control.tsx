@@ -3,7 +3,9 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { StatusDot, type DotTone } from "@/components/app/status-dot";
+import { AgentTrace, type AgentBeat } from "@/components/live/agent-trace";
 import { Button } from "@/components/ui/button";
+import { LiquidButton } from "@/components/ui/liquid-glass-button";
 import type { PillView } from "@/core/live/client";
 import { STAGES, type Stage } from "@/core/live/health";
 import { api, errorMessage } from "@/lib/api";
@@ -48,6 +50,7 @@ export function CallControl({ banker, cases, source }: { banker: string; cases: 
   const [down, setDown] = useState<ReadonlySet<Stage>>(new Set());
   const [endedText, setEndedText] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [beats, setBeats] = useState<AgentBeat[]>([]);
   const channel = useRef<BroadcastChannel | null>(null);
   const call = useRef<{ end(): Promise<void> } | null>(null);
   const stopping = useRef(false);
@@ -66,6 +69,10 @@ export function CallControl({ banker, cases, source }: { banker: string; cases: 
     channel.current?.postMessage(view);
     window.blinkDesktop?.setPillVisible(view.level !== "idle");
     if (view.level === "ended") setEndedText(view.text);
+    if (view.level === "ended" || view.level === "broken") {
+      const tone: AgentBeat["tone"] = view.level === "broken" ? "warn" : "quiet";
+      setBeats((prev) => [...prev, { text: view.text, tone }].slice(-40));
+    }
   };
 
   const onStage = (stage: Stage, up: boolean) =>
@@ -99,6 +106,7 @@ export function CallControl({ banker, cases, source }: { banker: string; cases: 
   const start = async (caseId: string) => {
     setError(null);
     setEndedText(null);
+    setBeats([]);
     setDown(new Set());
     setActiveCase(caseId);
     setPhase("starting");
@@ -113,7 +121,13 @@ export function CallControl({ banker, cases, source }: { banker: string; cases: 
         turns = (callId) => liveTurnSource(callId);
       }
       window.blinkDesktop?.setPillVisible(true);
-      call.current = await runCall({ caseId, source: turns, onView: show, onStage });
+      call.current = await runCall({
+        caseId,
+        source: turns,
+        onView: show,
+        onStage,
+        onBeat: (beat) => setBeats((prev) => [...prev, beat].slice(-40)),
+      });
       setPhase("live");
       // A scripted call is over when its last turn is out.
       if (scriptDone) void scriptDone.then(stop);
@@ -130,7 +144,7 @@ export function CallControl({ banker, cases, source }: { banker: string; cases: 
   const tone = (stage: Stage): DotTone => (!busy ? "none" : down.has(stage) ? "warn" : "good");
 
   return (
-    <main className="flex flex-1 flex-col gap-4 p-5 text-sm">
+    <main className="flex min-h-0 flex-1 flex-col gap-4 p-5 text-sm">
       <header className="flex items-baseline justify-between gap-3">
         <h1 className="font-semibold text-foreground">Blink</h1>
         <span className="text-xs text-muted-foreground" data-testid="banker">
@@ -159,9 +173,9 @@ export function CallControl({ banker, cases, source }: { banker: string; cases: 
                   Stop
                 </Button>
               ) : (
-                <Button size="sm" data-testid={`start-call-${c.id}`} disabled={busy} onClick={() => void start(c.id)}>
+                <LiquidButton className="h-8 px-3 text-xs" data-testid={`start-call-${c.id}`} disabled={busy} onClick={() => void start(c.id)}>
                   Start
-                </Button>
+                </LiquidButton>
               )}
             </div>
           ))
@@ -191,6 +205,7 @@ export function CallControl({ banker, cases, source }: { banker: string; cases: 
           {error}
         </p>
       )}
+      <AgentTrace beats={beats} />
     </main>
   );
 }

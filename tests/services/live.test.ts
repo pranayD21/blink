@@ -79,6 +79,8 @@ describe("ingesting a turn", () => {
     const d = await feed(11);
     expect(d[4].pill).toEqual({ level: "listening", text: "Listening" }); // T5
     expect(d[10].pill).toEqual({ level: "red", text: "Sounds like inside information. Move on." }); // T11
+    expect(d[10].note).toBe("A rule is met. Move on.");
+    expect(d[10].note.toLowerCase()).not.toContain("dashboard");
     expect(claimRow("C1").flagged).toBe("review_required");
     expect(claimRow("C1").firstFlaggedSeq).toBe(5); // needs_context from T5, when the figure had no source yet
     expect(fromJson<string[]>(claimRow("C1").ruleIdsJson, [])).toContain("R1");

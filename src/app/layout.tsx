@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
-import "@fontsource-variable/inter";
+import { Instrument_Sans, Instrument_Serif } from "next/font/google";
 import "./globals.css";
+
+const sans = Instrument_Sans({ subsets: ["latin"], variable: "--font-instrument-sans", display: "swap" });
+const serif = Instrument_Serif({ subsets: ["latin"], weight: "400", variable: "--font-instrument-serif", display: "swap" });
 import { ThemeProvider } from "@/components/app/theme-provider";
 import { AppHeader } from "@/components/app/app-header";
 import { HeaderGate } from "@/components/app/header-gate";
@@ -18,7 +21,7 @@ export const dynamic = "force-dynamic";
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className="h-full antialiased" suppressHydrationWarning>
+    <html lang="en" className={`${sans.variable} ${serif.variable} h-full antialiased`} suppressHydrationWarning>
       <body className="flex min-h-full flex-col bg-background text-foreground">
         <ThemeProvider>
           <TooltipProvider delayDuration={200}>

@@ -15,9 +15,5 @@ export const metadata: Metadata = { title: "Sign in — Blink" };
 export default async function LoginPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const next = safeNextPath((await searchParams).next);
   if (authMode() === "switcher" || (await optionalPageActor())) redirect(next);
-  return (
-    <main className="flex flex-1 justify-center px-6 pt-24">
-      <LoginForm next={next} />
-    </main>
-  );
+  return <LoginForm next={next} />;
 }

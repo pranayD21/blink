@@ -13,6 +13,7 @@ import { turnHash } from "@/core/deps/hash";
 import { compareClaim, isComparable, toPublicMatchFact } from "@/core/evidence/compare";
 import type { GroundedClaim, GroundingIssue, GroundingTurn } from "@/core/extraction/ground";
 import type { LlmQuestionWire } from "@/core/extraction/schema";
+import { activityLine } from "@/core/live/activity";
 import { STAGES, type Stage } from "@/core/live/health";
 import { type MonitorMove, PILL_TEXT, type PillLevel, decidePill, endedText } from "@/core/live/pill";
 import { probeRuleIds } from "@/core/live/probe";
@@ -149,6 +150,8 @@ export const TurnSchema = z.strictObject({
 export interface TurnDecision {
   seq: number;
   pill: { level: PillLevel; text: string };
+  /** What the agent did, for the live trace. It never includes the words that were said. */
+  note: string;
   decidedAt: string;
   readStatus: "read" | "timeout" | "refused" | "error";
 }
@@ -178,7 +181,13 @@ const label = (seq: number) => `T${seq}`;
 
 const REVIEW_STATES: ReadonlySet<string> = new Set(["REVIEW_REQUIRED", "ESCALATION_REQUESTED"]);
 
-const decisionOf = (row: CallTurnRow): TurnDecision => ({ seq: row.seq, pill: { level: row.pill, text: PILL_TEXT[row.pill] }, decidedAt: row.decidedAt, readStatus: row.readStatus });
+const decisionOf = (row: CallTurnRow): TurnDecision => ({
+  seq: row.seq,
+  pill: { level: row.pill, text: PILL_TEXT[row.pill] },
+  note: activityLine({ readStatus: row.readStatus, level: row.pill, reason: row.pillReason, suppressed: row.suppressed }),
+  decidedAt: row.decidedAt,
+  readStatus: row.readStatus,
+});
 
 const toClaimRecord = (c: GroundedClaim): ClaimRecord => ({
   logicalKey: c.logicalKey,

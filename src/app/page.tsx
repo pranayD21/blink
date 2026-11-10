@@ -67,8 +67,8 @@ export default async function QueuePage() {
 
       <div className="mb-4 flex flex-wrap items-baseline gap-x-8 gap-y-1 border-y py-2.5 text-sm" data-testid="queue-figures">
         <Figure label="in review" value={String(summary.inReview)} />
-        <Figure label="average review time" value={summary.avgReviewMinutes === null ? "—" : `${summary.avgReviewMinutes} min`} note={reviewer ? null : "visible to compliance"} />
-        <Figure label="findings awaiting escalation" value={summary.awaitingEscalation === null ? "—" : String(summary.awaitingEscalation)} note={reviewer ? null : "visible to compliance"} />
+        {reviewer && <Figure label="average review time" value={summary.avgReviewMinutes === null ? "none" : `${summary.avgReviewMinutes} min`} />}
+        {reviewer && <Figure label="findings awaiting escalation" value={summary.awaitingEscalation === null ? "0" : String(summary.awaitingEscalation)} />}
       </div>
 
       <div className="overflow-hidden rounded-xl border bg-card">

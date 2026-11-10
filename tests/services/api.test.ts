@@ -24,6 +24,7 @@ vi.mock("next/headers", () => ({
 
 import { POST as actAs } from "@/app/api/session/act-as/route";
 import { POST as login } from "@/app/api/session/login/route";
+import { POST as register } from "@/app/api/session/register/route";
 import { POST as logout } from "@/app/api/session/logout/route";
 import { GET as getAnalystBriefs } from "@/app/api/analyst/briefs/route";
 import { GET as getAnalystRelease } from "@/app/api/analyst/releases/[id]/route";
@@ -450,6 +451,34 @@ describe("every request is checked for the case it touches", () => {
     expect(signOutRes.status).toBe(403);
     const sameSite = await logout(new NextRequest("http://localhost/api/session/logout", { method: "POST", headers: { ...headers, origin: "http://localhost" }, body: "{}" }));
     expect(sameSite.status).toBe(200);
+  });
+});
+
+describe("creating an account", () => {
+  async function openAccount(body: unknown) {
+    const res = await register(new NextRequest("http://localhost/api/session/register", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) }));
+    const setCookie = res.headers.get("set-cookie") ?? "";
+    return { status: res.status, setCookie, json: (await res.json()) as { user?: { name: string; role: string }; error?: { code: string } } };
+  }
+
+  it("opens a banker account, signs it in, and refuses a second one on the same email", async () => {
+    const created = await openAccount({ name: "Amina Shah", email: "Amina@Example.com", password: "a-long-password" });
+    expect(created.status).toBe(200);
+    expect(created.json.user).toMatchObject({ name: "Amina Shah", role: "analyst" });
+    expect(created.setCookie).toMatch(/blink_session=/);
+    expect(JSON.stringify(created.json)).not.toContain("a-long-password");
+
+    const again = await openAccount({ name: "Someone Else", email: "amina@example.com", password: "another-password" });
+    expect(again.status).toBe(409);
+    expect(again.json.error?.code).toBe("EMAIL_TAKEN");
+
+    const signedIn = await signIn("amina@example.com", "a-long-password");
+    expect(signedIn.status).toBe(200);
+    expect(signedIn.json.user?.role).toBe("analyst");
+  });
+
+  it("refuses a short password", async () => {
+    expect((await openAccount({ name: "Amina Shah", email: "short@example.com", password: "short" })).status).toBe(400);
   });
 });
 

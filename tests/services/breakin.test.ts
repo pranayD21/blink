@@ -285,6 +285,7 @@ const TABLE: Row[] = [
   // Only in switcher mode: with password sign-in it is not there at all.
   { file: "src/app/api/session/act-as/route.ts", method: "POST", caseScoped: false, noSession: 404, body: () => ({ userId: "user_marcus" }) },
   { file: "src/app/api/session/login/route.ts", method: "POST", caseScoped: false, noSession: 400, body: () => ({}) },
+  { file: "src/app/api/session/register/route.ts", method: "POST", caseScoped: false, noSession: 400, body: () => ({}) },
   // Signing out answers 200 whether or not there was a session.
   { file: "src/app/api/session/logout/route.ts", method: "POST", caseScoped: false, noSession: 200, body: () => ({}) },
   { file: "src/app/api/tasks/[id]/answer/route.ts", method: "POST", caseScoped: true, owner: "marcus", params: () => ({ id: ids.task }), body: () => ({ answer: "From the public filing.", expectedVersion: 1 }) },
