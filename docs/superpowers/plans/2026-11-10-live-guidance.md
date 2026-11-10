@@ -484,7 +484,7 @@ export function costUsd(usage: Pick<LlmUsage, "input_tokens" | "output_tokens"> 
 
 - Prices per million tokens: `claude-opus-5-5` 4 / 20 / 0.2 / 5; `claude-haiku-5-5` 0.10 / 0.50 / 0.01 / 0.125. Any other model: `null`.
 
-- [ ] **Step 1: Write the failing tests.**
+- [x] **Step 1: Write the failing tests.**
 
 ```ts
 it("the hash of an existing stage is unchanged", () => {
@@ -499,10 +499,10 @@ it("prices by model, and an unknown model has no price", () => {
 it("replay serves a recording made under a model override", async () => { /* BLINK_RECORDINGS_DIR = a temp dir holding one hand-written live_read recording; structuredCall({ ..., model: "claude-haiku-5-5", thinking: "disabled" }) returns it with replayed: true */ });
 ```
 
-- [ ] **Step 2: Run it and see it fail.** Run: `pnpm exec vitest run tests/services/llm-client.test.ts`. Expected: FAIL on the override and price tests.
-- [ ] **Step 3: Implement.** The hashed object keeps its present keys; `model` becomes `opts.model ?? llmModel()` and a `thinking` key is added only when it is `"disabled"`. With `thinking: "disabled"` send `thinking: { type: "disabled" }`. Send `betas` and `fallbacks` only when no `model` override is given: Haiku 5.5 has no server-side fallback. Pass `{ timeout: opts.timeoutMs, maxRetries: opts.maxRetries }` as the request options when set, and raise `LlmTimeout` when the SDK reports a timeout. The log row stores the model actually requested. Update `metrics.ts` and `record-demo.ts` for the nullable cost: sum known costs and report how many calls had none.
-- [ ] **Step 4: Run the tests.** Run: `pnpm test`. Expected: PASS.
-- [ ] **Step 5: Commit.**
+- [x] **Step 2: Run it and see it fail.** Run: `pnpm exec vitest run tests/services/llm-client.test.ts`. Expected: FAIL on the override and price tests.
+- [x] **Step 3: Implement.** The hashed object keeps its present keys; `model` becomes `opts.model ?? llmModel()` and a `thinking` key is added only when it is `"disabled"`. With `thinking: "disabled"` send `thinking: { type: "disabled" }`. Send `betas` and `fallbacks` only when no `model` override is given: Haiku 5.5 has no server-side fallback. Pass `{ timeout: opts.timeoutMs, maxRetries: opts.maxRetries }` as the request options when set, and raise `LlmTimeout` when the SDK reports a timeout. The log row stores the model actually requested. Update `metrics.ts` and `record-demo.ts` for the nullable cost: sum known costs and report how many calls had none.
+- [x] **Step 4: Run the tests.** Run: `pnpm test`. Expected: PASS.
+- [x] **Step 5: Commit.**
 
 ```bash
 git add src/server/llm/client.ts src/server/services/metrics.ts scripts/record-demo.ts tests/services/llm-client.test.ts

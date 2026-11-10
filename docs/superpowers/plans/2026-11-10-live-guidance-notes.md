@@ -104,3 +104,7 @@ When the owner has reported, the next step is to fill in the answers here, write
 - Task 3 Step 3: waits on Step 2. The answers (system track live, mic track live, pill above Zoom, audio without video, far-side level in the mic) are filled in from the owner's report.
 - Task 3 Step 4: waits on Step 3. Writes `verdict: mac-app` or `verdict: fallback` and `audio grant: audio-only` or `needs-video`; Tasks 18 and 19 read them (Task 18 assumes `needs-video` until then).
 - Task 3 Step 5: waits on Step 4. Commit the notes as `docs(spike): record what the Mac app can hear and show`.
+
+## Task 10: the time limit is enforced twice
+
+The SDK's per-request `timeout` stops counting once the response headers arrive, and a streamed answer sends them at once, so on its own it would not bound a stalled stream. `structuredCall` therefore passes `timeout` to the SDK and also runs its own deadline (an `AbortController` fired after `timeoutMs`) over the whole stream; either one raises `LlmTimeout`. A test stalls a stubbed stream after the headers and checks this.

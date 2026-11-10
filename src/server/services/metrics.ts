@@ -102,21 +102,28 @@ export function loadMetrics(db: DbOrTx) {
   // ── Cost and latency per stage: real tokens × list price ──────────────────
   // Calls made by `pnpm eval` are measurement, not review work, so they are left out of the cost table.
   const calls = db.select().from(llmCalls).all().filter((c) => !fromJson<{ eval?: string }>(c.refJson, {}).eval);
-  const stages = new Map<string, { stage: string; calls: number; replayed: number; inputTokens: number; outputTokens: number; cacheReadTokens: number; costUsd: number; latencyMs: number }>();
-  const costByCase = new Map<string, number>();
+  const stages = new Map<string, { stage: string; calls: number; replayed: number; inputTokens: number; outputTokens: number; cacheReadTokens: number; costUsd: number; unpricedCalls: number; latencyMs: number }>();
+  // Cost is summed over the calls whose model has a price; a call with no price is counted, never added as zero.
+  const costByCase = new Map<string, { costUsd: number; unpricedCalls: number }>();
   for (const call of calls) {
-    const cost = costUsd({ input_tokens: call.inputTokens, output_tokens: call.outputTokens, cache_read_input_tokens: call.cacheReadTokens, cache_creation_input_tokens: call.cacheCreationTokens });
-    const s = stages.get(call.stage) ?? { stage: call.stage, calls: 0, replayed: 0, inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, costUsd: 0, latencyMs: 0 };
+    const cost = costUsd({ input_tokens: call.inputTokens, output_tokens: call.outputTokens, cache_read_input_tokens: call.cacheReadTokens, cache_creation_input_tokens: call.cacheCreationTokens }, call.model);
+    const s = stages.get(call.stage) ?? { stage: call.stage, calls: 0, replayed: 0, inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, costUsd: 0, unpricedCalls: 0, latencyMs: 0 };
     s.calls++;
     if (call.replayed) s.replayed++;
     s.inputTokens += call.inputTokens;
     s.outputTokens += call.outputTokens;
     s.cacheReadTokens += call.cacheReadTokens;
-    s.costUsd += cost;
+    if (cost === null) s.unpricedCalls++;
+    else s.costUsd += cost;
     s.latencyMs += call.latencyMs;
     stages.set(call.stage, s);
     const caseId = fromJson<{ caseId?: string }>(call.refJson, {}).caseId;
-    if (caseId) costByCase.set(caseId, (costByCase.get(caseId) ?? 0) + cost);
+    if (caseId) {
+      const c = costByCase.get(caseId) ?? { costUsd: 0, unpricedCalls: 0 };
+      if (cost === null) c.unpricedCalls++;
+      else c.costUsd += cost;
+      costByCase.set(caseId, c);
+    }
   }
 
   const evalRow = db.select().from(evalRuns).orderBy(desc(evalRuns.createdAt)).limit(1).get();
@@ -133,10 +140,12 @@ export function loadMetrics(db: DbOrTx) {
     corrections: perCase,
     quotes: { proposed, valid, rate: proposed > 0 ? valid / proposed : null },
     llm: {
-      stages: [...stages.values()].map((s) => ({ ...s, avgLatencyMs: s.calls > 0 ? s.latencyMs / s.calls : 0, avgCostUsd: s.calls > 0 ? s.costUsd / s.calls : 0 })).sort((a, b) => (a.stage < b.stage ? -1 : 1)),
+      stages: [...stages.values()].map((s) => ({ ...s, avgLatencyMs: s.calls > 0 ? s.latencyMs / s.calls : 0, avgCostUsd: s.calls > s.unpricedCalls ? s.costUsd / (s.calls - s.unpricedCalls) : null })).sort((a, b) => (a.stage < b.stage ? -1 : 1)),
       totalCostUsd: [...stages.values()].reduce((n, s) => n + s.costUsd, 0),
+      /** Calls whose model has no listed price: left out of every cost figure, and said so. */
+      unpricedCalls: [...stages.values()].reduce((n, s) => n + s.unpricedCalls, 0),
       anyReplayed: calls.some((c) => c.replayed),
-      perCase: [...costByCase.entries()].map(([caseId, cost]) => ({ caseId, title: titleOf.get(caseId) ?? caseId, costUsd: cost })),
+      perCase: [...costByCase.entries()].map(([caseId, c]) => ({ caseId, title: titleOf.get(caseId) ?? caseId, costUsd: c.costUsd, unpricedCalls: c.unpricedCalls })),
     },
     eval: evalResult ? { ...evalResult, storedAt: evalRow!.createdAt } : null,
     missedConcerns: evalResult ? evalResult.fixtures.flatMap((f) => f.missed.map((m) => `${f.id}: ${m}`)) : [],

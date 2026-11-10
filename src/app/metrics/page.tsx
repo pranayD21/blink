@@ -12,7 +12,9 @@ export default async function MetricsPage() {
   await pageActor();
   const m = loadMetrics(getDb());
   const { blink, baseline, savedFraction, moreCallsFraction, target } = m.reviewTime;
-  const perCallCost = m.llm.perCase.length > 0 ? m.llm.perCase.reduce((n, c) => n + c.costUsd, 0) / m.llm.perCase.length : null;
+  // Cases with an unpriced call are left out of the average rather than counted low.
+  const pricedCases = m.llm.perCase.filter((c) => c.unpricedCalls === 0);
+  const perCallCost = pricedCases.length > 0 ? pricedCases.reduce((n, c) => n + c.costUsd, 0) / pricedCases.length : null;
 
   return (
     <PageShell title="Metrics" description="Everything here is measured from what the app recorded: review sessions, corrections, model calls, and the eval run.">
@@ -24,7 +26,7 @@ export default async function MetricsPage() {
         <Stat label="Review time with Blink" value={formatMinutes(blink.avgMs)} hint={blink.cases > 0 ? `average over ${blink.cases} case(s), active minutes` : "no review timed yet"} />
         <Stat label="Review time, baseline mode" value={formatMinutes(baseline.avgMs)} hint={baseline.cases > 0 ? `average over ${baseline.cases} case(s)` : "open a case's Baseline page to time one"} />
         <Stat label="Time saved" value={savedFraction === null ? "—" : formatPercent(savedFraction)} hint={moreCallsFraction !== null ? `= ${formatPercent(moreCallsFraction)} more calls at the same review hours` : "needs one Blink and one baseline review"} />
-        <Stat label="Model cost per call" value={perCallCost === null ? "—" : formatUsd(perCallCost)} hint={m.llm.anyReplayed ? "recorded token counts × list price" : "real tokens × list price"} />
+        <Stat label="Model cost per call" value={perCallCost === null ? (m.llm.perCase.length > 0 ? "unknown" : "—") : formatUsd(perCallCost)} hint={`${m.llm.anyReplayed ? "recorded token counts × list price" : "real tokens × list price"}${m.llm.unpricedCalls > 0 ? `; ${m.llm.unpricedCalls} call(s) have no listed price and are not counted` : ""}`} />
       </div>
 
       <div className="grid grid-cols-2 items-start gap-4">
@@ -106,14 +108,14 @@ export default async function MetricsPage() {
                     <td className="px-3 py-1.5">{s.inputTokens.toLocaleString("en-US")}</td>
                     <td className="px-3 py-1.5">{s.outputTokens.toLocaleString("en-US")}</td>
                     <td className="px-3 py-1.5">{(s.avgLatencyMs / 1000).toFixed(1)} s</td>
-                    <td className="px-3 py-1.5">{formatUsd(s.avgCostUsd)}</td>
+                    <td className="px-3 py-1.5">{s.avgCostUsd === null ? "unknown" : formatUsd(s.avgCostUsd)}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           )}
           <p className="border-t px-3 py-2 text-xs text-slate-500">
-            Tokens × Claude Opus 5.5 list price ($4 / $20 per million input / output tokens). {m.llm.anyReplayed ? "Replayed calls show the tokens and latency of the recorded run; no money was spent replaying them." : ""}
+            Tokens × the list price of each model (Claude Opus 5.5 $4 / $20, Claude Haiku 5.5 $0.10 / $0.50 per million input / output tokens). A model with no listed price shows as unknown. {m.llm.anyReplayed ? "Replayed calls show the tokens and latency of the recorded run; no money was spent replaying them." : ""}
           </p>
         </Panel>
 

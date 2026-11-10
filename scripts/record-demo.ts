@@ -257,8 +257,18 @@ function finish() {
   heading("Summary");
   const calls = getDb().select().from(llmCalls).all();
   const live = calls.filter((c) => !c.replayed);
-  const cost = (rows: typeof calls) => rows.reduce((n, c) => n + costUsd({ input_tokens: c.inputTokens, output_tokens: c.outputTokens, cache_read_input_tokens: c.cacheReadTokens, cache_creation_input_tokens: c.cacheCreationTokens }), 0);
-  console.log(`   ${calls.length} model call(s): ${live.length} live ($${cost(live).toFixed(2)}), ${calls.length - live.length} replayed (recorded cost $${cost(calls.filter((c) => c.replayed)).toFixed(2)})`);
+  // Sum the calls that have a listed price, and say how many had none: an unknown cost is never counted as zero.
+  const cost = (rows: typeof calls) => {
+    let usd = 0;
+    let unpriced = 0;
+    for (const c of rows) {
+      const one = costUsd({ input_tokens: c.inputTokens, output_tokens: c.outputTokens, cache_read_input_tokens: c.cacheReadTokens, cache_creation_input_tokens: c.cacheCreationTokens }, c.model);
+      if (one === null) unpriced++;
+      else usd += one;
+    }
+    return `$${usd.toFixed(2)}${unpriced > 0 ? ` + ${unpriced} call(s) with no listed price` : ""}`;
+  };
+  console.log(`   ${calls.length} model call(s): ${live.length} live (${cost(live)}), ${calls.length - live.length} replayed (recorded cost ${cost(calls.filter((c) => c.replayed))})`);
   if (problems.length === 0) console.log("   All checks passed.");
   else {
     console.log(`   ${problems.length} check(s) failed:`);

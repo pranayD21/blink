@@ -36,8 +36,22 @@ export const llmModel = () => process.env.BLINK_MODEL || "claude-opus-5-5";
 
 export const RECORDINGS_DIR = () => resolve(process.cwd(), process.env.BLINK_RECORDINGS_DIR ?? "fixtures/llm-recordings");
 
-/** Claude Opus 5.5 list prices per million tokens (§13.2). */
-const PRICE_PER_MTOK = { input: 4, output: 20, cacheRead: 0.2, cacheWrite: 5 };
+export interface ModelPrice {
+  input: number;
+  output: number;
+  cacheRead: number;
+  cacheWrite: number;
+}
+
+/** List prices per million tokens (§13.2). A model not listed here has no price, and its cost is unknown. */
+const PRICE_PER_MTOK: Record<string, ModelPrice> = {
+  "claude-opus-5-5": { input: 4, output: 20, cacheRead: 0.2, cacheWrite: 5 },
+  "claude-haiku-5-5": { input: 0.1, output: 0.5, cacheRead: 0.01, cacheWrite: 0.125 },
+};
+
+export function priceFor(model: string): ModelPrice | null {
+  return Object.hasOwn(PRICE_PER_MTOK, model) ? PRICE_PER_MTOK[model] : null;
+}
 
 export interface LlmUsage {
   input_tokens: number;
@@ -46,10 +60,11 @@ export interface LlmUsage {
   cache_creation_input_tokens: number;
 }
 
-export function costUsd(usage: Pick<LlmUsage, "input_tokens" | "output_tokens"> & Partial<LlmUsage>): number {
-  return (
-    (usage.input_tokens * PRICE_PER_MTOK.input + usage.output_tokens * PRICE_PER_MTOK.output + (usage.cache_read_input_tokens ?? 0) * PRICE_PER_MTOK.cacheRead + (usage.cache_creation_input_tokens ?? 0) * PRICE_PER_MTOK.cacheWrite) / 1_000_000
-  );
+/** Dollars for one call, or null when the model has no known price: an unknown cost is never shown as zero. */
+export function costUsd(usage: Pick<LlmUsage, "input_tokens" | "output_tokens"> & Partial<LlmUsage>, model: string = llmModel()): number | null {
+  const price = priceFor(model);
+  if (!price) return null;
+  return (usage.input_tokens * price.input + usage.output_tokens * price.output + (usage.cache_read_input_tokens ?? 0) * price.cacheRead + (usage.cache_creation_input_tokens ?? 0) * price.cacheWrite) / 1_000_000;
 }
 
 // ── Errors: every failure is typed and visible; none is swallowed ───────────
@@ -78,6 +93,11 @@ export class LlmTruncated extends LlmError {
 export class LlmSchemaError extends LlmError {
   constructor(stage: string, detail: string) {
     super("LLM_SCHEMA_ERROR", `the model's ${stage} output did not match the expected schema: ${detail}`);
+  }
+}
+export class LlmTimeout extends LlmError {
+  constructor(stage: string, timeoutMs?: number) {
+    super("LLM_TIMEOUT", `the ${stage} request did not finish${timeoutMs === undefined ? " in time" : ` within ${timeoutMs} ms`}`, true);
   }
 }
 export class LlmReplayMiss extends LlmError {
@@ -117,6 +137,14 @@ export interface StructuredCallOptions<T extends z.ZodType> {
   user: string;
   effort: "low" | "medium" | "high";
   maxTokens?: number;
+  /** Use this model instead of BLINK_MODEL. A model override gets no server-side fallback. */
+  model?: string;
+  /** "disabled" turns thinking off (for the fast live reader); the default is adaptive thinking. */
+  thinking?: "adaptive" | "disabled";
+  /** Give up after this many milliseconds, with an LlmTimeout. */
+  timeoutMs?: number;
+  /** Retries the SDK may make for 429 and 5xx; the SDK default applies when unset. */
+  maxRetries?: number;
   /** What this call was for, stored with the log row: { caseId?, policyVersionId?, documentId? }. */
   ref?: Record<string, string>;
 }
@@ -132,13 +160,23 @@ export interface StructuredCallResult<T> {
 let client: Anthropic | null = null;
 const anthropic = () => (client ??= new Anthropic()); // ANTHROPIC_API_KEY or an `ant auth login` profile
 
-export function requestHashFor(opts: Pick<StructuredCallOptions<z.ZodType>, "stage" | "promptVersion" | "system" | "user" | "effort" | "maxTokens">): string {
-  return hashOf({ model: llmModel(), prompt_version: opts.promptVersion, system: opts.system, user: opts.user, effort: opts.effort, max_tokens: opts.maxTokens ?? 32000, schema: opts.stage });
+export function requestHashFor(opts: Pick<StructuredCallOptions<z.ZodType>, "stage" | "promptVersion" | "system" | "user" | "effort" | "maxTokens" | "model" | "thinking">): string {
+  // `thinking` joins the hashed object only when it is "disabled", so every recording made before it existed keeps its hash.
+  return hashOf({
+    model: opts.model ?? llmModel(),
+    prompt_version: opts.promptVersion,
+    system: opts.system,
+    user: opts.user,
+    effort: opts.effort,
+    max_tokens: opts.maxTokens ?? 32000,
+    schema: opts.stage,
+    ...(opts.thinking === "disabled" ? { thinking: "disabled" } : {}),
+  });
 }
 
 export async function structuredCall<T extends z.ZodType>(opts: StructuredCallOptions<T>): Promise<StructuredCallResult<z.infer<T>>> {
   const mode = llmMode();
-  const model = llmModel();
+  const model = opts.model ?? llmModel();
   const maxTokens = opts.maxTokens ?? 32000;
   const requestHash = requestHashFor(opts);
   const file = recordingFile(opts.stage, requestHash);
@@ -190,29 +228,44 @@ export async function structuredCall<T extends z.ZodType>(opts: StructuredCallOp
 
   const started = nowMs();
   let message;
+  // The SDK's own `timeout` stops counting once the response headers arrive, and a streamed answer sends them
+  // at once. So the limit is also enforced here, as a deadline over the whole stream.
+  const deadline = new AbortController();
+  let timedOut = false;
+  const timer =
+    opts.timeoutMs === undefined
+      ? null
+      : setTimeout(() => {
+          timedOut = true;
+          deadline.abort();
+        }, opts.timeoutMs);
   try {
     // Streaming is the single code path: at this max_tokens the SDK refuses a
     // non-streaming request, and long extractions would risk an HTTP timeout.
+    const requestOptions = { signal: deadline.signal, ...(opts.timeoutMs !== undefined ? { timeout: opts.timeoutMs } : {}), ...(opts.maxRetries !== undefined ? { maxRetries: opts.maxRetries } : {}) };
     const stream = anthropic().beta.messages.stream({
       model,
       max_tokens: maxTokens,
-      thinking: { type: "adaptive" },
+      thinking: opts.thinking === "disabled" ? { type: "disabled" } : { type: "adaptive" },
       output_config: { effort: opts.effort, format: betaZodOutputFormat(opts.schema) },
       system: [{ type: "text", text: opts.system, cache_control: { type: "ephemeral" } }],
       messages: [{ role: "user", content: opts.user }],
-      // A safety classifier could decline compliance text about insider trading;
-      // the server-side fallback re-runs a declined request on the recommended model (D5).
-      betas: ["server-side-fallback-2026-07-01"],
-      fallbacks: "default",
-    });
+      // A safety classifier could decline compliance text about insider trading; the server-side fallback
+      // re-runs a declined request on the recommended model (D5). Claude Haiku 5.5 has no fallback, so a
+      // call that names its own model sends neither field.
+      ...(opts.model ? {} : { betas: ["server-side-fallback-2026-07-01"], fallbacks: "default" as const }),
+    }, requestOptions);
     message = await stream.finalMessage();
   } catch (err) {
     if (err instanceof LlmError) throw err;
+    if (timedOut || err instanceof Anthropic.APIConnectionTimeoutError) throw new LlmTimeout(opts.stage, opts.timeoutMs);
     // The SDK has already retried 429 and 5xx twice by the time we get here.
     if (err instanceof Anthropic.RateLimitError) throw new LlmApiError(opts.stage, "rate limited (429)", true);
     if (err instanceof Anthropic.APIConnectionError) throw new LlmApiError(opts.stage, `could not reach the API (${err.message})`, true);
     if (err instanceof Anthropic.APIError) throw new LlmApiError(opts.stage, `${err.status ?? "error"} ${err.message}`, (err.status ?? 0) >= 500);
     throw new LlmApiError(opts.stage, err instanceof Error ? err.message : String(err), false);
+  } finally {
+    if (timer) clearTimeout(timer);
   }
   const latencyMs = nowMs() - started;
 
