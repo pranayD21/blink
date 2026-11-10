@@ -6,6 +6,9 @@
  * `Idempotency-Key` on a mutation: the first response is stored and returned
  * again for a repeat of the same request by the same user, so a double-click
  * or a retried request cannot apply twice.
+ *
+ * A mutation sent from another site is refused before anything runs (live
+ * guidance, section 5): see `requireSameOrigin`.
  */
 import { eq } from "drizzle-orm";
 import type { NextRequest } from "next/server";
@@ -51,6 +54,40 @@ export function errorResponse(err: unknown): Response {
   return Response.json(errorBody("INTERNAL", err instanceof Error ? err.message : "unexpected error"), { status: 500 });
 }
 
+const BAD_ORIGIN = () => new AppError(403, "BAD_ORIGIN", "this request came from another site, so it was refused");
+
+/**
+ * Refuses a request that can change something (any method but GET and HEAD) when its `Origin`
+ * header names a host other than the one the request was sent to: the request URL's host, its
+ * `Host` header, or, behind a proxy, `X-Forwarded-Host`. A browser always sets `Origin` on a
+ * cross-site POST and a page cannot forge it. A request with no `Origin` is let through: older
+ * browsers leave it off same-origin requests, and server-to-server calls and tests never send it.
+ */
+export function requireSameOrigin(req: Request): void {
+  if (req.method === "GET" || req.method === "HEAD") return;
+  const origin = req.headers.get("origin");
+  if (origin === null) return;
+  let from: URL;
+  try {
+    from = new URL(origin);
+  } catch {
+    throw BAD_ORIGIN(); // "null" (a sandboxed page or a file) and anything unparseable
+  }
+  const named = [req.headers.get("host"), ...(req.headers.get("x-forwarded-host") ?? "").split(",")];
+  const hosts = new Set([new URL(req.url).host]);
+  for (const raw of named) {
+    const host = raw?.trim();
+    if (!host) continue;
+    try {
+      // Parsed with the origin's scheme, so a default port written out ("blink.app:443") still matches.
+      hosts.add(new URL(`${from.protocol}//${host}`).host);
+    } catch {
+      // A malformed header names no host.
+    }
+  }
+  if (!hosts.has(from.host)) throw BAD_ORIGIN();
+}
+
 interface Stored {
   status: number;
   body: unknown;
@@ -59,6 +96,7 @@ interface Stored {
 export function api<P = Record<string, never>>(handler: (ctx: ApiContext<P>) => unknown | Promise<unknown>) {
   return async (req: NextRequest, context: { params: Promise<P> }): Promise<Response> => {
     try {
+      requireSameOrigin(req);
       const actor = await requireSessionActor();
       const params = await context.params;
 

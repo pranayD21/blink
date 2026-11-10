@@ -4,6 +4,7 @@ import { z } from "zod";
 import { sha256Hex, turnHash } from "@/core/deps/hash";
 import { type LineageRow, diffTurns } from "@/core/evidence/lineage";
 import { type ParsedTranscript, TranscriptParseError, parseTranscript } from "@/core/transcript/parse";
+import { requireCaseAccess } from "../auth/access";
 import { type Actor, requireRole } from "../auth/actor";
 import { appendAudit } from "../audit/log";
 import { nowIso } from "../clock";
@@ -13,7 +14,7 @@ import { badRequest, conflict } from "../errors";
 import { newId } from "../ids";
 import { enqueueJob } from "../jobs/queue";
 import { applyCaseEvent } from "./caseStatus";
-import { type TranscriptRow, type TurnRow, currentTranscript, getCase, turnsOfVersion } from "./loaders";
+import { type TranscriptRow, type TurnRow, currentTranscript, turnsOfVersion } from "./loaders";
 
 export const UploadTranscriptSchema = z.strictObject({
   text: z.string().min(1, "the transcript is empty"),
@@ -54,7 +55,7 @@ export interface UploadResult {
 
 export function uploadTranscript(tx: DbOrTx, caseId: string, input: UploadTranscriptInput, actor: Actor): UploadResult {
   requireRole(actor, "analyst", "reviewer", "senior_reviewer");
-  const caseRow = getCase(tx, caseId);
+  const caseRow = requireCaseAccess(tx, actor, caseId);
   const parsed = previewTranscript(input.text, input.filename, input.speakerMap);
   if (!parsed.turns.some((t) => t.speaker === "expert")) {
     throw badRequest("no expert turns were found. Map the speaker labels to roles and upload again.", { unknownSpeakers: parsed.unknownSpeakers });
@@ -120,7 +121,7 @@ export function uploadTranscript(tx: DbOrTx, caseId: string, input: UploadTransc
 /** Re-runs analysis on the current transcript version as a new run (POST /api/cases/:id/analyze). */
 export function requestReanalysis(tx: DbOrTx, caseId: string, actor: Actor, source: "ai" | "gold" = "ai"): { jobId: string } {
   requireRole(actor, "reviewer", "senior_reviewer");
-  const caseRow = getCase(tx, caseId);
+  const caseRow = requireCaseAccess(tx, actor, caseId);
   const transcript = currentTranscript(tx, caseId);
   if (!transcript) throw badRequest("upload a transcript first");
   applyCaseEvent(tx, caseRow, "ANALYSIS_STARTED", { actorId: actor.id, cause: "analysis re-run requested" });

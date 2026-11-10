@@ -2,6 +2,7 @@
 import { asc, desc, eq, inArray } from "drizzle-orm";
 import { z } from "zod";
 import { hashOf } from "@/core/deps/hash";
+import { requireCaseAccess, visibleCaseIds } from "../auth/access";
 import { type Actor, isReviewer, requireRole } from "../auth/actor";
 import { appendAudit } from "../audit/log";
 import { nowIso } from "../clock";
@@ -111,8 +112,15 @@ export interface CaseListItem {
   createdAt: string;
 }
 
-export function listCases(db: DbOrTx, actor: Actor): CaseListItem[] {
+/** Visible to the actor only: a banker's own cases, every case for a reviewer, none for the policy owner. */
+const visibleCases = (db: DbOrTx, actor: Actor) => {
+  const visible = visibleCaseIds(db, actor);
   const rows = db.select().from(cases).orderBy(desc(cases.createdAt)).all();
+  return visible === "all" ? rows : rows.filter((c) => visible.has(c.id));
+};
+
+export function listCases(db: DbOrTx, actor: Actor): CaseListItem[] {
+  const rows = visibleCases(db, actor);
   if (rows.length === 0) return [];
   const ids = rows.map((r) => r.id);
   const packetRows = db.select().from(packets).where(inArray(packets.caseId, ids)).orderBy(desc(packets.versionNo)).all();
@@ -161,9 +169,9 @@ export function packetView(db: DbOrTx, caseId: string) {
   };
 }
 
-/** The three cards above the queue (§15.1). Findings are counted only for reviewers. */
+/** The three cards above the queue (§15.1), over the cases the actor may see. Findings are counted only for reviewers. */
 export function queueSummary(db: DbOrTx, actor: Actor) {
-  const rows = db.select().from(cases).all();
+  const rows = visibleCases(db, actor);
   const inReview = rows.filter((c) => c.status === "IN_REVIEW" || c.status === "READY_FOR_APPROVAL" || c.status === "STALE").length;
   if (!isReviewer(actor)) return { inReview, avgReviewMinutes: null, awaitingEscalation: null };
   const sessions = db.select().from(reviewSessions).all().filter((s) => s.mode === "blink" && s.activeMs > 0);
@@ -178,10 +186,10 @@ export function queueSummary(db: DbOrTx, actor: Actor) {
 /**
  * What an analyst sees of their own case: the packet, the transcript versions
  * they uploaded, and how far along the case is. Nothing about findings.
+ * Another banker's case is a 404, the same as a case that does not exist.
  */
-export function analystCaseView(db: DbOrTx, caseId: string) {
-  const row = db.select().from(cases).where(eq(cases.id, caseId)).get();
-  if (!row) return null;
+export function analystCaseView(db: DbOrTx, caseId: string, actor: Actor) {
+  const row = requireCaseAccess(db, actor, caseId);
   const versions = db.select().from(transcriptVersions).where(eq(transcriptVersions.caseId, caseId)).orderBy(desc(transcriptVersions.versionNo)).all();
   const job = db
     .select()

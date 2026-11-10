@@ -8,6 +8,7 @@
  */
 import { and, desc, eq, isNull } from "drizzle-orm";
 import { z } from "zod";
+import { requireCaseAccess } from "../auth/access";
 import { type Actor, requireReviewer } from "../auth/actor";
 import { appendAudit } from "../audit/log";
 import { nowIso } from "../clock";
@@ -24,7 +25,10 @@ function openSession(tx: DbOrTx, caseId: string, actorId: string, mode: SessionM
   return tx.select().from(reviewSessions).where(and(eq(reviewSessions.caseId, caseId), eq(reviewSessions.actorId, actorId), eq(reviewSessions.mode, mode), isNull(reviewSessions.endedAt))).get() ?? null;
 }
 
+/** The review timer is a reviewer's: a banker or the policy owner is refused, and an unknown case is a 404. */
 export function heartbeat(tx: DbOrTx, caseId: string, actor: Actor, mode: SessionMode): { sessionId: string; activeMs: number } {
+  requireReviewer(actor);
+  requireCaseAccess(tx, actor, caseId);
   const now = nowIso();
   const session = openSession(tx, caseId, actor.id, mode);
   if (!session) {

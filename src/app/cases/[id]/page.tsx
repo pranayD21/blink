@@ -3,7 +3,7 @@ import { RoleGate } from "@/components/app/role-gate";
 import { AnalystCase } from "@/components/workspace/analyst-case";
 import type { TranscriptSample } from "@/components/workspace/upload-transcript";
 import { Workspace } from "@/components/workspace/workspace";
-import { type Actor, DEMO_USERS, isReviewer } from "@/server/auth/actor";
+import { DEMO_USERS, isReviewer } from "@/server/auth/actor";
 import { pageActor } from "@/server/auth/session";
 import { getDb } from "@/server/db/client";
 import { AppError } from "@/server/errors";
@@ -32,21 +32,23 @@ export default async function CasePage({ params }: PageProps<"/cases/[id]">) {
   const db = getDb();
 
   if (actor.role === "analyst") {
-    const view = analystCaseView(db, id);
+    // Another banker's case is the same 404 page as one that does not exist.
+    const view = orNull(() => analystCaseView(db, id, actor));
     if (!view) notFound();
     return <AnalystCase view={view} samples={samplesFor(view.case.ticker)} allowGold={allowGold()} />;
   }
   if (!isReviewer(actor)) {
     return <RoleGate title="The review workspace is for compliance" message="Findings, evidence, and dispositions are visible to compliance reviewers only." current={actor} switchTo={DEMO_USERS.filter((u) => u.role === "reviewer" || u.role === "senior_reviewer")} />;
   }
-  const payload = workspaceOrNull(id, actor);
+  const payload = orNull(() => loadWorkspace(db, id, actor));
   if (!payload) notFound();
   return <Workspace payload={payload} samples={samplesFor(payload.case.ticker)} allowGold={allowGold()} />;
 }
 
-function workspaceOrNull(id: string, actor: Actor) {
+/** A 404 from the service becomes null, so the page shows Next's not-found page. */
+function orNull<T>(load: () => T): T | null {
   try {
-    return loadWorkspace(getDb(), id, actor);
+    return load();
   } catch (err) {
     if (err instanceof AppError && err.status === 404) return null;
     throw err;

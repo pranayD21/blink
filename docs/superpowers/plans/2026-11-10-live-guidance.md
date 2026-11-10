@@ -1200,7 +1200,7 @@ export function visibleCaseIds(db: DbOrTx, actor: Actor): Set<string> | "all";
 
 - `api()` refuses a non-GET request whose `Origin` header names a different host than the request: 403 `BAD_ORIGIN`.
 
-- [ ] **Step 1: Write the failing tests.** Add a second banker in the test (`user_sam`, role `analyst`).
+- [x] **Step 1: Write the failing tests.** Add a second banker in the test (`user_sam`, role `analyst`).
 
 ```ts
 it("a banker's case list holds only their own cases", async () => expect(ids(await call(getCases, "sam"))).not.toContain(CASE));
@@ -1209,10 +1209,10 @@ it("a reviewer still sees every case", async () => expect(ids(await call(getCase
 it("a request from another site is refused", async () => { /* POST with Origin: https://evil.example → 403 BAD_ORIGIN; the same with the app's own origin → not 403 */ });
 ```
 
-- [ ] **Step 2: Run it and see it fail.**
-- [ ] **Step 3: Implement.** Use `requireCaseAccess` in every service that takes a case id from a banker: `analystCaseView` (which now takes the actor), `uploadTranscript`, `requestReanalysis`, `heartbeat`, `startCall`, and the job route (resolve the job's case from its payload).
-- [ ] **Step 4: Run the tests.** Run: `pnpm test && pnpm e2e`. Expected: PASS.
-- [ ] **Step 5: Commit.**
+- [x] **Step 2: Run it and see it fail.**
+- [x] **Step 3: Implement.** Use `requireCaseAccess` in every service that takes a case id from a banker: `analystCaseView` (which now takes the actor), `uploadTranscript`, `requestReanalysis`, `heartbeat`, `startCall`, and the job route (resolve the job's case from its payload).
+- [x] **Step 4: Run the tests.** Run: `pnpm test && pnpm e2e`. Expected: PASS.
+- [x] **Step 5: Commit.**
 
 ```bash
 git add src/server/auth/access.ts src/server/http/route.ts src/server/services src/app/api/jobs src/app/api/cases src/app/cases tests/services/access.test.ts tests/services/api.test.ts

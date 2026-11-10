@@ -31,6 +31,7 @@ import { GET as getAudit } from "@/app/api/audit/route";
 import { POST as verifyAudit } from "@/app/api/audit/verify/route";
 import { POST as releaseRoute } from "@/app/api/briefs/[id]/release/route";
 import { GET as getBriefs } from "@/app/api/cases/[id]/briefs/route";
+import { POST as postTranscript } from "@/app/api/cases/[id]/transcripts/route";
 import { GET as getWorkspace } from "@/app/api/cases/[id]/workspace/route";
 import { GET as getCases, POST as postCase } from "@/app/api/cases/route";
 import { POST as postEvent } from "@/app/api/findings/[id]/events/route";
@@ -40,15 +41,19 @@ import { hashPassword } from "@/server/auth/password";
 import { optionalPageActor, pageActor } from "@/server/auth/session";
 import { getDb } from "@/server/db/client";
 import { authSessions, decisions, jobs, loginAttempts, releases, users } from "@/server/db/schema";
+import { enqueueJob } from "@/server/jobs/queue";
 import { getBrief } from "@/server/services/briefs";
-import { CASE, G1, G2, G3, RATIONALE, approve, completeReview, draftTemplate, findingOn, release, seedAnalyzed } from "../helpers/db";
+import { analystCaseView } from "@/server/services/cases";
+import { loadActor } from "@/server/auth/actor";
+import { CASE, G1, G2, G3, RATIONALE, appError, approve, completeReview, draftTemplate, findingOn, release, seedAnalyzed } from "../helpers/db";
 
 type Handler<P> = (req: NextRequest, ctx: { params: Promise<P> }) => Promise<Response>;
 
-async function call<P>(handler: Handler<P>, as: string | null, init: { method?: string; path?: string; params?: P; body?: unknown; key?: string } = {}) {
+async function call<P>(handler: Handler<P>, as: string | null, init: { method?: string; path?: string; params?: P; body?: unknown; key?: string; origin?: string } = {}) {
   session.user = as ? `user_${as}` : null;
   const headers: Record<string, string> = { "content-type": "application/json" };
   if (init.key) headers["idempotency-key"] = init.key;
+  if (init.origin) headers.origin = init.origin;
   const req = new NextRequest(`http://localhost${init.path ?? "/api/test"}`, { method: init.method ?? "GET", headers, body: init.body === undefined ? undefined : JSON.stringify(init.body) });
   const res = await handler(req, { params: Promise.resolve((init.params ?? {}) as P) });
   return { status: res.status, replay: res.headers.get("Idempotent-Replay") === "true", json: (await res.json()) as Record<string, unknown> & { error?: { code: string; message: string; details?: unknown } } };
@@ -59,6 +64,8 @@ beforeEach(async () => {
   session.token = null;
   session.path = null;
   await seedAnalyzed();
+  // A second banker, who created no case.
+  getDb().insert(users).values({ id: "user_sam", name: "Sam Ortiz", role: "analyst" }).run();
 });
 afterEach(() => {
   vi.unstubAllEnvs();
@@ -240,7 +247,6 @@ describe("status codes and the error shape (§14)", () => {
     expect((await call(getAnalystBriefs, "priya")).json).toEqual({ briefs: [] });
     release(brief.id);
     const id = getDb().select().from(releases).get()!.id;
-    getDb().insert(users).values({ id: "user_sam", name: "Sam Ortiz", role: "analyst" }).run();
 
     const own = await call(getAnalystRelease, "priya", { params: { id } });
     expect(own.status).toBe(200);
@@ -319,6 +325,83 @@ describe("status codes and the error shape (§14)", () => {
   it("anyone signed in can verify the audit chain", async () => {
     const res = await call(verifyAudit, "priya", { method: "POST" });
     expect(res.json).toMatchObject({ ok: true });
+  });
+});
+
+const ids = (res: { json: Record<string, unknown> }) => (res.json.cases as { id: string }[]).map((c) => c.id);
+
+describe("every request is checked for the case it touches", () => {
+  it("a banker's case list holds only their own cases", async () => {
+    expect(ids(await call(getCases, "sam"))).not.toContain(CASE);
+    expect(ids(await call(getCases, "priya"))).toContain(CASE);
+    expect(ids(await call(getCases, "dana"))).toEqual([]);
+  });
+
+  it("a banker cannot open, upload to, or poll another banker's case", async () => {
+    const sam = loadActor(getDb(), "user_sam");
+    expect(appError(() => analystCaseView(getDb(), CASE, sam))).toMatchObject({ status: 404, code: "NOT_FOUND" });
+
+    const upload = await call(postTranscript, "sam", { method: "POST", params: { id: CASE }, body: { text: "Expert: Orders were flat in the quarter.", source: "gold" } });
+    expect(upload.status).toBe(404);
+    expect(upload.json.error).toEqual({ code: "NOT_FOUND", message: "case not found" });
+
+    const job = getDb().select().from(jobs).where(eq(jobs.type, "analyze_transcript")).get()!;
+    const poll = await call(getJobRoute, "sam", { params: { id: job.id } });
+    expect(poll.status).toBe(404);
+    // The same answer as a job that does not exist, so the id says nothing.
+    expect(poll.json).toEqual((await call(getJobRoute, "sam", { params: { id: "job_missing" } })).json);
+    expect((await call(getJobRoute, "priya", { params: { id: job.id } })).status).toBe(200);
+    expect((await call(getJobRoute, "dana", { params: { id: job.id } })).status).toBe(403);
+  });
+
+  it("a job with no case keeps its role rule", async () => {
+    const compile = enqueueJob(getDb(), "compile_policy", { policyVersionId: "pv_x" });
+    const forOwner = await call(getJobRoute, "dana", { params: { id: compile.id } });
+    expect(forOwner.status).toBe(200);
+    expect((forOwner.json.job as { payload: unknown }).payload).toEqual({ policyVersionId: "pv_x" });
+    const forBanker = await call(getJobRoute, "sam", { params: { id: compile.id } });
+    expect(forBanker.status).toBe(200);
+    expect((forBanker.json.job as { payload: unknown }).payload).toEqual({});
+  });
+
+  it("a reviewer still sees every case", async () => {
+    expect(ids(await call(getCases, "marcus"))).toContain(CASE);
+    expect(ids(await call(getCases, "jordan"))).toContain(CASE);
+  });
+
+  it("a request from another site is refused", async () => {
+    const body = { text: "Expert: Orders were flat in the quarter.", source: "gold" };
+    const evil = await call(postTranscript, "priya", { method: "POST", params: { id: CASE }, body, origin: "https://evil.example" });
+    expect(evil.status).toBe(403);
+    expect(evil.json.error!.code).toBe("BAD_ORIGIN");
+    // A look-alike host with the app's name in it is another site too.
+    expect((await call(postTranscript, "priya", { method: "POST", params: { id: CASE }, body, origin: "http://localhost.evil.example" })).status).toBe(403);
+    expect((await call(postTranscript, "priya", { method: "POST", params: { id: CASE }, body, origin: "null" })).status).toBe(403);
+
+    const own = await call(postTranscript, "priya", { method: "POST", params: { id: CASE }, body, origin: "http://localhost" });
+    expect(own.status).not.toBe(403);
+    // A GET is never refused for its origin: it changes nothing.
+    expect((await call(getCases, "priya", { origin: "https://evil.example" })).status).toBe(200);
+  });
+
+  it("behind a proxy the forwarded host counts as the app's own", async () => {
+    session.user = "user_marcus";
+    const req = (origin: string) =>
+      new NextRequest("http://10.0.0.5:3000/api/audit/verify", { method: "POST", headers: { "content-type": "application/json", origin, "x-forwarded-host": "blink.example.com" } });
+    expect((await verifyAudit(req("https://blink.example.com"), { params: Promise.resolve({}) })).status).toBe(200);
+    expect((await verifyAudit(req("https://evil.example"), { params: Promise.resolve({}) })).status).toBe(403);
+  });
+
+  it("sign-in and sign-out from another site are refused", async () => {
+    const headers = { "content-type": "application/json", origin: "https://evil.example" };
+    const signInRes = await login(new NextRequest("http://localhost/api/session/login", { method: "POST", headers, body: JSON.stringify({ email: "priya@blink.demo", password: "x" }) }));
+    expect(signInRes.status).toBe(403);
+    expect(((await signInRes.json()) as { error: { code: string } }).error.code).toBe("BAD_ORIGIN");
+    expect(getDb().select().from(loginAttempts).all()).toHaveLength(0);
+    const signOutRes = await logout(new NextRequest("http://localhost/api/session/logout", { method: "POST", headers, body: "{}" }));
+    expect(signOutRes.status).toBe(403);
+    const sameSite = await logout(new NextRequest("http://localhost/api/session/logout", { method: "POST", headers: { ...headers, origin: "http://localhost" }, body: "{}" }));
+    expect(sameSite.status).toBe(200);
   });
 });
 

@@ -7,10 +7,11 @@ import { AUTH_COOKIE } from "@/lib/session";
 import { destroySession, sessionCookieOptions } from "@/server/auth/sessions";
 import { transact } from "@/server/db/client";
 import { AppError } from "@/server/errors";
-import { errorResponse } from "@/server/http/route";
+import { errorResponse, requireSameOrigin } from "@/server/http/route";
 
 export async function POST(req: NextRequest): Promise<Response> {
   try {
+    requireSameOrigin(req);
     if (!req.headers.get("content-type")?.toLowerCase().startsWith("application/json")) {
       throw new AppError(415, "UNSUPPORTED_MEDIA_TYPE", "send the sign-out as JSON");
     }

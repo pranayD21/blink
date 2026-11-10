@@ -16,7 +16,7 @@ import { MAX_EMAIL_LENGTH, createSession, destroySession, normalizeEmail, purgeE
 import { getDb, transact } from "@/server/db/client";
 import { users } from "@/server/db/schema";
 import { AppError, badRequest } from "@/server/errors";
-import { errorResponse } from "@/server/http/route";
+import { errorResponse, requireSameOrigin } from "@/server/http/route";
 
 const Schema = z.strictObject({
   email: z.string().trim().min(1).max(MAX_EMAIL_LENGTH),
@@ -32,6 +32,7 @@ const TOO_MANY = new AppError(429, "TOO_MANY_ATTEMPTS", "Too many failed sign-in
 
 export async function POST(req: NextRequest): Promise<Response> {
   try {
+    requireSameOrigin(req);
     // A cross-site HTML form cannot send JSON, so this also stops another site from signing a visitor in.
     if (!req.headers.get("content-type")?.toLowerCase().startsWith("application/json")) {
       throw new AppError(415, "UNSUPPORTED_MEDIA_TYPE", "send the sign-in as JSON");

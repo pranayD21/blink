@@ -21,6 +21,7 @@ import type { PublicMatchFact } from "@/core/predicates/registry";
 import { type CompiledPolicy, evaluateClaim } from "@/core/runtime/evaluateClaim";
 import type { ClaimRecord } from "@/core/types";
 import { appendAudit } from "../audit/log";
+import { requireCaseAccess } from "../auth/access";
 import { type Actor, requireRole } from "../auth/actor";
 import { nowIso, nowMs } from "../clock";
 import { type DbOrTx, fromJson, getDb, toJson, transact } from "../db/client";
@@ -32,7 +33,7 @@ import { LIVE_PROMPT_VERSION } from "../llm/prompts/live";
 import { latestRun } from "./analysis";
 import { syncCaseStatus } from "./caseStatus";
 import { createFinding, findingLabel, openTask } from "./findingsCore";
-import { activePolicyVersion, currentTranscript, getCase, loadCaseBundle, loadCurrentClaims, loadDocumentSet, loadPolicy, turnsOfVersion } from "./loaders";
+import { activePolicyVersion, currentTranscript, loadCaseBundle, loadCurrentClaims, loadDocumentSet, loadPolicy, turnsOfVersion } from "./loaders";
 import { uploadTranscript } from "./transcripts";
 
 export type CallRow = typeof calls.$inferSelect;
@@ -50,9 +51,8 @@ export const StartCallSchema = z.strictObject({ caseId: z.string() });
  */
 export function startCall(tx: DbOrTx, input: z.infer<typeof StartCallSchema>, actor: Actor): CallRow {
   requireRole(actor, "analyst");
-  const caseRow = getCase(tx, input.caseId);
   // Another banker's case is not there at all, rather than forbidden: its id says nothing.
-  if (caseRow.createdBy !== actor.id) throw notFound("case");
+  const caseRow = requireCaseAccess(tx, actor, input.caseId);
 
   const live = tx
     .select()
