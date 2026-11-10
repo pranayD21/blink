@@ -12,7 +12,8 @@
  *
  * Exit code: 0 when every policy either validated or failed with validator
  * issues; 1 on anything else (a refused or truncated model call, a replay
- * miss, a failed job, a crash).
+ * miss, a failed job, a crash). In replay mode a compile that could not run
+ * leaves the committed bundle as it was.
  */
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -86,7 +87,11 @@ async function compileOne(name: string, requiredParagraphs: string[]): Promise<{
     rulesDoc: d.rulesDoc,
     monitors: d.monitors,
   };
-  writeFileSync(realPolicyBundlePath(name), `${JSON.stringify(bundle, null, 2)}\n`);
+  // A replay that could not run (a missing recording) says nothing about the policy, so it never replaces the bundle a
+  // record run wrote; it is reported and fails the run.
+  const replayFailed = llmMode() === "replay" && compileError !== null;
+  if (replayFailed) console.log(`   ! not written: replay could not compile ${name}; fixtures/real/policies/${name}.compiled.json is left as it was`);
+  else writeFileSync(realPolicyBundlePath(name), `${JSON.stringify(bundle, null, 2)}\n`);
 
   let problem: string | null = null;
   if (failedJobs.length > 0) problem = `${name}: ${failedJobs.length} job(s) failed`;

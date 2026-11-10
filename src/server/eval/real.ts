@@ -84,16 +84,46 @@ export function readRealPolicyBundle(name: string): RealPolicyBundle {
 }
 
 /**
- * The compiled rules and monitors for a real policy. Throws, naming the policy, when it did not validate,
- * when its bundle is missing, or when the policy text has changed since the bundle was written.
+ * Blocking issue codes that only say the policy is not fully automated: a clause, or a required paragraph, that no
+ * rule carries. Every other blocking code is about the rules or monitors themselves (a malformed guard, an unknown
+ * predicate, an unhandled indeterminate result, a failed scenario, ...). PARAGRAPH_UNCOVERED is only ever a warning.
  */
-export function loadRealPolicy(name: string, bundle: RealPolicyBundle = readRealPolicyBundle(name)): CompiledPolicy {
+export const COVERAGE_ISSUE_CODES: readonly string[] = ["CLAUSE_DROPPED"];
+
+export interface RealCompiledPolicy extends CompiledPolicy {
+  /** With `allowCoverageGaps`, the blocking coverage issues the policy was loaded despite; empty for a validated policy. */
+  coverageGaps: string[];
+}
+
+export interface LoadRealPolicyOptions {
+  /**
+   * Load a COMPILE_FAILED policy whose every blocking issue is a coverage issue: its rules and monitors passed every
+   * other check, and they simply do not automate all of the policy. Used to evaluate real calls under the rules the
+   * policy did get (Task 37); the app itself never activates such a policy.
+   */
+  allowCoverageGaps?: boolean;
+  /** The bundle to load; read from `fixtures/real/policies/<name>.compiled.json` when not given. */
+  bundle?: RealPolicyBundle;
+}
+
+/**
+ * The compiled rules and monitors for a real policy. Throws, naming the policy, when the policy did not validate
+ * (unless `allowCoverageGaps` and only coverage issues block), when its bundle is missing, or when the policy text
+ * has changed since the bundle was written.
+ */
+export function loadRealPolicy(name: string, options: LoadRealPolicyOptions = {}): RealCompiledPolicy {
   known(name);
+  const bundle = options.bundle ?? readRealPolicyBundle(name);
   const textHash = sha256Hex(realPolicyText(name).replace(/\r\n?/g, "\n"));
   if (bundle.sourceTextHash !== textHash) throw new Error(`real policy "${name}" was compiled from different text than fixtures/real/policies/${name}.md; run pnpm eval:policies`);
-  if (bundle.status !== "VALIDATED" || !bundle.rulesDoc) {
-    const why = bundle.compileError ? `${bundle.compileError.code}: ${bundle.compileError.message}` : [...new Set(bundle.issues.filter((i) => i.severity === "blocking").map((i) => i.code))].join(", ") || "no rules";
-    throw new Error(`real policy "${name}" did not validate (${bundle.status}): ${why}`);
+  const blocking = bundle.issues.filter((i) => i.severity === "blocking");
+  const compiled = () => ({ rules: compileRules(RulesDocSchema.parse(bundle.rulesDoc)), monitors: MonitorsDocSchema.parse({ monitors: bundle.monitors }).monitors });
+  if (!bundle.compileError && bundle.rulesDoc && bundle.status === "VALIDATED") return { ...compiled(), coverageGaps: [] };
+  const onlyCoverage = blocking.length > 0 && blocking.every((i) => COVERAGE_ISSUE_CODES.includes(i.code));
+  if (options.allowCoverageGaps && !bundle.compileError && bundle.rulesDoc && bundle.rulesDoc.rules.length > 0 && onlyCoverage) {
+    return { ...compiled(), coverageGaps: blocking.map((i) => `${i.code}: ${i.message}`) };
   }
-  return { rules: compileRules(RulesDocSchema.parse(bundle.rulesDoc)), monitors: MonitorsDocSchema.parse({ monitors: bundle.monitors }).monitors };
+  const why = bundle.compileError ? `${bundle.compileError.code}: ${bundle.compileError.message}` : [...new Set(blocking.map((i) => i.code))].join(", ") || "no rules";
+  const hint = !options.allowCoverageGaps && onlyCoverage && !bundle.compileError ? "; only coverage issues block, so it loads with { allowCoverageGaps: true }" : "";
+  throw new Error(`real policy "${name}" did not validate (${bundle.status}): ${why}${hint}`);
 }

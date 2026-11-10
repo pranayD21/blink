@@ -8,11 +8,13 @@ Spec section 11 asks whether Blink's policy compiler works beyond the demo polic
 |---|---|---|---|---|---|---|---|
 | Oaktree | 31 | 51 | 4 | 38 | 7 of 9 | 10 `CLAUSE_DROPPED` | no |
 | Sage Rock | 33 | 43 | 5 | 33 | 2 of 7 | 7 `CLAUSE_DROPPED` | no |
-| TCW | 27 | 55 | 3 | 35 | 4 of 7 | 10 `CLAUSE_DROPPED` | no |
+| TCW | 27 | 55 | 3 | 35 | 3 of 7 | 10 `CLAUSE_DROPPED` | no |
 
-Each compile ran pass A, then pass B, an assembly, pass B again with the validator's feedback, and a second assembly. Then it stopped: the second pass B is the last one allowed (`MAX_PASS_B_CALLS = 2`). The AI scenario stage did not run, because it runs only once a policy would otherwise validate. Clauses that are neither in a rule nor listed as unsupported are definitions or out-of-scope text, which the validator does not require to be placed (Oaktree 6, Sage Rock 7, TCW 17).
+Each compile ran pass A, then pass B, an assembly, pass B again with the validator's feedback, and a second assembly. Then it stopped: the second pass B is the last one allowed (`MAX_PASS_B_CALLS = 2`). The AI scenario stage did not run, because it runs only once a policy would otherwise validate. Clauses that are neither in a rule (as a source or an exception clause) nor listed as unsupported are definitions or out-of-scope text, which the validator does not require to be placed: Oaktree 5, Sage Rock 7, TCW 17. Oaktree's C44 is not among them, because R4 cites it as an exception clause.
 
-`loadRealPolicy(name)` (`src/server/eval/real.ts`) therefore refuses all three, naming each one. Task 37 has no real policy to run the development set under until this is decided.
+`loadRealPolicy(name)` (`src/server/eval/real.ts`) therefore refuses all three, naming each one. Since every blocking issue is a coverage issue, `loadRealPolicy(name, { allowCoverageGaps: true })` loads the rules each policy did get (4, 5 and 3) and lists the gaps. That is how Task 37 runs the development set under them. The app itself never activates such a policy.
+
+**The compile is not deterministic.** The same Sage Rock text gave 5 blocking issues on an earlier record run (at the old token cap) and 7 on this one. Each figure here is one run.
 
 ## Sources
 
@@ -52,11 +54,32 @@ Duties about trading, passing information on, firm administration, call logistic
 
 ## Why each policy failed
 
-The validator rejects a required paragraph if any of its clauses is left unsupported, even when another clause of the same paragraph is in a rule. That applies even to a clause the inventory classed as out of scope. Real policy paragraphs mix the part a call can show (an expert says something that may be inside information) with parts it cannot: the trader's pre-trade check, not passing the information on afterwards, and the compliance officer's own determination.
+**The main cause: gaps in the predicate vocabulary, together with marking whole paragraphs as required.**
 
-- **Oaktree.** P23 is fully automated. P4, P9, P11, P21, P22 and P24 each have a rule but also an unsupported clause; for example, P4's "before executing any trade, determine whether you have access to MNPI", and its "do not discuss it with anyone else". P25 (pre-approval for employees of portfolio holdings) and P26 (public officials) have no rule: no predicate observes portfolio holdings or public office.
-- **Sage Rock.** P19 (target-company employment within six months) and P26 (notify the CCO of possible MNPI from an expert) are automated. P8 (notify the CCO) was left wholly unsupported: the compiler read its notice as tied to a contemplated trade, so it put each of its clauses outside the call. P11 (notify the CCO after a public-company contact) was also left unsupported, because no predicate identifies a contact with a public company. P18 (an agreement that bars the topic), P20 (government officials) and P21 (clinical-trial doctors) have no predicate.
-- **TCW.** P2, P8 and P21 have rules, but each also has an unsupported clause: P2's not discussing the information with others, P8's placing the company on the restricted list after the Administrator's determination, and P21's not trading. P7 has no rule. Its "may not knowingly accept any MNPI" applies only before the issuer is on the restricted list, and its other clause concerns Legal approving confidentiality agreements; no predicate observes either. P17 (consult Legal about consultants who recently worked at a company in a major transaction) has no rule: no predicate observes a "major transaction", and the policy gives no window for "recent". P23 and P24 concern value-added investors, whom no predicate identifies.
+Eleven of the 23 required paragraphs have no rule at all, because no predicate can express them:
+- Oaktree P25 and P26;
+- Sage Rock P8, P11, P18, P20 and P21;
+- TCW P7, P17, P23 and P24.
+
+The ten predicates observe the statement (company-specific, unreported, internally sourced, marked confidential, a corporate event) and the expert's employment history. They do not observe:
+- whether an expert is a public official (Oaktree P26, Sage Rock P20);
+- whether an expert is a doctor in an ongoing clinical trial (Sage Rock P21);
+- whether an expert is bound by an agreement that bars the topic (Sage Rock P18);
+- whether the issuer is a portfolio holding (Oaktree P25);
+- whether the speaker is a value-added investor (TCW P23, P24);
+- whether a company is involved in a "major transaction" (TCW P17);
+- the restricted list (TCW P7);
+- a contact with a public company (Sage Rock P11).
+
+Sage Rock P8 has a call-relevant notice duty, but the compiler read it as tied to a contemplated trade. Even if the validator accepted any required paragraph that has some rule, none of the three would validate.
+
+The second part of the cause is paragraph-level marking. A required paragraph fails if any of its clauses is left unsupported. Real policy paragraphs mix what a call can show (an expert says something that may be inside information) with what it cannot: the trader's pre-trade check, not passing the information on afterwards, and the compliance officer's own decision. That accounts for the other blocking issues, in paragraphs that do have a rule:
+- Oaktree: P4, P9, P11, P21 and P22. For example, P4's "before executing any trade, determine whether you have access to MNPI", and its "do not discuss it with anyone else".
+- TCW: P2, P8 and P21. P2's not discussing the information with others, P8's placing the company on the restricted list after the Administrator's determination, and P21's not trading.
+
+Required paragraphs automated in full: Oaktree P23 and P24 (P24's exception, C44, is carried as an exception clause of R4), and Sage Rock P19 and P26.
+
+**A secondary product issue (`src/core/policy/validate.ts`, around line 226).** A clause from a required paragraph that is listed as unsupported is blocking, whatever its kind. A clause of a non-actionable kind (`out_of_scope`, `definition`, `discretion`, `evidence_requirement`) that is simply left out of both lists is not. So an honest compiler that lists an out-of-scope clause as unsupported is penalized, where omitting it would pass. Six of the 27 blocking issues here are out-of-scope clauses listed that way: Oaktree C7, C38 and C40; Sage Rock C10; TCW C17 and C40. Fixing this alone would leave all three failing.
 
 ## Rules written
 
@@ -220,4 +243,4 @@ As the compiler listed them, with its reasons. "(required)" marks a paragraph th
 - With the higher token cap, the compiler reads a real policy excerpt of 12k to 15k characters and produces a clause inventory, typed rules and monitors that pass every structural check (determinism, indeterminate handling, guard shape).
 - The ten predicates cover the core of each policy: a statement that may be inside information about the covered issuer, inside sourcing, a confidentiality signal, a recent employee of the target, and an analyst soliciting such information.
 - They cannot cover who an expert is beyond employment: public officials, clinical-trial doctors, agreements that bar a topic, employees of portfolio holdings, value-added investors. Nor can they cover anything that happens after the call: trading, passing the information on, the compliance officer's own decisions.
-- As a policy owner would mark them, required paragraphs make all three fail. The cause is the validator's clause-by-clause rule for required paragraphs, not a defect in the rules written. Whether that rule should accept a required paragraph that has a rule for its call-observable part is a product decision; this test did not change it.
+- With paragraphs marked as a policy owner would mark them, all three fail. The main cause is that the ten predicates cannot express several call-relevant restrictions (above). Next comes the marking of whole paragraphs, which mix call-relevant and post-call duties. The validator's treatment of out-of-scope clauses listed as unsupported is a secondary product issue. None of this is a defect in the rules that were written: they passed every other check. Whether to add predicates, mark clauses rather than paragraphs, or change the validator's rule is a product decision; this test changed none of them.

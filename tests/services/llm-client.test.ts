@@ -135,37 +135,58 @@ describe("a live call with a time limit", () => {
   });
 });
 
-describe("a live call cut off at the token limit", () => {
+describe("a live call whose output the SDK cannot parse", () => {
   afterEach(() => vi.unstubAllGlobals().unstubAllEnvs());
 
-  /** A server that streams half a JSON object and then stops at max_tokens, as a long structured answer does. */
-  const truncatingServer = () =>
+  /** A server that streams one text block and stops for `stopReason`, as the API does. */
+  const streamingServer = (text: string, stopReason: string, extraDelta: Record<string, unknown> = {}) =>
     vi.fn(async () => {
       const events: [string, unknown][] = [
         ["message_start", { type: "message_start", message: { id: "msg_cut", type: "message", role: "assistant", model: "claude-opus-5-5", content: [], stop_reason: null, stop_sequence: null, usage: { input_tokens: 1200, output_tokens: 1, cache_read_input_tokens: 300, cache_creation_input_tokens: 0 } } }],
         ["content_block_start", { type: "content_block_start", index: 0, content_block: { type: "text", text: "" } }],
-        ["content_block_delta", { type: "content_block_delta", index: 0, delta: { type: "text_delta", text: '{"ok": tr' } }],
+        ["content_block_delta", { type: "content_block_delta", index: 0, delta: { type: "text_delta", text } }],
         ["content_block_stop", { type: "content_block_stop", index: 0 }],
-        ["message_delta", { type: "message_delta", delta: { stop_reason: "max_tokens", stop_sequence: null }, usage: { output_tokens: 16000 } }],
+        ["message_delta", { type: "message_delta", delta: { stop_reason: stopReason, stop_sequence: null, ...extraDelta }, usage: { output_tokens: 16000 } }],
         ["message_stop", { type: "message_stop" }],
       ];
-      const text = events.map(([name, data]) => `event: ${name}\ndata: ${JSON.stringify(data)}\n\n`).join("");
-      return new Response(text, { status: 200, headers: { "content-type": "text/event-stream" } });
+      const body = events.map(([name, data]) => `event: ${name}\ndata: ${JSON.stringify(data)}\n\n`).join("");
+      return new Response(body, { status: 200, headers: { "content-type": "text/event-stream" } });
     });
 
-  it("raises LlmTruncated, not an API error, and logs the call with the usage the stream reported", async () => {
+  /** Runs one call against `server`, with a fresh client module: the SDK client keeps the fetch it was built with. */
+  async function callWith(server: ReturnType<typeof streamingServer>) {
     resetDbForTests();
     vi.stubEnv("BLINK_LLM_MODE", "live");
     vi.stubEnv("ANTHROPIC_API_KEY", "test-key-not-real");
-    vi.stubGlobal("fetch", truncatingServer());
-    // The SDK client keeps the fetch it was built with, so load a fresh client module that picks up this stub.
+    vi.stubGlobal("fetch", server);
     vi.resetModules();
-    const { structuredCall, LlmTruncated } = await import("@/server/llm/client");
-    const err = await structuredCall({ stage: "policy_pass_a", promptVersion: "v1", schema: z.object({ ok: z.boolean() }), system: "s", user: "u", effort: "high", maxTokens: 16000, maxRetries: 0 }).catch((e) => e);
-    expect(err).toBeInstanceOf(LlmTruncated);
+    const client = await import("@/server/llm/client");
+    const err = await client.structuredCall({ stage: "policy_pass_a", promptVersion: "v1", schema: z.object({ ok: z.boolean() }), system: "s", user: "u", effort: "high", maxTokens: 16000, maxRetries: 0 }).catch((e) => e);
+    return { client, err, rows: getDb().select().from(llmCalls).all() };
+  }
+
+  it("cut off at the token limit: raises LlmTruncated, not an API error, and logs the call with the usage the stream reported", async () => {
+    const { client, err, rows } = await callWith(streamingServer('{"ok": tr', "max_tokens"));
+    expect(err).toBeInstanceOf(client.LlmTruncated);
     expect((err as { code: string }).code).toBe("LLM_TRUNCATED");
-    const rows = getDb().select().from(llmCalls).all();
     expect(rows).toHaveLength(1);
     expect(rows[0]).toMatchObject({ stage: "policy_pass_a", stopReason: "max_tokens", inputTokens: 1200, outputTokens: 16000, cacheReadTokens: 300, replayed: false });
+  });
+
+  it("a refusal in plain text: raises LlmRefusal and logs the call", async () => {
+    const { client, err, rows } = await callWith(streamingServer("I can't help with that.", "refusal", { stop_details: { category: "cyber", explanation: "declined" } }));
+    expect(err).toBeInstanceOf(client.LlmRefusal);
+    expect((err as { code: string }).code).toBe("LLM_REFUSAL");
+    expect((err as Error).message).toContain("cyber");
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({ stopReason: "refusal", inputTokens: 1200, outputTokens: 16000, replayed: false });
+  });
+
+  it("invalid JSON at end_turn: raises LlmSchemaError and logs the call", async () => {
+    const { client, err, rows } = await callWith(streamingServer('{"ok": true,,}', "end_turn"));
+    expect(err).toBeInstanceOf(client.LlmSchemaError);
+    expect((err as { code: string }).code).toBe("LLM_SCHEMA_ERROR");
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({ stopReason: "end_turn", inputTokens: 1200, outputTokens: 16000, replayed: false });
   });
 });
