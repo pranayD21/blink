@@ -12,6 +12,7 @@ import { eq } from "drizzle-orm";
 import type { LiveTurn } from "@/core/live/transcript";
 import { parseTranscript } from "@/core/transcript/parse";
 import { DEMO_USERS, loadActor } from "../auth/actor";
+import { hashPassword } from "../auth/password";
 import { appendAudit } from "../audit/log";
 import { transact } from "../db/client";
 import { cases, users } from "../db/schema";
@@ -77,10 +78,44 @@ export function fixturePolicyInput(file: "blink-demo-policy-v1.md" | "blink-demo
   return { title, text, requiredParagraphs: FIXTURE_REQUIRED_PARAGRAPHS, scenarios: readFixtureJson("policy", "scenarios-v1.json") };
 }
 
+/** `priya@blink.demo` for Priya Raman. */
+const demoEmail = (name: string): string => `${name.split(" ")[0].toLowerCase()}@blink.demo`;
+
+/**
+ * Passwords for the demo accounts come from `BLINK_SEED_PASSWORDS`, a JSON object keyed by user id.
+ * A user it does not name keeps no password, so nobody can sign in as them. The value is never logged,
+ * and a malformed one is reported without quoting it.
+ */
+function seedPasswords(): Record<string, string> {
+  const raw = process.env.BLINK_SEED_PASSWORDS;
+  if (!raw) return {};
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    throw new Error("BLINK_SEED_PASSWORDS is not valid JSON");
+  }
+  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed) || !Object.values(parsed).every((v) => typeof v === "string" && v.length > 0)) {
+    throw new Error('BLINK_SEED_PASSWORDS must be a JSON object of non-empty strings keyed by user id, like {"user_priya": "..."}');
+  }
+  return parsed as Record<string, string>;
+}
+
 export function seedBase(options: SeedOptions = {}): { caseId: string; documents: string[] } {
   return transact((tx) => {
+    const passwords = seedPasswords();
     for (const user of DEMO_USERS) {
-      if (!tx.select().from(users).where(eq(users.id, user.id)).get()) tx.insert(users).values(user).run();
+      const existing = tx.select().from(users).where(eq(users.id, user.id)).get();
+      const password = passwords[user.id];
+      if (!existing) {
+        tx.insert(users).values({ ...user, email: demoEmail(user.name), passwordHash: password ? hashPassword(password) : null }).run();
+        continue;
+      }
+      // A re-seed fills in what is missing and never replaces a password that is already set.
+      const fill: { email?: string; passwordHash?: string } = {};
+      if (!existing.email) fill.email = demoEmail(user.name);
+      if (!existing.passwordHash && password) fill.passwordHash = hashPassword(password);
+      if (Object.keys(fill).length) tx.update(users).set(fill).where(eq(users.id, user.id)).run();
     }
     const documentIds: string[] = [];
     for (const file of readdirSync(fixture("documents")).filter((f) => f.endsWith(".md")).sort()) {

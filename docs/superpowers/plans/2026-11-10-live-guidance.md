@@ -1131,7 +1131,7 @@ export function recordAttempt(tx: DbOrTx, email: string, ok: boolean): void;
 
 - Seeding: each demo user gets `email` `<first name>@blink.demo`; `password_hash` comes from the JSON in `BLINK_SEED_PASSWORDS` (`{"user_priya": "..."}`), and stays null for a user it does not name.
 
-- [ ] **Step 1: Write the failing tests.**
+- [x] **Step 1: Write the failing tests.**
 
 ```ts
 it("a password verifies only against its own hash, and the hash is not the password", () => { const h = hashPassword("correct horse"); expect(verifyPassword("correct horse", h)).toBe(true); expect(verifyPassword("wrong", h)).toBe(false); expect(h).not.toContain("correct horse"); expect(verifyPassword("x", null)).toBe(false); });
@@ -1140,10 +1140,10 @@ it("the stored value is not the token", () => expect(sessionRow().tokenHash).not
 it("the sixth attempt after five failures is refused", () => { /* five recordAttempt(false) → tooManyAttempts true; sixteen minutes later → false */ });
 ```
 
-- [ ] **Step 2: Run it and see it fail.** Run: `pnpm exec vitest run tests/services/auth.test.ts`. Expected: FAIL.
-- [ ] **Step 3: Implement** with `node:crypto` (`scryptSync`, `randomBytes`, `timingSafeEqual`, `createHash`). No new dependency.
-- [ ] **Step 4: Run the tests.** Run: `pnpm db:generate && pnpm test`. Expected: PASS.
-- [ ] **Step 5: Commit.**
+- [x] **Step 2: Run it and see it fail.** Run: `pnpm exec vitest run tests/services/auth.test.ts`. Expected: FAIL.
+- [x] **Step 3: Implement** with `node:crypto` (`scryptSync`, `randomBytes`, `timingSafeEqual`, `createHash`). No new dependency.
+- [x] **Step 4: Run the tests.** Run: `pnpm db:generate && pnpm test`. Expected: PASS.
+- [x] **Step 5: Commit.**
 
 ```bash
 git add src/server/auth/password.ts src/server/auth/sessions.ts src/server/db/schema.ts drizzle src/server/services/seed.ts src/lib/session.ts tests/services/auth.test.ts

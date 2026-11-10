@@ -4,6 +4,9 @@
  */
 export const SESSION_COOKIE = "blink_user";
 
+/** The cookie that carries a real sign-in: a random token, never a user id. */
+export const AUTH_COOKIE = "blink_session";
+
 /** New visitors start as the compliance reviewer, the role most of the app is for. */
 export const DEFAULT_USER_ID = "user_marcus";
 

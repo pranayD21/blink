@@ -21,7 +21,35 @@ export const users = sqliteTable("users", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),
   role: text("role", { enum: ["analyst", "reviewer", "senior_reviewer", "policy_owner"] }).notNull(),
+  email: text("email").unique(), // + the sign-in name; null for a user nobody can sign in as
+  passwordHash: text("password_hash"), // + scrypt, "scrypt$N$r$p$salt$hash"; null means no password login
 });
+
+/** + A signed-in browser. Only the SHA-256 of the cookie's token is kept, so a copy of the database cannot be replayed. */
+export const authSessions = sqliteTable(
+  "auth_sessions",
+  {
+    id: text("id").primaryKey(),
+    tokenHash: text("token_hash").notNull().unique(),
+    userId: text("user_id").notNull(),
+    createdAt: text("created_at").notNull(),
+    expiresAt: text("expires_at").notNull(),
+    lastSeenAt: text("last_seen_at").notNull(),
+  },
+  (t) => [index("auth_sessions_user_idx").on(t.userId)],
+);
+
+/** + Every sign-in attempt, kept so five failures in fifteen minutes lock an email out for a while. */
+export const loginAttempts = sqliteTable(
+  "login_attempts",
+  {
+    id: text("id").primaryKey(),
+    email: text("email").notNull(),
+    at: text("at").notNull(),
+    ok: bool("ok"),
+  },
+  (t) => [index("login_attempts_email_idx").on(t.email, t.at)],
+);
 
 // ── Curated public documents (§11) ──────────────────────────────────────────
 
