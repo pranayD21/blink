@@ -9,10 +9,10 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { eq } from "drizzle-orm";
 import { type GroundingTurn, groundExtraction } from "@/core/extraction/ground";
-import { type LlmExtraction, LlmExtractionSchema } from "@/core/extraction/schema";
+import { type LlmExtraction, LlmExtractionSchema, LlmExtractionWireSchema, extractionFromWire } from "@/core/extraction/schema";
 import { fromJson, getDb, transact } from "../../db/client";
 import { analysisRuns, transcriptVersions } from "../../db/schema";
-import { LlmError, llmModel, structuredCall } from "../../llm/client";
+import { LlmError, LlmSchemaError, llmModel, structuredCall } from "../../llm/client";
 import { EXTRACT_PROMPT_VERSION, EXTRACT_STAGE, EXTRACT_SYSTEM, buildExtractUser } from "../../llm/prompts/extract";
 import { persistAnalysis, recordAnalysisFailure, setRunStage, startRun } from "../../services/analysis";
 import { loadCaseBundle, loadDocumentSet, turnsOfVersion } from "../../services/loaders";
@@ -86,14 +86,17 @@ export async function analyzeTranscript(job: JobRow): Promise<Record<string, unk
     const result = await structuredCall({
       stage: EXTRACT_STAGE,
       promptVersion: EXTRACT_PROMPT_VERSION,
-      schema: LlmExtractionSchema,
+      schema: LlmExtractionWireSchema,
       system: EXTRACT_SYSTEM,
       user: buildExtractUser({ ctx: bundle.ctx, researchQuestions: bundle.researchQuestions, expert: bundle.expertProfile, turns: turnRows.map((t) => ({ label: t.label, speaker: t.speaker, text: t.text })) }),
       effort: "high",
       maxTokens: 32000,
       ref: { caseId: payload.caseId, runId: run.id },
     });
-    extraction = result.data;
+    // The flat wire form is restored to the canonical shape and checked again before anything uses it.
+    const canonical = LlmExtractionSchema.safeParse(extractionFromWire(result.data));
+    if (!canonical.success) throw new LlmSchemaError(EXTRACT_STAGE, canonical.error.issues.slice(0, 3).map((i) => `${i.path.join(".")}: ${i.message}`).join("; "));
+    extraction = canonical.data;
     llmCallId = result.callId;
   }
 

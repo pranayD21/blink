@@ -177,7 +177,10 @@ export async function structuredCall<T extends z.ZodType>(opts: StructuredCallOp
     return id;
   };
 
-  if (mode === "replay") {
+  // Record mode fills in what is missing: a request that already has a recording is served from it, so an
+  // interrupted recording run resumes without paying twice. Set BLINK_LLM_RERECORD=1 to refresh everything.
+  const reuseRecording = mode === "record" && existsSync(file) && process.env.BLINK_LLM_RERECORD !== "1";
+  if (mode === "replay" || reuseRecording) {
     if (!existsSync(file)) throw new LlmReplayMiss(opts.stage, requestHash, file.replace(`${process.cwd()}/`, ""));
     const recording = JSON.parse(readFileSync(file, "utf8")) as Recording;
     const data = validate(recording.response.parsed_output);

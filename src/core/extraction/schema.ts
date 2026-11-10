@@ -76,6 +76,104 @@ export const LlmExtractionSchema = z.object({
 });
 export type LlmExtraction = z.infer<typeof LlmExtractionSchema>;
 
+// ── Wire format for the extraction call ─────────────────────────────────────
+
+/**
+ * What the model is actually asked to emit. The API compiles an output schema
+ * into a grammar, and the nested, nullable shape above compiles to one that is
+ * too large to accept. This flat form says the same thing with sentinel values
+ * ("" for an absent string, 0 for an absent year or quarter, "none" for an
+ * absent category) and one nullable number. `extractionFromWire` restores the
+ * canonical shape, so nothing downstream sees the difference.
+ */
+export const LlmExtractionWireSchema = z.object({
+  claims: z.array(
+    z.object({
+      logical_key: z.string(),
+      summary: z.string(),
+      speaker: z.enum(["expert", "analyst"]),
+      subject_kind: z.enum(ENTITY_KINDS),
+      subject_name: z.string(),
+      metric_category: z.enum([...METRIC_CATEGORIES, "none"]),
+      metric_label: z.string(),
+      event_kind: z.enum(EVENT_KINDS),
+      period_label: z.string(),
+      period_relative: z.enum(["current", "prior", "future", "unspecified"]),
+      fiscal_year: z.number().int(),
+      fiscal_quarter: z.number().int(),
+      calendar_year: z.number().int(),
+      calendar_quarter: z.number().int(),
+      value_number: z.number().nullable(),
+      value_unit: z.enum(["percent", "usd", "units", "none"]),
+      value_direction: z.enum(["up", "down", "flat", "none"]),
+      value_baseline: z.string(),
+      scope: z.enum(SCOPES),
+      scope_detail: z.string(),
+      knowledge_basis: z.enum(KNOWLEDGE_BASES),
+      access_timing: z.enum(ACCESS_TIMINGS),
+      confidentiality_signals: z.array(z.string()),
+      qualifications: z.array(z.string()),
+      is_correction_of: z.string(),
+      quotes: z.array(z.object({ turn_id: z.string(), quote: z.string(), role: z.enum(QUOTE_ROLES), supports_fields: z.array(z.string()) })),
+      links: z.array(z.object({ to: z.string(), kind: z.enum(LINK_KINDS) })),
+      solicited_by_analyst: z.enum(["yes", "no", "unclear"]),
+      field_uncertainty: z.array(z.object({ field: z.string(), kind: z.enum(["ambiguous", "conflicting_statements"]), note: z.string() })),
+    }),
+  ),
+  suggested_concerns: z.array(z.object({ title: z.string(), claim_keys: z.array(z.string()), rationale: z.string() })),
+  missing_context_questions: z.array(z.object({ claim_key: z.string(), question: z.string() })),
+  call_summary: z.string(),
+});
+export type LlmExtractionWire = z.infer<typeof LlmExtractionWireSchema>;
+
+const blankToNull = (s: string): string | null => (s.trim() === "" ? null : s.trim());
+const zeroToNull = (n: number): number | null => (n > 0 ? n : null);
+
+/** Restores the canonical extraction shape from the flat wire form. */
+export function extractionFromWire(wire: LlmExtractionWire): LlmExtraction {
+  return {
+    claims: wire.claims.map((c) => {
+      const unit = c.value_unit === "none" ? null : c.value_unit;
+      const direction = c.value_direction === "none" ? null : c.value_direction;
+      const baseline = blankToNull(c.value_baseline);
+      const hasValue = c.value_number !== null || unit !== null || direction !== null || baseline !== null;
+      return {
+        logical_key: c.logical_key,
+        fields: {
+          summary: c.summary,
+          speaker: c.speaker,
+          subject_entity: { name: blankToNull(c.subject_name), kind: c.subject_kind },
+          metric: c.metric_category === "none" ? null : { category: c.metric_category, label: c.metric_label.trim() || c.metric_category.replaceAll("_", " ") },
+          event_kind: c.event_kind,
+          period: {
+            label: blankToNull(c.period_label),
+            fiscal_year: zeroToNull(c.fiscal_year),
+            fiscal_quarter: zeroToNull(c.fiscal_quarter),
+            calendar_year: zeroToNull(c.calendar_year),
+            calendar_quarter: zeroToNull(c.calendar_quarter),
+            relative: c.period_relative,
+          },
+          value: hasValue ? { number: c.value_number, unit, direction, baseline } : null,
+          scope: c.scope,
+          scope_detail: blankToNull(c.scope_detail),
+          knowledge_basis: c.knowledge_basis,
+          access_timing: c.access_timing,
+          confidentiality_signals: c.confidentiality_signals,
+          qualifications: c.qualifications,
+          is_correction_of: blankToNull(c.is_correction_of),
+        },
+        quotes: c.quotes,
+        links: c.links,
+        solicited_by_analyst: c.solicited_by_analyst,
+        field_uncertainty: c.field_uncertainty,
+      };
+    }),
+    suggested_concerns: wire.suggested_concerns,
+    missing_context_questions: wire.missing_context_questions,
+    call_summary: wire.call_summary,
+  };
+}
+
 export const LlmDocFactsSchema = z.object({
   facts: z.array(
     z.object({

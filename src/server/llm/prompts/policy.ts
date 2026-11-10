@@ -64,14 +64,14 @@ How the rules are used: code evaluates each rule's guard against one statement a
 # Writing a rule
 
 - rule_id: R1, R2, … in the order of the policy paragraph each rule comes from.
-- source_clause_ids: the clauses the rule implements. Include an evidence_requirement clause here when the rule's on_indeterminate setting is how that clause is carried out.
+- source_clause_ids: the clauses the rule implements. Include an evidence_requirement clause here when the rule's on_indeterminate setting is how that clause is carried out (see on_indeterminate below).
 - intent: a short phrase naming what the rule catches.
-- guard: a boolean expression over predicates from the vocabulary, in the flat form described below. Use only predicates the clause actually calls for: do not add conditions the policy does not state, and do not leave out conditions it does state.
+- guard: a boolean expression over predicates from the vocabulary, in the flat form described below. Give each condition the clause states its own predicate: a clause of the form "a statement describing X at a covered issuer, where the expert indicates Y" has three conditions (the issuer, X, and Y) and needs a predicate for each, even when one predicate's description appears to imply another's. The reviewer later reads the guard's trace condition by condition, and a condition with no predicate of its own cannot be shown or contested. Do not add conditions the policy does not state.
 - exception_clause_ids: clauses whose carve-out is built into this rule's guard. An exception is expressed either with not(...) around the predicate that detects the excepted case, or by a predicate whose refuted case is the exception (the predicate descriptions say when this applies).
 - on_true: "open_review", or "open_review_and_escalate" when the policy requires escalation to a more senior person.
 - on_indeterminate: what happens when evidence is missing or conflicting, so the guard is neither true nor false.
-  - "open_context_task": compliance seeks clarification first. Choose this when every way the guard can be indeterminate is a gap the policy says to clarify.
-  - "open_review": the statement goes to a reviewer as it stands. Choose this when the guard can also be indeterminate for a reason the policy does not send to clarification.
+  - "open_context_task": compliance asks for the missing context before anything else. Choose this for a rule covered by a policy clause that requires clarification when information is unclear. That clause is carried out by this setting, so list it in the rule's source_clause_ids rather than as unsupported. It does not have to name every gap the guard could have: the context task asks for whatever is missing, and the reviewer can still promote the statement to review.
+  - "open_review": the statement goes to a reviewer as it stands. Choose this when no clarification clause covers the rule. Also choose it, even where a clarification clause would otherwise apply, for a rule whose trigger is the expert signalling that the information is confidential or not yet public: clarifying such a statement means asking the expert to say more about the very thing that may be material nonpublic information, so it goes to a reviewer instead.
 - severity: high, medium, or low, from how serious the policy treats the matter.
 
 # Guard format
