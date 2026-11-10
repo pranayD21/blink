@@ -740,14 +740,14 @@ git commit   # feat(api): add the routes the banker's app calls during a call
 - Consumes: `PillView`, `reduceClient`, `PILL_TEXT` (Tasks 7 and 8).
 - Produces: `Pill({ view }: { view: PillView })`; the page listens on `new BroadcastChannel("blink-pill")` for `PillView` messages and renders the latest; scripts `e2e:serve:live` and an `e2e` that runs both configs.
 
-- [ ] **Step 1: Add the second browser-test setup.** `playwright.live.config.ts` copies `playwright.config.ts` with `testDir: "./tests/e2e-live"`, port 3101 and `command: "pnpm e2e:serve:live"`. In `package.json`:
+- [x] **Step 1: Add the second browser-test setup.** `playwright.live.config.ts` copies `playwright.config.ts` with `testDir: "./tests/e2e-live"`, port 3101 and `command: "pnpm e2e:serve:live"`. In `package.json`:
 
 ```json
 "e2e": "playwright test && playwright test -c playwright.live.config.ts",
 "e2e:serve:live": "BLINK_DB_PATH=./data/e2e-live.db BLINK_LLM_MODE=replay BLINK_AUTH_MODE=switcher BLINK_ALLOW_SWITCHER=1 BLINK_ALLOW_SCRIPTED_CALLS=1 sh -c 'rm -f data/e2e-live.db data/e2e-live.db-wal data/e2e-live.db-shm && mkdir -p data && drizzle-kit migrate && tsx scripts/seed.ts --manual-policy && next build && concurrently -k -n web,worker \"next start -p 3101\" \"tsx scripts/worker.ts\"'"
 ```
 
-- [ ] **Step 2: Write the failing test.**
+- [x] **Step 2: Write the failing test.**
 
 ```ts
 const show = (page: Page, view: object) => page.evaluate((v) => new BroadcastChannel("blink-pill").postMessage(v), view);
@@ -762,10 +762,10 @@ test("the pill shows exactly what it is sent, and nothing else", async ({ page }
 });
 ```
 
-- [ ] **Step 3: Run it and see it fail.** Run: `pnpm exec playwright test -c playwright.live.config.ts tests/e2e-live/pill.spec.ts`. Expected: FAIL, 404 on `/desktop/pill`.
-- [ ] **Step 4: Build the page.** The pill is one rounded line: a `StatusDot` (`good` for listening and ended, `warn`, `stop`, `ring` for broken) and the text, on `bg-popover` with a hairline border, centred. The page sets `html, body { background: transparent }` so the Mac window shows only the pill. `HeaderGate` is a client component that renders its children unless `usePathname()` starts with `/desktop`; the root layout wraps `AppHeader` in it. Add `src/components/live` and `src/app/desktop` to `UI_RULE_SCOPE`.
-- [ ] **Step 5: Run the tests.** Run: `pnpm e2e`. Expected: PASS for both configs.
-- [ ] **Step 6: Commit.**
+- [x] **Step 3: Run it and see it fail.** Run: `pnpm exec playwright test -c playwright.live.config.ts tests/e2e-live/pill.spec.ts`. Expected: FAIL, 404 on `/desktop/pill`.
+- [x] **Step 4: Build the page.** The pill is one rounded line: a `StatusDot` (`good` for listening and ended, `warn`, `stop`, `ring` for broken) and the text, on `bg-popover` with a hairline border, centred. The page sets `html, body { background: transparent }` so the Mac window shows only the pill. `HeaderGate` is a client component that renders its children unless `usePathname()` starts with `/desktop`; the root layout wraps `AppHeader` in it. Add `src/components/live` and `src/app/desktop` to `UI_RULE_SCOPE`.
+- [x] **Step 5: Run the tests.** Run: `pnpm e2e`. Expected: PASS for both configs.
+- [x] **Step 6: Commit.**
 
 ```bash
 git add src/components/live src/app/desktop src/components/app/header-gate.tsx src/app/layout.tsx playwright.live.config.ts tests/e2e-live/pill.spec.ts package.json tests/helpers/ui-scope.ts
