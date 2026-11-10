@@ -35,5 +35,7 @@ export function safeNextPath(next: string | string[] | undefined | null): string
   }
   if (url.origin !== LOCAL_ORIGIN) return "/";
   if (url.pathname === LOGIN_PATH || url.pathname.startsWith(`${LOGIN_PATH}/`)) return "/";
-  return `${url.pathname}${url.search}${url.hash}`;
+  const result = `${url.pathname}${url.search}${url.hash}`;
+  // Dot segments can collapse into "//host" ("/..//host" resolves to the path "//host"), which a browser reads as another site.
+  return /^\/(?![/\\])/.test(result) ? result : "/";
 }

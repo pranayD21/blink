@@ -184,7 +184,7 @@ describe("where sign-in may send you next", () => {
   it("keeps a path on this site and turns anything else into the home page", () => {
     expect(safeNextPath("/desktop")).toBe("/desktop");
     expect(safeNextPath("/cases/case_1?tab=brief")).toBe("/cases/case_1?tab=brief");
-    for (const bad of [undefined, null, "", "desktop", "//evil.example", "/\\evil.example", "https://evil.example/", "/\t/evil.example", "/\n/evil.example", "/\r/evil.example", decodeURIComponent("/%09/evil.example"), "/a\u0000b", "/a\u007fb", "/login", "/login?next=/x", ["/a", "/b"]]) {
+    for (const bad of [undefined, null, "", "desktop", "//evil.example", "/\\evil.example", "https://evil.example/", "/\t/evil.example", "/\n/evil.example", "/\r/evil.example", decodeURIComponent("/%09/evil.example"), "/./..//evil.example", "/..//evil.example", "/.//evil.example", "/a/../..//evil.example", "/a\u0000b", "/a\u007fb", "/login", "/login?next=/x", ["/a", "/b"]]) {
       expect(safeNextPath(bad as string | undefined)).toBe("/");
     }
   });
@@ -204,7 +204,9 @@ describe("every page checks the session itself", () => {
   });
 
   it("each page except /login and /desktop/pill calls pageActor", () => {
-    const missing = pages.filter((p) => !PUBLIC.has(p) && !/\bpageActor\(/.test(readFileSync(join("src/app", p), "utf8")));
+    // Comments are removed first, so a page cannot pass by mentioning the call without making it.
+    const code = (p: string) => readFileSync(join("src/app", p), "utf8").replace(/\/\*[\s\S]*?\*\//g, "").replace(/(^|[^:])\/\/.*$/gm, "$1");
+    const missing = pages.filter((p) => !PUBLIC.has(p) && !/\bawait\s+pageActor\(\)/.test(code(p)));
     expect(missing).toEqual([]);
   });
 });
