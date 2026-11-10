@@ -694,5 +694,16 @@
       }
     ],
     "call_summary": "The expert, a former Halvorsen Pumps regional sales director who left in July 2026, described soft distributor demand, stable pricing, and steel cost pressure across the pump industry. The expert also gave a twenty percent decline figure that was later attributed to Halvorsen's West region for the current quarter, sourced from a Salesforce dashboard the expert can still access, and mentioned an unannounced re-bid of the Cardinal Utilities contract."
+  },
+  "extraction_v2_patch": {
+    "note": "Transcript v2 corrects T19 from twelve to twenty-one percent. Applied by the dev-only gold loader when the uploaded transcript is v2.",
+    "claim": "C9",
+    "replace": [
+      [
+        "twelve percent",
+        "twenty-one percent"
+      ]
+    ],
+    "value_number": 21
   }
 }

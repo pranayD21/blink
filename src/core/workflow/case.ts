@@ -48,7 +48,9 @@ export function transitionCase(status: CaseStatus, event: CaseEvent): CaseTransi
       if (status !== "READY_FOR_APPROVAL") return { ok: false, message: `a brief can only be approved when the case is READY_FOR_APPROVAL (it is ${status})` };
       return to("APPROVED", status);
     case "APPROVAL_VOIDED":
-      if (status === "APPROVED") return to("READY_FOR_APPROVAL", status);
+      // A new brief version is being prepared. After a release the earlier brief stays with the
+      // analyst until the new one is released; the case simply needs approval again.
+      if (status === "APPROVED" || status === "RELEASED") return to("READY_FOR_APPROVAL", status);
       return to(status, status);
     case "BRIEF_RELEASED":
       if (status !== "APPROVED") return { ok: false, message: `a brief can only be released when the case is APPROVED (it is ${status})` };

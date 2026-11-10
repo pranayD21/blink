@@ -107,3 +107,42 @@ export const LlmBriefSchema = z.object({
   ),
 });
 export type LlmBrief = z.infer<typeof LlmBriefSchema>;
+
+// ── Reviewer corrections ────────────────────────────────────────────────────
+
+const QuarterSchema = z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(4)]);
+
+/**
+ * The fields a reviewer may verify or correct (§10.6, PATCH /api/claims/:id).
+ * Each is optional; a present field replaces the asserted value for
+ * evaluation (`verified ?? asserted`), and the asserted value is kept.
+ */
+export const VerifiedFieldsSchema = z
+  .strictObject({
+    subject_entity: z.strictObject({ name: z.string().trim().min(1).nullable(), kind: z.enum(ENTITY_KINDS) }),
+    metric: z.strictObject({ category: z.enum(METRIC_CATEGORIES), label: z.string().trim().min(1) }).nullable(),
+    event_kind: z.enum(EVENT_KINDS),
+    period: z.strictObject({
+      label: z.string().nullable(),
+      fiscal_year: z.number().int().min(1990).max(2100).nullable(),
+      fiscal_quarter: QuarterSchema.nullable(),
+      calendar_year: z.number().int().min(1990).max(2100).nullable(),
+      calendar_quarter: QuarterSchema.nullable(),
+      relative: z.enum(["current", "prior", "future", "unspecified"]),
+    }),
+    value: z
+      .strictObject({
+        number: z.number().finite().nullable(),
+        unit: z.enum(["percent", "usd", "units"]).nullable(),
+        direction: z.enum(["up", "down", "flat"]).nullable(),
+        baseline: z.string().nullable(),
+      })
+      .nullable(),
+    scope: z.enum(SCOPES),
+    scope_detail: z.string().nullable(),
+    knowledge_basis: z.enum(KNOWLEDGE_BASES),
+    access_timing: z.enum(ACCESS_TIMINGS),
+    confidentiality_signals: z.array(z.string()),
+  })
+  .partial();
+export type VerifiedFields = z.infer<typeof VerifiedFieldsSchema>;
