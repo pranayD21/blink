@@ -446,7 +446,7 @@ git commit   # feat(live): add the pure pieces the client and the record share
 
 - `findings.origin` gains `"live"`.
 
-- [ ] **Step 1: Write the failing test.**
+- [x] **Step 1: Write the failing test.**
 
 ```ts
 it("a call, a turn and a claim can be stored, and a turn's seq is unique per call", () => {
@@ -456,10 +456,10 @@ it("a call, a turn and a claim can be stored, and a turn's seq is unique per cal
 });
 ```
 
-- [ ] **Step 2: Run it and see it fail.** Run: `pnpm exec vitest run tests/services/live-schema.test.ts`. Expected: FAIL, `calls` is not exported.
-- [ ] **Step 3: Add the tables, then generate.** Run: `pnpm db:generate`. Expected: one new SQL file under `drizzle/`.
-- [ ] **Step 4: Run the tests.** Run: `pnpm test`. Expected: PASS.
-- [ ] **Step 5: Commit.**
+- [x] **Step 2: Run it and see it fail.** Run: `pnpm exec vitest run tests/services/live-schema.test.ts`. Expected: FAIL, `calls` is not exported.
+- [x] **Step 3: Add the tables, then generate.** Run: `pnpm db:generate`. Expected: one new SQL file under `drizzle/`.
+- [x] **Step 4: Run the tests.** Run: `pnpm test`. Expected: PASS.
+- [x] **Step 5: Commit.**
 
 ```bash
 git add src/server/db/schema.ts drizzle tests/services/live-schema.test.ts

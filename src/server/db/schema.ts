@@ -10,6 +10,7 @@
  * reason they exist.
  */
 import { index, integer, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
+import { STAGES } from "@/core/live/health";
 
 const version = () => integer("version").notNull().default(1);
 const bool = (name: string) => integer(name, { mode: "boolean" }).notNull().default(false);
@@ -360,7 +361,7 @@ export const findings = sqliteTable(
     id: text("id").primaryKey(),
     caseId: text("case_id").notNull(),
     claimLogicalKey: text("claim_logical_key"),
-    origin: text("origin", { enum: ["policy", "ai_suggested", "reviewer"] }).notNull(),
+    origin: text("origin", { enum: ["policy", "ai_suggested", "reviewer", "live"] }).notNull(),
     monitorInstanceId: text("monitor_instance_id"),
     title: text("title").notNull(),
     severity: text("severity", { enum: ["high", "medium", "low"] }).notNull(),
@@ -442,6 +443,105 @@ export const attestations = sqliteTable(
     createdAt: text("created_at").notNull(),
   },
   (t) => [index("attestations_case_idx").on(t.caseId)],
+);
+
+// ── Live calls ──────────────────────────────────────────────────────────────
+
+export const calls = sqliteTable(
+  "calls",
+  {
+    id: text("id").primaryKey(),
+    caseId: text("case_id").notNull(),
+    startedBy: text("started_by").notNull(),
+    policyVersionId: text("policy_version_id").notNull(),
+    status: text("status", { enum: ["live", "ended", "abandoned"] }).notNull(),
+    startedAt: text("started_at").notNull(),
+    endedAt: text("ended_at"),
+    lastAmberAt: text("last_amber_at"), // drives "amber at most once in 30 seconds"
+    transcriptVersionId: text("transcript_version_id"), // set when the call is ended and stored as a transcript
+    analysisJobId: text("analysis_job_id"),
+    readerModel: text("reader_model").notNull(),
+    readerPromptVersion: text("reader_prompt_version").notNull(),
+    hiddenCount: integer("hidden_count").notNull().default(0),
+    version: version(),
+  },
+  (t) => [index("calls_case_idx").on(t.caseId)],
+);
+
+export const callTurns = sqliteTable(
+  "call_turns",
+  {
+    id: text("id").primaryKey(), // `${callId}:${seq}`
+    callId: text("call_id").notNull(),
+    seq: integer("seq").notNull(),
+    speaker: text("speaker", { enum: ["analyst", "expert"] }).notNull(),
+    text: text("text").notNull(),
+    textHash: text("text_hash").notNull(),
+    speechStartMs: integer("speech_start_ms"),
+    speechEndMs: integer("speech_end_ms").notNull(),
+    speechEndedAt: text("speech_ended_at").notNull(),
+    transcribedAt: text("transcribed_at").notNull(),
+    receivedAt: text("received_at").notNull(),
+    readMs: integer("read_ms"),
+    rulesMs: integer("rules_ms"),
+    decidedAt: text("decided_at").notNull(),
+    responseReceivedAt: text("response_received_at"),
+    shownAt: text("shown_at"),
+    readStatus: text("read_status", { enum: ["read", "timeout", "refused", "error"] }).notNull(),
+    llmCallId: text("llm_call_id"),
+    claimsJson: text("claims_json").notNull().default("[]"),
+    evaluationsJson: text("evaluations_json").notNull().default("[]"),
+    rejectedJson: text("rejected_json").notNull().default("[]"),
+    pill: text("pill", { enum: ["listening", "amber", "red"] }).notNull(),
+    pillReason: text("pill_reason").notNull(),
+    pillRuleIdsJson: text("pill_rule_ids_json").notNull().default("[]"),
+    suppressed: bool("suppressed"),
+    error: text("error"),
+  },
+  (t) => [uniqueIndex("call_turns_call_seq_idx").on(t.callId, t.seq)],
+);
+
+export const callClaims = sqliteTable(
+  "call_claims",
+  {
+    id: text("id").primaryKey(), // `${callId}:${logicalKey}`
+    callId: text("call_id").notNull(),
+    logicalKey: text("logical_key").notNull(),
+    recordJson: text("record_json").notNull(),
+    monitorStatesJson: text("monitor_states_json").notNull().default("[]"),
+    flagged: text("flagged", { enum: ["none", "needs_context", "review_required"] }).notNull(),
+    ruleIdsJson: text("rule_ids_json").notNull().default("[]"),
+    firstFlaggedSeq: integer("first_flagged_seq"),
+    updatedAt: text("updated_at").notNull(),
+  },
+  (t) => [index("call_claims_call_idx").on(t.callId)],
+);
+
+export const callOutages = sqliteTable(
+  "call_outages",
+  {
+    id: text("id").primaryKey(),
+    callId: text("call_id").notNull(),
+    stage: text("stage", { enum: STAGES }).notNull(),
+    startedAt: text("started_at").notNull(),
+    endedAt: text("ended_at"),
+    cause: text("cause").notNull(),
+    shownToBanker: bool("shown_to_banker"),
+  },
+  (t) => [index("call_outages_call_idx").on(t.callId)],
+);
+
+/** The span of a turn a live finding hid; offsets are inside the turn text. */
+export const findingPassages = sqliteTable(
+  "finding_passages",
+  {
+    id: text("id").primaryKey(),
+    findingId: text("finding_id").notNull(),
+    turnId: text("turn_id").notNull(),
+    startChar: integer("start_char").notNull(),
+    endChar: integer("end_char").notNull(),
+  },
+  (t) => [index("finding_passages_finding_idx").on(t.findingId)],
 );
 
 // ── Brief, approval, release (§12) ──────────────────────────────────────────
