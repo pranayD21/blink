@@ -4,6 +4,7 @@ import { Plus, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Panel } from "@/components/app/page-shell";
+import { StatusDot } from "@/components/app/status-dot";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -23,8 +24,8 @@ const MONTHS = ["January", "February", "March", "April", "May", "June", "July", 
 function Field({ label, hint, children, className }: { label: string; hint?: string; children: React.ReactNode; className?: string }) {
   return (
     <label className={cn("block", className)}>
-      <span className="text-xs font-medium text-slate-600">{label}</span>
-      {hint && <span className="ml-1.5 text-xs text-slate-400">{hint}</span>}
+      <span className="text-xs font-medium text-muted-foreground">{label}</span>
+      {hint && <span className="ml-1.5 text-xs text-muted-foreground/70">{hint}</span>}
       <div className="mt-0.5">{children}</div>
     </label>
   );
@@ -115,7 +116,7 @@ export function NewCaseForm() {
             <Input value={issuer} onChange={(e) => setIssuer(e.target.value)} placeholder="Acme Valves, Inc." data-testid="case-issuer" />
           </Field>
           <Field label="Ticker">
-            <Input value={ticker} onChange={(e) => setTicker(e.target.value)} placeholder="ACMV" className="uppercase" data-testid="case-ticker" />
+            <Input value={ticker} onChange={(e) => setTicker(e.target.value)} placeholder="ACMV" data-testid="case-ticker" />
           </Field>
           <Field label="Aliases" hint="comma-separated; how the expert may refer to the issuer" className="col-span-2">
             <Input value={aliases} onChange={(e) => setAliases(e.target.value)} placeholder="Acme, Acme Valves" />
@@ -126,9 +127,9 @@ export function NewCaseForm() {
         </Panel>
 
         <Panel title="Fiscal calendar" bodyClassName="grid grid-cols-4 gap-3">
-          <p className="col-span-4 -mt-1 text-xs text-slate-500">Blink uses this to decide whether a period the expert mentions has already been reported.</p>
+          <p className="col-span-4 -mt-1 text-xs text-muted-foreground">Blink uses this to decide whether a period the expert mentions has already been reported.</p>
           <Field label="Fiscal year ends in">
-            <select value={fyEnd} onChange={(e) => setFyEnd(Number(e.target.value))} className="h-8 w-full rounded-lg border border-slate-300 bg-white px-2 text-sm">
+            <select value={fyEnd} onChange={(e) => setFyEnd(Number(e.target.value))} className="h-8 w-full rounded-lg border border-input bg-background px-2 text-sm">
               {MONTHS.map((m, i) => (
                 <option key={m} value={i + 1}>
                   {m}
@@ -140,7 +141,7 @@ export function NewCaseForm() {
             <Input value={lastFy} onChange={(e) => setLastFy(e.target.value)} placeholder="2027" inputMode="numeric" data-testid="case-last-fy" />
           </Field>
           <Field label="Quarter">
-            <select value={lastQ} onChange={(e) => setLastQ(e.target.value)} className="h-8 w-full rounded-lg border border-slate-300 bg-white px-2 text-sm">
+            <select value={lastQ} onChange={(e) => setLastQ(e.target.value)} className="h-8 w-full rounded-lg border border-input bg-background px-2 text-sm">
               {[1, 2, 3, 4].map((q) => (
                 <option key={q} value={q}>
                   Q{q}
@@ -188,8 +189,8 @@ export function NewCaseForm() {
             </Field>
           </div>
           <div>
-            <div className="text-xs font-medium text-slate-600">
-              Employment history <span className="font-normal text-slate-400">dates decide whether the expert is a recent employee of the issuer</span>
+            <div className="text-xs font-medium text-muted-foreground">
+              Employment history <span className="font-normal text-muted-foreground/70">dates decide whether the expert is a recent employee of the issuer</span>
             </div>
             <div className="mt-1 space-y-2">
               {jobs.map((job, i) => (
@@ -222,22 +223,22 @@ export function NewCaseForm() {
         <Panel title="Packet preview" bodyClassName="p-3">
           <dl className="space-y-2 text-sm" data-testid="packet-preview">
             <div>
-              <dt className="text-xs text-slate-500">Case</dt>
-              <dd className="text-slate-900">{title || <span className="text-slate-300">—</span>}</dd>
+              <dt className="text-xs text-muted-foreground">Case</dt>
+              <dd className="text-foreground">{title || <span className="text-muted-foreground/60">—</span>}</dd>
             </div>
             <div>
-              <dt className="text-xs text-slate-500">Issuer</dt>
+              <dt className="text-xs text-muted-foreground">Issuer</dt>
               <dd>
-                {issuer || <span className="text-slate-300">—</span>} {ticker && <span className="text-slate-500">({ticker.toUpperCase()})</span>}
-                {aliasList.length > 0 && <div className="text-xs text-slate-500">also: {aliasList.join(", ")}</div>}
+                {issuer || <span className="text-muted-foreground/60">—</span>} {ticker && <span className="text-muted-foreground">({ticker.toUpperCase()})</span>}
+                {aliasList.length > 0 && <div className="text-xs text-muted-foreground">also: {aliasList.join(", ")}</div>}
               </dd>
             </div>
             <div>
-              <dt className="text-xs text-slate-500">Call date</dt>
-              <dd>{isDate(callDate) ? formatDate(callDate) : <span className="text-slate-300">—</span>}</dd>
+              <dt className="text-xs text-muted-foreground">Call date</dt>
+              <dd>{isDate(callDate) ? formatDate(callDate) : <span className="text-muted-foreground/60">—</span>}</dd>
             </div>
             <div>
-              <dt className="text-xs text-slate-500">Fiscal calendar</dt>
+              <dt className="text-xs text-muted-foreground">Fiscal calendar</dt>
               <dd>
                 Year ends in {MONTHS[fyEnd - 1]}.{" "}
                 {/^\d{4}$/.test(lastFy) && isDate(reportedOn) ? (
@@ -245,20 +246,20 @@ export function NewCaseForm() {
                     Last reported Q{lastQ} FY{lastFy} on {formatDate(reportedOn)}.
                   </>
                 ) : (
-                  <span className="text-slate-300">Last reported quarter not set.</span>
+                  <span className="text-muted-foreground/60">Last reported quarter not set.</span>
                 )}
               </dd>
             </div>
             <div>
-              <dt className="text-xs text-slate-500">Research questions</dt>
-              <dd>{cleanQuestions.length > 0 ? <ul className="list-disc pl-4">{cleanQuestions.map((q) => <li key={q}>{q}</li>)}</ul> : <span className="text-slate-300">—</span>}</dd>
+              <dt className="text-xs text-muted-foreground">Research questions</dt>
+              <dd>{cleanQuestions.length > 0 ? <ul className="list-disc pl-4">{cleanQuestions.map((q) => <li key={q}>{q}</li>)}</ul> : <span className="text-muted-foreground/60">—</span>}</dd>
             </div>
             <div>
-              <dt className="text-xs text-slate-500">Expert</dt>
+              <dt className="text-xs text-muted-foreground">Expert</dt>
               <dd>
-                {expertName || <span className="text-slate-300">—</span>}
+                {expertName || <span className="text-muted-foreground/60">—</span>}
                 {cleanJobs.map((j, i) => (
-                  <div key={i} className="text-xs text-slate-500">
+                  <div key={i} className="text-xs text-muted-foreground">
                     {j.employer}
                     {j.title ? `, ${j.title}` : ""} · {j.start || "?"} to {j.end || "present"}
                   </div>
@@ -268,8 +269,10 @@ export function NewCaseForm() {
           </dl>
         </Panel>
         {missing.length > 0 ? (
-          <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900" data-testid="missing-fields">
-            <p className="font-medium">Still needed:</p>
+          <div className="rounded-xl border bg-muted/50 px-3 py-2 text-sm text-foreground" data-testid="missing-fields">
+            <p className="font-medium">
+              <StatusDot tone="warn">Still needed:</StatusDot>
+            </p>
             <ul className="mt-1 list-disc pl-4 text-xs">
               {missing.map((m) => (
                 <li key={m}>{m}</li>
@@ -277,10 +280,12 @@ export function NewCaseForm() {
             </ul>
           </div>
         ) : (
-          <p className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">The packet is complete.</p>
+          <p className="rounded-xl border bg-muted/50 px-3 py-2 text-sm text-foreground">
+            <StatusDot tone="good">The packet is complete.</StatusDot>
+          </p>
         )}
         {error && (
-          <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-800" role="alert">
+          <p className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-foreground" role="alert">
             {error}
           </p>
         )}

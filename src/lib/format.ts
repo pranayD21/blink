@@ -45,7 +45,7 @@ export const HIDDEN_STATUS_LABEL: Record<"until_decided" | "kept_hidden" | "show
 };
 
 export const ROLE_LABEL: Record<string, string> = {
-  analyst: "Analyst",
+  analyst: "Banker",
   reviewer: "Compliance reviewer",
   senior_reviewer: "Senior compliance officer",
   policy_owner: "Policy owner",

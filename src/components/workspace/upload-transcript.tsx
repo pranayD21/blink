@@ -26,7 +26,7 @@ interface Preview {
 
 type Role = "analyst" | "expert" | "moderator";
 
-/** Shared by the analyst's case page and the review workspace. */
+/** Shared by the banker's case page and the review workspace. */
 export function TranscriptUploadForm({ caseId, samples, allowGold, onUploaded, onCancel }: { caseId: string; samples: TranscriptSample[]; allowGold: boolean; onUploaded: (jobId: string, versionNo: number) => void; onCancel?: () => void }) {
   const [text, setText] = useState("");
   const [filename, setFilename] = useState<string | null>(null);
@@ -111,8 +111,8 @@ export function TranscriptUploadForm({ caseId, samples, allowGold, onUploaded, o
       />
 
       {preview && (
-        <div className="min-w-0 rounded-lg border bg-slate-50 p-3" data-testid="transcript-preview">
-          <div className="text-xs font-medium text-slate-700">
+        <div className="min-w-0 rounded-lg border bg-muted/60 p-3" data-testid="transcript-preview">
+          <div className="text-xs font-medium text-foreground">
             Parsed as {preview.format.toUpperCase()}: {preview.turnCount} turns{filename ? ` from ${filename}` : ""}
           </div>
           <div className="mt-2 grid gap-1.5">
@@ -120,7 +120,7 @@ export function TranscriptUploadForm({ caseId, samples, allowGold, onUploaded, o
               const unknown = preview.unknownSpeakers.includes(s.name);
               return (
                 <div key={s.name} className="flex items-center gap-2 text-xs">
-                  <span className="w-48 truncate font-medium text-slate-800">{s.name}</span>
+                  <span className="w-48 truncate font-medium text-foreground">{s.name}</span>
                   {unknown || speakerMap[s.name] ? (
                     <Select
                       value={speakerMap[s.name] ?? ""}
@@ -130,45 +130,45 @@ export function TranscriptUploadForm({ caseId, samples, allowGold, onUploaded, o
                         void runPreview(text, filename, next);
                       }}
                     >
-                      <SelectTrigger size="sm" className="h-7 w-40 bg-white text-xs">
+                      <SelectTrigger size="sm" className="h-7 w-40 bg-background text-xs">
                         <SelectValue placeholder="Who is this?" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="analyst">Analyst</SelectItem>
+                        <SelectItem value="analyst">Banker</SelectItem>
                         <SelectItem value="expert">Expert</SelectItem>
                         <SelectItem value="moderator">Moderator</SelectItem>
                       </SelectContent>
                     </Select>
                   ) : (
-                    <span className="text-slate-600 capitalize">{s.role}</span>
+                    <span className="text-muted-foreground capitalize">{s.role === "analyst" ? "banker" : s.role}</span>
                   )}
                 </div>
               );
             })}
           </div>
-          {!hasExpert && <p className="mt-2 text-xs text-amber-800">No expert speaker is mapped yet. Map the speakers so Blink knows whose statements to evaluate.</p>}
-          <div className="mt-2 max-h-28 space-y-0.5 overflow-y-auto border-t pt-2 text-xs text-slate-600">
+          {!hasExpert && <p className="mt-2 text-xs text-foreground">No expert speaker is mapped yet. Map the speakers so Blink knows whose statements to evaluate.</p>}
+          <div className="mt-2 max-h-28 space-y-0.5 overflow-y-auto border-t pt-2 text-xs text-muted-foreground">
             {preview.turns.map((t) => (
               <div key={t.label} className="truncate">
-                <span className="font-mono text-slate-400">{t.label}</span> <span className="font-medium text-slate-700">{t.speakerName}:</span> {t.text}
+                <span className="font-mono text-muted-foreground/70">{t.label}</span> <span className="font-medium text-foreground">{t.speakerName}:</span> {t.text}
               </div>
             ))}
-            {preview.turnCount > preview.turns.length && <div className="text-slate-400">… {preview.turnCount - preview.turns.length} more</div>}
+            {preview.turnCount > preview.turns.length && <div className="text-muted-foreground/70">… {preview.turnCount - preview.turns.length} more</div>}
           </div>
         </div>
       )}
 
       {allowGold && (
-        <label className="flex items-start gap-2 rounded-lg border border-dashed px-3 py-2 text-xs text-slate-600">
+        <label className="flex items-start gap-2 rounded-lg border border-dashed px-3 py-2 text-xs text-muted-foreground">
           <Checkbox checked={gold} onCheckedChange={(v) => setGold(v === true)} className="mt-0.5" />
           <span>
-            <span className="font-medium text-slate-800">Development only:</span> load hand-labeled claims instead of calling the model. Works for the seeded Halvorsen transcript; the run is labeled as hand-labeled everywhere.
+            <span className="font-medium text-foreground">Development only:</span> load hand-labeled claims instead of calling the model. Works for the seeded Halvorsen transcript; the run is labeled as hand-labeled everywhere.
           </span>
         </label>
       )}
 
       {error && (
-        <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-800" role="alert">
+        <p className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-foreground" role="alert">
           {error}
         </p>
       )}

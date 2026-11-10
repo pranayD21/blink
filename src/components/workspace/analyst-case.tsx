@@ -24,7 +24,7 @@ const STATUS_TEXT: Record<string, string> = {
   STALE: "The evidence changed after approval. Compliance is reviewing the call again.",
 };
 
-/** The analyst's side of a case: packet, transcript upload, progress. Findings are never shown here (§14). */
+/** The banker's side of a case: packet, transcript upload, progress. Findings are never shown here (§14). */
 export function AnalystCase({ view, samples, allowGold }: { view: View; samples: TranscriptSample[]; allowGold: boolean }) {
   const router = useRouter();
   const [liveJob, setLiveJob] = useState<string | null>(null);
@@ -40,7 +40,7 @@ export function AnalystCase({ view, samples, allowGold }: { view: View; samples:
       }
       description={STATUS_TEXT[view.case.status]}
     >
-      <div className="grid grid-cols-[1fr_22rem] gap-4">
+      <div className="grid grid-cols-[1fr_22rem] items-start gap-4">
         <div className="space-y-4">
           {jobId && (
             <JobProgress
@@ -70,17 +70,17 @@ export function AnalystCase({ view, samples, allowGold }: { view: View; samples:
                 {view.transcripts.map((t) => (
                   <li key={t.versionNo} className="flex justify-between">
                     <span>
-                      <span className="font-mono text-slate-500">v{t.versionNo}</span> {t.sourceLabel}
+                      <span className="font-mono text-muted-foreground">v{t.versionNo}</span> {t.sourceLabel}
                     </span>
-                    <span className="text-slate-500">{formatDateTime(t.createdAt)}</span>
+                    <span className="text-muted-foreground">{formatDateTime(t.createdAt)}</span>
                   </li>
                 ))}
               </ul>
             </Panel>
           )}
-          <p className="text-sm text-slate-600">
-            Compliance findings are not visible to analysts. When a brief is released it appears under{" "}
-            <Link href="/analyst" className="font-medium text-indigo-700 underline underline-offset-2">
+          <p className="text-sm text-muted-foreground">
+            Compliance findings are not visible to bankers. When a brief is released it appears under{" "}
+            <Link href="/analyst" className="font-medium text-foreground underline underline-offset-2">
               Released briefs
             </Link>
             {view.released ? "; one has been released for this case." : "."}
@@ -91,27 +91,27 @@ export function AnalystCase({ view, samples, allowGold }: { view: View; samples:
           {packet ? (
             <dl className="space-y-3 text-sm">
               <div>
-                <dt className="text-xs font-medium text-slate-500">Covered issuer</dt>
+                <dt className="text-xs font-medium text-muted-foreground">Covered issuer</dt>
                 <dd>
                   {view.case.issuer} ({view.case.ticker})
                 </dd>
               </div>
               <div>
-                <dt className="text-xs font-medium text-slate-500">Call date</dt>
+                <dt className="text-xs font-medium text-muted-foreground">Call date</dt>
                 <dd>{formatDate(packet.callDate)}</dd>
               </div>
               <div>
-                <dt className="text-xs font-medium text-slate-500">Expert</dt>
+                <dt className="text-xs font-medium text-muted-foreground">Expert</dt>
                 <dd>
                   {packet.expert?.name}
-                  <div className="text-xs text-slate-500">
+                  <div className="text-xs text-muted-foreground">
                     {packet.expert?.currentTitle}
                     {packet.expert?.currentEmployer ? `, ${packet.expert.currentEmployer}` : ""}
                   </div>
                 </dd>
               </div>
               <div>
-                <dt className="text-xs font-medium text-slate-500">Research questions</dt>
+                <dt className="text-xs font-medium text-muted-foreground">Research questions</dt>
                 <dd>
                   <ul className="list-disc space-y-0.5 pl-4">
                     {packet.researchQuestions.map((q) => (
@@ -122,7 +122,7 @@ export function AnalystCase({ view, samples, allowGold }: { view: View; samples:
               </div>
             </dl>
           ) : (
-            <p className="text-sm text-slate-500">No packet.</p>
+            <p className="text-sm text-muted-foreground">No packet.</p>
           )}
         </Panel>
       </div>

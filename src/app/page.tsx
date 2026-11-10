@@ -1,16 +1,27 @@
-import { ArrowRight, Plus } from "lucide-react";
+import { Plus } from "lucide-react";
 import Link from "next/link";
-import { PageShell, Stat } from "@/components/app/page-shell";
-import { Chip, StateChip, toneOf } from "@/components/app/status-chip";
+import { PageShell } from "@/components/app/page-shell";
+import { StateChip } from "@/components/app/status-chip";
+import { StatusDot, dotOf } from "@/components/app/status-dot";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { formatDate } from "@/lib/format";
+import { formatDate, humanize } from "@/lib/format";
 import { pageActor } from "@/server/auth/session";
 import { getDb } from "@/server/db/client";
 import { listCases, queueSummary } from "@/server/services/cases";
 import { activePolicyVersion } from "@/server/services/loaders";
 
 const OPEN_STATES = ["REVIEW_REQUIRED", "NEEDS_CONTEXT", "ESCALATED", "NOT_TRIGGERED_PENDING_ACK"];
+
+/** One figure on the line above the queue: the value in one weight, its label beside it. */
+function Figure({ label, value, note }: { label: string; value: string; note?: string | null }) {
+  return (
+    <span className="text-muted-foreground">
+      <span className="font-semibold text-foreground tabular-nums">{value}</span> {label}
+      {note && <span className="ml-1.5 text-xs">({note})</span>}
+    </span>
+  );
+}
 
 function loadQueue(actor: Awaited<ReturnType<typeof pageActor>>) {
   try {
@@ -41,12 +52,12 @@ export default async function QueuePage() {
       }
     >
       {!ready && (
-        <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+        <div className="mb-4 rounded-lg border border-warning/40 bg-warning/10 px-4 py-3 text-sm text-foreground">
           The database has not been set up yet. Run <code className="font-mono">pnpm db:reset</code> and reload.
         </div>
       )}
       {ready && !policy && (
-        <div className="mb-4 flex items-center justify-between gap-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900" data-testid="no-policy-banner">
+        <div className="mb-4 flex items-center justify-between gap-4 rounded-lg border border-warning/40 bg-warning/10 px-4 py-3 text-sm text-foreground" data-testid="no-policy-banner">
           <span>No policy is active yet. Calls can be uploaded, but nothing is evaluated until the policy owner approves a compiled policy.</span>
           <Link href="/policies" className="shrink-0 font-medium underline underline-offset-2">
             Go to Policy
@@ -54,30 +65,28 @@ export default async function QueuePage() {
         </div>
       )}
 
-      <div className="mb-5 grid grid-cols-3 gap-3">
-        <Stat label="Cases in review" value={summary.inReview} />
-        <Stat label="Average review time" value={summary.avgReviewMinutes === null ? "—" : `${summary.avgReviewMinutes} min`} hint={reviewer ? "active minutes per case, measured" : "visible to compliance"} />
-        <Stat label="Findings awaiting escalation" value={summary.awaitingEscalation ?? "—"} hint={reviewer ? "need a senior compliance officer" : "visible to compliance"} />
+      <div className="mb-4 flex flex-wrap items-baseline gap-x-8 gap-y-1 border-y py-2.5 text-sm" data-testid="queue-figures">
+        <Figure label="in review" value={String(summary.inReview)} />
+        <Figure label="average review time" value={summary.avgReviewMinutes === null ? "—" : `${summary.avgReviewMinutes} min`} note={reviewer ? null : "visible to compliance"} />
+        <Figure label="findings awaiting escalation" value={summary.awaitingEscalation === null ? "—" : String(summary.awaitingEscalation)} note={reviewer ? null : "visible to compliance"} />
       </div>
 
-      <div className="overflow-hidden rounded-xl border bg-white">
+      <div className="overflow-hidden rounded-xl border bg-card">
         <Table>
           <TableHeader>
-            <TableRow className="bg-slate-50 hover:bg-slate-50">
+            <TableRow className="hover:bg-transparent">
               <TableHead>Case</TableHead>
-              <TableHead>Issuer</TableHead>
               <TableHead>Expert</TableHead>
               <TableHead>Call date</TableHead>
-              <TableHead>Status</TableHead>
+              <TableHead>State</TableHead>
               <TableHead>Open findings</TableHead>
-              <TableHead>Time in review</TableHead>
-              <TableHead />
+              <TableHead className="text-right">Time in review</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {cases.length === 0 && (
               <TableRow>
-                <TableCell colSpan={8} className="py-8 text-center text-slate-500">
+                <TableCell colSpan={6} className="py-8 text-center text-muted-foreground">
                   No cases yet.
                 </TableCell>
               </TableRow>
@@ -86,43 +95,35 @@ export default async function QueuePage() {
               const open = c.findingCounts ? OPEN_STATES.filter((s) => (c.findingCounts![s] ?? 0) > 0) : [];
               return (
                 <TableRow key={c.id} data-testid={`case-row-${c.id}`}>
-                  <TableCell className="font-medium text-slate-900">
+                  <TableCell className="font-medium text-foreground">
                     <Link href={`/cases/${c.id}`} className="hover:underline">
                       {c.title}
                     </Link>
-                    <div className="text-xs font-normal text-slate-500">{c.transcriptVersion ? `transcript v${c.transcriptVersion}` : "no transcript yet"}</div>
-                  </TableCell>
-                  <TableCell>
-                    {c.issuer} <span className="text-slate-400">({c.ticker})</span>
+                    <div className="text-xs font-normal text-muted-foreground">
+                      {c.issuer} ({c.ticker}) · {c.transcriptVersion ? `transcript v${c.transcriptVersion}` : "no transcript yet"}
+                    </div>
                   </TableCell>
                   <TableCell>{c.expertName}</TableCell>
                   <TableCell className="tabular-nums">{formatDate(c.callDate)}</TableCell>
                   <TableCell>
                     <StateChip state={c.status} />
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="text-xs tabular-nums">
                     {c.findingCounts === null ? (
-                      <span className="text-xs text-slate-400">compliance only</span>
+                      <span className="text-muted-foreground">compliance only</span>
                     ) : open.length === 0 ? (
-                      <span className="text-slate-400">—</span>
+                      <span className="text-muted-foreground">—</span>
                     ) : (
-                      <div className="flex flex-wrap gap-1">
+                      <div className="flex flex-wrap gap-x-3 gap-y-0.5">
                         {open.map((s) => (
-                          <Chip key={s} tone={toneOf(s)} className="font-mono tracking-tight">
-                            {c.findingCounts![s]} {s}
-                          </Chip>
+                          <StatusDot key={s} tone={dotOf(s)}>
+                            {c.findingCounts![s]} {humanize(s).toLowerCase()}
+                          </StatusDot>
                         ))}
                       </div>
                     )}
                   </TableCell>
-                  <TableCell className="tabular-nums">{c.reviewMinutes === null ? "—" : `${c.reviewMinutes} min`}</TableCell>
-                  <TableCell className="text-right">
-                    <Button asChild size="sm" variant="outline">
-                      <Link href={`/cases/${c.id}`}>
-                        Open <ArrowRight />
-                      </Link>
-                    </Button>
-                  </TableCell>
+                  <TableCell className="text-right tabular-nums">{c.reviewMinutes === null ? "—" : `${c.reviewMinutes} min`}</TableCell>
                 </TableRow>
               );
             })}

@@ -1356,10 +1356,10 @@ Each task restyles a group of existing screens to section 9 of the spec, adds it
 **Files:**
 - Modify: `src/app/page.tsx`, `src/app/cases/new/page.tsx`, `src/components/cases/new-case-form.tsx`, `src/components/workspace/analyst-case.tsx`, `src/components/workspace/upload-transcript.tsx`, `src/app/analyst/page.tsx`, `src/components/brief/released-brief.tsx`, `src/components/ui/*.tsx`, `tests/helpers/ui-scope.ts`
 
-- [ ] **Step 1: Extend the scope and see the rule test fail.** Add `src/app/page.tsx`, `src/app/cases/new`, `src/components/cases`, `src/components/ui`, `src/app/analyst` and the three component files. Run: `pnpm exec vitest run tests/core/ui-rules.test.ts`. Expected: FAIL, listing literal colour classes.
-- [ ] **Step 2: Restyle.** The queue is one row per case: title, expert, call date, a `StateLabel`, open findings as plain counts, time in review. The three cards above it become one line of figures. The words "Banker" and "Bankers" replace "Analyst" in visible text.
-- [ ] **Step 3: Run the checks and look.** Run: `pnpm test && pnpm e2e`, then screenshot into `test-results/redesign/31/`. Expected: PASS, and the screenshots match the rules.
-- [ ] **Step 4: Commit.**
+- [x] **Step 1: Extend the scope and see the rule test fail.** Add `src/app/page.tsx`, `src/app/cases/new`, `src/components/cases`, `src/components/ui`, `src/app/analyst` and the three component files. Run: `pnpm exec vitest run tests/core/ui-rules.test.ts`. Expected: FAIL, listing literal colour classes.
+- [x] **Step 2: Restyle.** The queue is one row per case: title, expert, call date, a `StateLabel`, open findings as plain counts, time in review. The three cards above it become one line of figures. The words "Banker" and "Bankers" replace "Analyst" in visible text.
+- [x] **Step 3: Run the checks and look.** Run: `pnpm test && pnpm e2e`, then screenshot into `test-results/redesign/31/`. Expected: PASS, and the screenshots match the rules.
+- [x] **Step 4: Commit.**
 
 ```bash
 git add src/app/page.tsx src/app/cases/new src/components/cases src/components/ui src/app/analyst src/components/workspace/analyst-case.tsx src/components/workspace/upload-transcript.tsx src/components/brief/released-brief.tsx tests/helpers/ui-scope.ts

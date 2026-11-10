@@ -10,7 +10,7 @@ import { pageActor } from "@/server/auth/session";
 export default async function NewCasePage() {
   const actor = await pageActor();
   if (actor.role !== "analyst") {
-    return <RoleGate title="Cases are opened by analysts" message="The analyst who ran the call fills in the case packet and uploads the transcript." current={actor} switchTo={DEMO_USERS.filter((u) => u.role === "analyst")} />;
+    return <RoleGate title="Cases are opened by bankers" message="The banker who ran the call fills in the case packet and uploads the transcript." current={actor} switchTo={DEMO_USERS.filter((u) => u.role === "analyst")} />;
   }
   return (
     <PageShell

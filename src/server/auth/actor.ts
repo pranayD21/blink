@@ -28,7 +28,7 @@ export const DEMO_USERS: readonly Actor[] = [
 ];
 
 export const ROLE_LABEL: Record<Role, string> = {
-  analyst: "Analyst",
+  analyst: "Banker",
   reviewer: "Compliance reviewer",
   senior_reviewer: "Senior compliance officer",
   policy_owner: "Policy owner",
