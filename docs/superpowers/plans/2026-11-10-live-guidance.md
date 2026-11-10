@@ -263,7 +263,7 @@ export const LlmLiveReadWireSchema = z.object({ claims: z.array(LlmClaimWireSche
 export type LlmLiveReadWire = z.infer<typeof LlmLiveReadWireSchema>;
 ```
 
-- [ ] **Step 1: Write the failing test** in `tests/core/wire.test.ts`, using the file's existing `claim()` builder:
+- [x] **Step 1: Write the failing test** in `tests/core/wire.test.ts`, using the file's existing `claim()` builder:
 
 ```ts
 it("claimFromWire restores one claim exactly as extractionFromWire does", () => {
@@ -276,10 +276,10 @@ it("the live form accepts claims plus a question", () => {
 });
 ```
 
-- [ ] **Step 2: Run it and see it fail.** Run: `pnpm exec vitest run tests/core/wire.test.ts`. Expected: FAIL, `claimFromWire` is not exported.
-- [ ] **Step 3: Extract the schema and the function** without changing what `extractionFromWire` returns.
-- [ ] **Step 4: Run the tests.** Run: `pnpm test`. Expected: PASS, including `recordings.test.ts` (the request hash does not cover the schema's shape).
-- [ ] **Step 5: Commit.**
+- [x] **Step 2: Run it and see it fail.** Run: `pnpm exec vitest run tests/core/wire.test.ts`. Expected: FAIL, `claimFromWire` is not exported.
+- [x] **Step 3: Extract the schema and the function** without changing what `extractionFromWire` returns.
+- [x] **Step 4: Run the tests.** Run: `pnpm test`. Expected: PASS, including `recordings.test.ts` (the request hash does not cover the schema's shape).
+- [x] **Step 5: Commit.**
 
 ```bash
 git add src/core/extraction/schema.ts tests/core/wire.test.ts

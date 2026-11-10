@@ -1,6 +1,13 @@
 /** The flat extraction wire form restores to the canonical shape (see `extractionFromWire`). */
 import { describe, expect, it } from "vitest";
-import { LlmExtractionSchema, type LlmExtractionWire, LlmExtractionWireSchema, extractionFromWire } from "@/core/extraction/schema";
+import {
+  LlmExtractionSchema,
+  type LlmExtractionWire,
+  LlmExtractionWireSchema,
+  LlmLiveReadWireSchema,
+  claimFromWire,
+  extractionFromWire,
+} from "@/core/extraction/schema";
 
 const claim = (over: Partial<LlmExtractionWire["claims"][number]> = {}): LlmExtractionWire["claims"][number] => ({
   logical_key: "C1",
@@ -35,6 +42,18 @@ const claim = (over: Partial<LlmExtractionWire["claims"][number]> = {}): LlmExtr
   ...over,
 });
 const wire = (...claims: LlmExtractionWire["claims"]): LlmExtractionWire => ({ claims, suggested_concerns: [], missing_context_questions: [], call_summary: "A call." });
+
+describe("claimFromWire and the live form", () => {
+  it("claimFromWire restores one claim exactly as extractionFromWire does", () => {
+    const whole = extractionFromWire({ claims: [claim()], suggested_concerns: [], missing_context_questions: [], call_summary: "" });
+    expect(claimFromWire(claim())).toEqual(whole.claims[0]);
+  });
+
+  it("the live form accepts claims plus a question", () => {
+    const q = { asks_for_fact: false, subject_kind: "unknown", subject_name: "", metric_category: "none", event_kind: "none", period_relative: "unspecified", scope: "unspecified" };
+    expect(LlmLiveReadWireSchema.safeParse({ claims: [claim()], question: q }).success).toBe(true);
+  });
+});
 
 describe("extractionFromWire", () => {
   it("restores a fully stated claim, and the result passes the canonical schema", () => {
