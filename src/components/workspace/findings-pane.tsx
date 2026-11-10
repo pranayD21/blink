@@ -31,7 +31,11 @@ function FindingRow({ finding, selected, onSelect }: { finding: FindingView; sel
         <div className="mt-1 truncate text-sm text-slate-800">{finding.title}</div>
         <div className="mt-0.5 flex flex-wrap items-center gap-x-2 text-xs text-slate-500">
           <span className={cn("font-medium capitalize", SEVERITY_TONE[finding.severity])}>{finding.severity}</span>
-          {finding.rules.length > 0 && <span className="font-mono">{finding.rules.map((r) => r.ruleId).join(",")}</span>}
+          {finding.rules.length > 0 && (
+            <span className="font-mono" title="Rules that are triggered; a “?” marks a rule still waiting for context">
+              {finding.rules.map((r) => `${r.ruleId}${r.state === "NEEDS_CONTEXT" ? "?" : ""}`).join(",")}
+            </span>
+          )}
           {finding.turnLabels.length > 0 && <span>{finding.turnLabels.length > 1 ? `${finding.turnLabels.length} turns (${finding.turnLabels.join(", ")})` : finding.turnLabels[0]}</span>}
           {finding.origin === "reviewer" && (
             <span className="inline-flex items-center gap-1">

@@ -81,6 +81,8 @@ export function CaseHeader({ payload, samples, allowGold, refresh }: { payload: 
   const jobId = liveJob ?? (job && (job.status === "queued" || job.status === "running") ? job.id : null);
   const blocking = payload.issues.filter((i) => !i.resolved && i.severity === "blocking");
   const warnings = payload.issues.filter((i) => !i.resolved && i.severity === "warning");
+  const openFindings = payload.blockers.filter((b) => b.code === "FINDING_OPEN" || b.code === "DECISION_STALE");
+  const otherBlockers = payload.blockers.filter((b) => b.code !== "FINDING_OPEN" && b.code !== "DECISION_STALE");
 
   async function rerun() {
     setRerunning(true);
@@ -190,7 +192,12 @@ export function CaseHeader({ payload, samples, allowGold, refresh }: { payload: 
           ) : (
             <>
               <span className="font-medium text-slate-700">Before a brief can be approved:</span>
-              {payload.blockers.map((b, i) => (
+              {openFindings.length > 0 && (
+                <span className="rounded bg-white px-1.5 py-0.5 ring-1 ring-slate-200" data-testid="blocker" title={openFindings.map((b) => b.message).join("\n")}>
+                  {openFindings.length === 1 ? openFindings[0].message : `${openFindings.length} findings to decide`}
+                </span>
+              )}
+              {otherBlockers.map((b, i) => (
                 <span key={i} className="rounded bg-white px-1.5 py-0.5 ring-1 ring-slate-200" data-testid="blocker">
                   {b.message}
                 </span>

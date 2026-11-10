@@ -10,7 +10,7 @@ import { type Actor, isReviewer, requireReviewer } from "../auth/actor";
 import { appendAudit } from "../audit/log";
 import { nowIso } from "../clock";
 import { type DbOrTx, fromJson, toJson } from "../db/client";
-import { approvals, briefs, cases, dependencies, findings, releases } from "../db/schema";
+import { approvals, briefs, cases, dependencies, findings, jobs, releases } from "../db/schema";
 import { conflict, forbidden, notFound, unprocessable, versionConflict } from "../errors";
 import { newId } from "../ids";
 import { enqueueJob } from "../jobs/queue";
@@ -339,4 +339,16 @@ export function releasedBriefs(tx: DbOrTx) {
       citations: citationsFor(tx, release.caseId, citedClaimKeys(sections)),
     };
   });
+}
+
+/** The newest brief-draft job for a case, so the page can show progress or the reason a draft failed. */
+export function latestDraftJob(db: DbOrTx, caseId: string): { id: string; status: string; error: string | null; createdAt: string } | null {
+  const job = db
+    .select()
+    .from(jobs)
+    .where(eq(jobs.type, "draft_brief"))
+    .orderBy(desc(jobs.createdAt), desc(jobs.id))
+    .all()
+    .find((j) => fromJson<{ caseId?: string }>(j.payloadJson, {}).caseId === caseId);
+  return job ? { id: job.id, status: job.status, error: job.error, createdAt: job.createdAt } : null;
 }
