@@ -99,11 +99,11 @@ The key in `.env.local` (`blink-dev`) cannot create tokens: `POST /v1/auth/grant
 **Interfaces:**
 - Produces: `DEEPGRAM_API_KEY` in `.env.local`, accepted by `POST https://api.deepgram.com/v1/auth/grant` (header `Authorization: Token <key>`, body `{"ttl_seconds": 30}`, response `{ access_token, expires_in }`).
 
-- [ ] **Step 1: Write `scripts/check-deepgram.ts`.** It calls `loadEnv()`, posts the grant request, prints `grant: <status>` and nothing else, and exits 0 only when the status is 200 and the body has `access_token`.
-- [ ] **Step 2: Run it and see it fail.** Run: `pnpm exec tsx scripts/check-deepgram.ts`. Expected: `grant: 403`, exit 1.
-- [ ] **Step 3: Replace the key.** With the playwriter skill, in the browser profile `install:Chrome:15c67h81sse2pk` (already signed in to Deepgram), open the API keys page, create a key named `blink-server` with role **Member** (under "Advanced"), expiry date 2026-12-10. Read the 40-character secret from the page inside the sandbox and write it to `.env.local` as `DEEPGRAM_API_KEY`, replacing the old line; print only its length. Then delete the key `blink-dev`. If the browser cannot be reached, go on and come back to this: every test before Task 38 mocks Deepgram. If it still cannot be reached when Task 38 starts, re-mark this step and the next two as the Global Constraints allow.
-- [ ] **Step 4: Run it and see it pass.** Expected: `grant: 200`, exit 0.
-- [ ] **Step 5: Add `DEEPGRAM_API_KEY=` and `BLINK_LIVE_MODEL=claude-haiku-5-5` to `.env.example`, then commit.**
+- [x] **Step 1: Write `scripts/check-deepgram.ts`.** It calls `loadEnv()`, posts the grant request, prints `grant: <status>` and nothing else, and exits 0 only when the status is 200 and the body has `access_token`.
+- [x] **Step 2: Run it and see it fail.** Run: `pnpm exec tsx scripts/check-deepgram.ts`. Expected: `grant: 403`, exit 1.
+- [x] **Step 3: Replace the key.** With the playwriter skill, in the browser profile `install:Chrome:15c67h81sse2pk` (already signed in to Deepgram), open the API keys page, create a key named `blink-server` with role **Member** (under "Advanced"), expiry date 2026-12-10. Read the 40-character secret from the page inside the sandbox and write it to `.env.local` as `DEEPGRAM_API_KEY`, replacing the old line; print only its length. Then delete the key `blink-dev`. If the browser cannot be reached, go on and come back to this: every test before Task 38 mocks Deepgram. If it still cannot be reached when Task 38 starts, re-mark this step and the next two as the Global Constraints allow.
+- [x] **Step 4: Run it and see it pass.** Expected: `grant: 200`, exit 0.
+- [x] **Step 5: Add `DEEPGRAM_API_KEY=` and `BLINK_LIVE_MODEL=claude-haiku-5-5` to `.env.example`, then commit.**
 
 ```bash
 git add scripts/check-deepgram.ts .env.example
