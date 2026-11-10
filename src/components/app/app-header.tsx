@@ -4,6 +4,7 @@ import { pageActor } from "@/server/auth/session";
 import { llmMode } from "@/server/llm/client";
 import { NavLinks } from "./nav-links";
 import { RoleSwitcher } from "./role-switcher";
+import { StatusDot } from "./status-dot";
 
 const NAV: Record<string, { href: string; label: string }[]> = {
   analyst: [
@@ -34,9 +35,9 @@ export async function AppHeader() {
   const actor = await pageActor();
   const mode = llmMode();
   return (
-    <header className="sticky top-0 z-40 flex h-12 shrink-0 items-center gap-4 border-b bg-white px-4">
-      <Link href="/" className="flex items-center gap-2 font-semibold tracking-tight text-slate-900">
-        <span className="grid size-6 place-items-center rounded-md bg-indigo-600 text-[13px] font-bold text-white">B</span>
+    <header className="sticky top-0 z-40 flex h-12 shrink-0 items-center gap-4 border-b bg-background px-4">
+      <Link href="/" className="flex items-center gap-2 font-semibold tracking-tight text-foreground">
+        <span className="grid size-6 place-items-center rounded-md bg-primary text-[13px] font-bold text-primary-foreground">B</span>
         Blink
       </Link>
       <NavLinks links={NAV[actor.role] ?? NAV.reviewer} />
@@ -45,14 +46,14 @@ export async function AppHeader() {
           <span
             data-testid="llm-mode"
             title={mode === "replay" ? "Model responses are served from committed recordings. No network call is made." : "Model responses are recorded as they are made; a request that already has a recording is served from it."}
-            className="inline-flex h-6 items-center rounded-full bg-sky-50 px-2.5 text-[11px] font-semibold tracking-wide text-sky-800 uppercase ring-1 ring-sky-200 ring-inset"
+            className="text-xs text-muted-foreground"
           >
-            {mode === "replay" ? "Replay mode" : "Record mode"}
+            <StatusDot tone="ring">{mode === "replay" ? "Replay mode" : "Record mode"}</StatusDot>
           </span>
         )}
         {/* Permanent: every screen of this demo shows that the data is synthetic. */}
-        <span data-testid="synthetic-pill" className="inline-flex h-6 items-center rounded-full bg-amber-50 px-2.5 text-[11px] font-semibold tracking-wide text-amber-800 uppercase ring-1 ring-amber-200 ring-inset">
-          Synthetic data
+        <span data-testid="synthetic-pill" className="text-xs text-muted-foreground">
+          <StatusDot tone="warn">Synthetic data</StatusDot>
         </span>
         <RoleSwitcher current={actor} users={[...DEMO_USERS]} />
       </div>

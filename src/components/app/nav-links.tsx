@@ -10,7 +10,7 @@ export function NavLinks({ links }: { links: { href: string; label: string }[] }
   return (
     <nav className="flex items-center gap-1 text-sm">
       {links.map((l) => (
-        <Link key={l.href} href={l.href} className={cn("rounded-md px-2.5 py-1 text-slate-600 hover:bg-slate-100 hover:text-slate-900", active(l.href) && "bg-slate-100 font-medium text-slate-900")}>
+        <Link key={l.href} href={l.href} className={cn("rounded-md px-2.5 py-1 text-muted-foreground hover:bg-muted hover:text-foreground", active(l.href) && "bg-muted font-medium text-foreground")}>
           {l.label}
         </Link>
       ))}

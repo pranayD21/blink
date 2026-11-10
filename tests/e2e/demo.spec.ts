@@ -36,21 +36,21 @@ async function dispose(page: Page, label: string, outcome: string) {
 async function attest(page: Page) {
   await page.getByTestId("open-attest").click();
   await page.getByTestId("confirm-attest").click();
-  await expect(page.getByTestId("case-status")).toHaveText("READY_FOR_APPROVAL");
+  await expect(page.getByTestId("case-status")).toHaveAttribute("data-state", "READY_FOR_APPROVAL");
 }
 
 async function draftApproveRelease(page: Page, version: number) {
   await page.getByTestId("draft-ai").click();
   await jobDone(page);
-  await expect(page.getByTestId("brief-status")).toHaveText("draft");
+  await expect(page.getByTestId("brief-status")).toHaveAttribute("data-state", "draft");
   await expect(page.getByText(`Brief v${version}`, { exact: false }).first()).toBeVisible();
   await page.getByTestId("open-approve").click();
   await expect(page.getByTestId("approve-hash")).toHaveText(/^[0-9a-f]{64}$/);
   await page.getByTestId("confirm-approve").click();
-  await expect(page.getByTestId("brief-status")).toHaveText("approved");
+  await expect(page.getByTestId("brief-status")).toHaveAttribute("data-state", "approved");
   await page.getByTestId("release").click();
   await expect(page.getByTestId("release-success")).toBeVisible();
-  await expect(page.getByTestId("case-status")).toHaveText("RELEASED");
+  await expect(page.getByTestId("case-status")).toHaveAttribute("data-state", "RELEASED");
 }
 
 test("the demo script runs end to end from recordings", async ({ page, baseURL }) => {
@@ -76,7 +76,7 @@ test("the demo script runs end to end from recordings", async ({ page, baseURL }
     await page.goto("/policies/new");
     await page.getByTestId("preset-Broken variant").click();
     await page.getByTestId("create-and-compile").click();
-    await expect(page.getByTestId("policy-status")).toHaveText("COMPILE_FAILED", { timeout: 90_000 });
+    await expect(page.getByTestId("policy-status")).toHaveAttribute("data-state", "COMPILE_FAILED", { timeout: 90_000 });
     await expect(page.getByTestId("compile-failed-banner")).toContainText("CLAUSE_DROPPED");
     await page.getByTestId("tab-approve").click();
     await expect(page.getByTestId("approve-policy")).toBeDisabled();
@@ -88,7 +88,7 @@ test("the demo script runs end to end from recordings", async ({ page, baseURL }
     await page.goto("/policies/new");
     await page.getByTestId("preset-Demo policy v1").click();
     await page.getByTestId("create-and-compile").click();
-    await expect(page.getByTestId("policy-status")).toHaveText("VALIDATED", { timeout: 90_000 });
+    await expect(page.getByTestId("policy-status")).toHaveAttribute("data-state", "VALIDATED", { timeout: 90_000 });
 
     await page.getByTestId("tab-clauses").click();
     await expect(page.getByTestId("unsupported-P8")).toBeVisible();
@@ -104,7 +104,7 @@ test("the demo script runs end to end from recordings", async ({ page, baseURL }
     await expect(page.getByTestId("approve-policy")).toBeDisabled();
     await page.getByTestId("approve-confirm").fill(hash.slice(0, 6));
     await page.getByTestId("approve-policy").click();
-    await expect(page.getByTestId("policy-status")).toHaveText("ACTIVE");
+    await expect(page.getByTestId("policy-status")).toHaveAttribute("data-state", "ACTIVE");
   });
 
   // ── 4. The analyst uploads the transcript ─────────────────────────────────
@@ -116,9 +116,9 @@ test("the demo script runs end to end from recordings", async ({ page, baseURL }
     await page.getByTestId("upload-transcript-submit").click();
     await expect(page.getByTestId("job-progress")).toBeVisible();
     await jobDone(page);
-    await expect(page.getByTestId("case-status")).toHaveText("IN_REVIEW");
+    await expect(page.getByTestId("case-status")).toHaveAttribute("data-state", "IN_REVIEW");
     // The analyst never sees findings.
-    await expect(page.getByText("REVIEW_REQUIRED")).toHaveCount(0);
+    await expect(page.locator('[data-state="REVIEW_REQUIRED"]')).toHaveCount(0);
   });
 
   // ── 5. The reviewer opens F1 ──────────────────────────────────────────────
@@ -134,7 +134,7 @@ test("the demo script runs end to end from recordings", async ({ page, baseURL }
     await expect(page.getByTestId("quote-T11").first()).toBeVisible();
 
     for (const rule of ["R1", "R2", "R4"]) await expect(page.getByTestId(`trace-${rule}`)).toHaveAttribute("data-state", "REVIEW_REQUIRED");
-    await expect(page.getByTestId("fsm-path")).toContainText(/UNASSESSED.*NEEDS_CONTEXT\s*at T5.*REVIEW_REQUIRED\s*at T11/s);
+    await expect(page.getByTestId("fsm-path")).toContainText(/Unassessed.*Needs context\s*at T5.*Review required\s*at T11/s);
     await expect(page.getByTestId("escalation-notice")).toContainText("senior compliance officer");
     await expect(page.getByTestId("comparison-outcome")).toHaveText("mismatch");
     await expect(page.getByTestId("mismatch-reasons")).toContainText("period, scope");
@@ -204,7 +204,7 @@ test("the demo script runs end to end from recordings", async ({ page, baseURL }
     await expect(page.getByTestId("transcript-preview")).toContainText("22 turns");
     await page.getByTestId("upload-transcript-submit").click();
     await jobDone(page);
-    await expect(page.getByTestId("case-status")).toHaveText("IN_REVIEW");
+    await expect(page.getByTestId("case-status")).toHaveAttribute("data-state", "IN_REVIEW");
     await expect(page.getByTestId("turn-T19")).toContainText("edited in v2");
     await expect(page.getByTestId("turn-T19")).toContainText("twenty-one percent");
 
@@ -214,7 +214,7 @@ test("the demo script runs end to end from recordings", async ({ page, baseURL }
     await expect(page.getByTestId("decision").first()).toHaveAttribute("data-stale", "false");
 
     await page.getByTestId("link-brief").click();
-    await expect(page.getByTestId("brief-status")).toHaveText("stale");
+    await expect(page.getByTestId("brief-status")).toHaveAttribute("data-state", "stale");
     await expect(page.getByTestId("approval-status")).toContainText("Approval STALE");
     await page.getByTestId("release").click();
     const failures = page.getByTestId("release-failures");

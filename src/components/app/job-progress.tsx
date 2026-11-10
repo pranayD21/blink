@@ -66,32 +66,32 @@ export function JobProgress({ jobId, label, stages, onFinished, className }: { j
   const current = job?.stage ?? "Queued";
 
   return (
-    <div className={cn("rounded-lg border bg-white px-4 py-3", failed && "border-red-200 bg-red-50", className)} data-testid="job-progress" data-status={status}>
+    <div className={cn("rounded-lg border bg-card px-4 py-3", failed && "border-destructive/40 bg-destructive/10", className)} data-testid="job-progress" data-status={status}>
       <div className="flex items-center gap-2 text-sm">
-        {failed ? <AlertTriangle className="size-4 text-red-600" /> : done ? <CheckCircle2 className="size-4 text-emerald-600" /> : <Loader2 className="size-4 animate-spin text-indigo-600" />}
-        <span className="font-medium text-slate-900">{label}</span>
-        <span className="text-slate-600" data-testid="job-stage">
+        {failed ? <AlertTriangle className="size-4 text-destructive" /> : done ? <CheckCircle2 className="size-4 text-success" /> : <Loader2 className="size-4 animate-spin text-foreground" />}
+        <span className="font-medium text-foreground">{label}</span>
+        <span className="text-muted-foreground" data-testid="job-stage">
           {failed ? "Failed" : current}
         </span>
-        {status === "queued" && <span className="text-xs text-slate-500">waiting for the worker</span>}
-        {lost && <span className="text-xs text-amber-700">connection lost, retrying…</span>}
+        {status === "queued" && <span className="text-xs text-muted-foreground">waiting for the worker</span>}
+        {lost && <span className="text-xs text-warning">connection lost, retrying…</span>}
       </div>
       {!failed && <Progress value={done ? 100 : (job?.progress ?? 0)} className="mt-2 h-1.5" />}
       {stages && !failed && (
-        <div className="mt-2 flex flex-wrap gap-x-2 gap-y-1 text-[11px] text-slate-500">
+        <div className="mt-2 flex flex-wrap gap-x-2 gap-y-1 text-[11px] text-muted-foreground">
           {stages.map((s, i) => {
             const at = stages.findIndex((x) => current.startsWith(x));
             const state = done || (at > -1 && i < at) ? "past" : i === at ? "now" : "next";
             return (
-              <span key={s} className={cn(state === "now" && "font-semibold text-indigo-700", state === "past" && "text-slate-700")}>
+              <span key={s} className={cn(state === "now" && "font-semibold text-foreground", state === "past" && "text-foreground/70")}>
                 {s}
-                {i < stages.length - 1 && <span className="ml-2 text-slate-300">·</span>}
+                {i < stages.length - 1 && <span className="ml-2 text-border">·</span>}
               </span>
             );
           })}
         </div>
       )}
-      {failed && job?.error && <p className="mt-2 text-sm text-red-800">{job.error}</p>}
+      {failed && job?.error && <p className="mt-2 text-sm text-destructive">{job.error}</p>}
     </div>
   );
 }

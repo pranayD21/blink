@@ -19,13 +19,13 @@ export function RoleGate({ title, message, current, switchTo }: { title: string;
     }
   }
   return (
-    <div className="mx-auto mt-16 max-w-lg rounded-xl border bg-white p-6 text-sm" data-testid="role-gate">
-      <div className="flex items-center gap-2 font-semibold text-slate-900">
-        <ShieldAlert className="size-4 text-amber-600" />
+    <div className="mx-auto mt-16 max-w-lg rounded-xl border bg-card p-6 text-sm" data-testid="role-gate">
+      <div className="flex items-center gap-2 font-semibold text-foreground">
+        <ShieldAlert className="size-4 text-warning" />
         {title}
       </div>
-      <p className="mt-2 text-slate-600">{message}</p>
-      <p className="mt-1 text-slate-500">
+      <p className="mt-2 text-muted-foreground">{message}</p>
+      <p className="mt-1 text-muted-foreground">
         You are acting as {current.name} ({ROLE_LABEL[current.role]?.toLowerCase()}).
       </p>
       <div className="mt-4 flex flex-wrap gap-2">

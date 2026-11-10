@@ -38,23 +38,23 @@ export function RoleSwitcher({ current, users }: { current: DemoUser; users: Dem
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="outline" size="sm" className="h-8 gap-2 px-2.5" disabled={busy || pending} data-testid="role-switcher">
-          <UserRound className="size-3.5 text-slate-500" />
+          <UserRound className="size-3.5 text-muted-foreground" />
           <span className="font-medium" data-testid="current-user">
             {current.name}
           </span>
-          <span className="text-slate-500" data-testid="current-role">
+          <span className="text-muted-foreground" data-testid="current-role">
             {ROLE_LABEL[current.role]}
           </span>
-          <ChevronDown className="size-3.5 text-slate-400" />
+          <ChevronDown className="size-3.5 text-muted-foreground" />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-64">
-        <DropdownMenuLabel className="text-xs font-normal text-slate-500">Act as a demo user</DropdownMenuLabel>
+        <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">Act as a demo user</DropdownMenuLabel>
         <DropdownMenuSeparator />
         {users.map((u) => (
           <DropdownMenuItem key={u.id} onSelect={() => actAs(u.id)} data-testid={`act-as-${u.id}`} className="flex items-center justify-between gap-3">
             <span className={u.id === current.id ? "font-medium" : ""}>{u.name}</span>
-            <span className="text-xs text-slate-500">{ROLE_LABEL[u.role]}</span>
+            <span className="text-xs text-muted-foreground">{ROLE_LABEL[u.role]}</span>
           </DropdownMenuItem>
         ))}
       </DropdownMenuContent>

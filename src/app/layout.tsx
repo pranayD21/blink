@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "@fontsource-variable/inter";
 import "./globals.css";
+import { ThemeProvider } from "@/components/app/theme-provider";
 import { AppHeader } from "@/components/app/app-header";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -16,13 +17,15 @@ export const dynamic = "force-dynamic";
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className="h-full antialiased">
-      <body className="flex min-h-full flex-col bg-slate-50 text-slate-900">
-        <TooltipProvider delayDuration={200}>
-          <AppHeader />
-          <div className="flex min-h-0 flex-1 flex-col">{children}</div>
-        </TooltipProvider>
-        <Toaster theme="light" position="bottom-right" richColors closeButton />
+    <html lang="en" className="h-full antialiased" suppressHydrationWarning>
+      <body className="flex min-h-full flex-col bg-background text-foreground">
+        <ThemeProvider>
+          <TooltipProvider delayDuration={200}>
+            <AppHeader />
+            <div className="flex min-h-0 flex-1 flex-col">{children}</div>
+          </TooltipProvider>
+          <Toaster position="bottom-right" richColors closeButton />
+        </ThemeProvider>
       </body>
     </html>
   );

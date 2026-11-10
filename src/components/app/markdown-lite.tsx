@@ -11,7 +11,7 @@ function inline(text: string): React.ReactNode[] {
     if (i > last) out.push(text.slice(last, i));
     const token = m[0];
     if (token.startsWith("**")) out.push(<strong key={key++}>{token.slice(2, -2)}</strong>);
-    else if (token.startsWith("`")) out.push(<code key={key++} className="rounded bg-slate-100 px-1 font-mono text-[0.85em]">{token.slice(1, -1)}</code>);
+    else if (token.startsWith("`")) out.push(<code key={key++} className="rounded bg-muted px-1 font-mono text-[0.85em]">{token.slice(1, -1)}</code>);
     else out.push(<em key={key++}>{token.slice(1, -1)}</em>);
     last = i + token.length;
   }
@@ -36,10 +36,10 @@ export function MarkdownLite({ source, className }: { source: string; className?
       continue;
     }
     if (line.startsWith("## ")) {
-      blocks.push(<h3 key={key++} className="mt-6 border-t pt-4 text-base font-semibold text-slate-900 first:mt-0 first:border-0 first:pt-0">{inline(line.slice(3))}</h3>);
+      blocks.push(<h3 key={key++} className="mt-6 border-t pt-4 text-base font-semibold text-foreground first:mt-0 first:border-0 first:pt-0">{inline(line.slice(3))}</h3>);
       i++;
     } else if (line.startsWith("# ")) {
-      blocks.push(<h2 key={key++} className="text-lg font-semibold text-slate-900">{inline(line.slice(2))}</h2>);
+      blocks.push(<h2 key={key++} className="text-lg font-semibold text-foreground">{inline(line.slice(2))}</h2>);
       i++;
     } else if (line.startsWith("|")) {
       const rows: string[][] = [];
@@ -52,14 +52,14 @@ export function MarkdownLite({ source, className }: { source: string; className?
       blocks.push(
         <div key={key++} className="overflow-x-auto rounded-lg border">
           <table className="w-full text-xs">
-            <thead className="bg-slate-50 text-left text-slate-600">
+            <thead className="bg-muted text-left text-muted-foreground">
               <tr>{head?.map((c, j) => <th key={j} className="px-2 py-1.5 font-medium">{c}</th>)}</tr>
             </thead>
             <tbody>
               {body.map((r, j) => (
-                <tr key={j} className="border-t border-slate-100">
+                <tr key={j} className="border-t border-border">
                   {r.map((c, k) => (
-                    <td key={k} className={cn("px-2 py-1 text-slate-700", k === 0 || /^[A-Z_,\s]+$/.test(c) ? "font-mono text-[11px]" : "")}>{c}</td>
+                    <td key={k} className={cn("px-2 py-1 text-foreground", k === 0 || /^[A-Z_,\s]+$/.test(c) ? "font-mono text-[11px]" : "")}>{c}</td>
                   ))}
                 </tr>
               ))}
@@ -71,7 +71,7 @@ export function MarkdownLite({ source, className }: { source: string; className?
       const items: string[] = [];
       while (i < lines.length && lines[i].startsWith("- ")) items.push(lines[i++].slice(2));
       blocks.push(
-        <ul key={key++} className="list-disc space-y-1 pl-5 text-sm text-slate-700">
+        <ul key={key++} className="list-disc space-y-1 pl-5 text-sm text-foreground">
           {items.map((item, j) => (
             <li key={j}>{inline(item)}</li>
           ))}
@@ -81,13 +81,13 @@ export function MarkdownLite({ source, className }: { source: string; className?
       const quote: string[] = [];
       while (i < lines.length && lines[i].startsWith("> ")) quote.push(lines[i++].slice(2));
       blocks.push(
-        <blockquote key={key++} className="rounded-r-md border-l-4 border-indigo-300 bg-indigo-50/60 px-3 py-2 text-sm text-slate-800">
+        <blockquote key={key++} className="rounded-r-md border-l-4 border-border bg-muted px-3 py-2 text-sm text-foreground">
           {inline(quote.join(" "))}
         </blockquote>,
       );
     } else {
       blocks.push(
-        <p key={key++} className="text-sm text-slate-700">
+        <p key={key++} className="text-sm text-foreground">
           {inline(line)}
         </p>,
       );

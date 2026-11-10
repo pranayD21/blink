@@ -172,7 +172,7 @@ New screens are built in the new look from the start; existing screens are resty
 - Produces: `StatusDot({ tone, children, ...span })` with `tone: "good" | "warn" | "stop" | "none" | "ring"`; `StateLabel({ state, ...span })`, which renders a dot and `humanize(state)` and keeps `data-state={state}`; Tailwind colours `bg-warning`, `bg-success`, `bg-destructive`; `UI_RULE_SCOPE: string[]` exported from the test's sibling `tests/helpers/ui-scope.ts` for later tasks to extend.
 - `StateChip` keeps its export and now renders `StateLabel`.
 
-- [ ] **Step 1: Write the failing test `tests/core/ui-rules.test.ts`.**
+- [x] **Step 1: Write the failing test `tests/core/ui-rules.test.ts`.**
 
 ```ts
 const FORBIDDEN = [/\buppercase\b/, /\b(?:bg|text|border|ring|decoration)-(?:white|black|(?:slate|indigo|sky|violet|amber|red|emerald|gray|zinc)-\d{2,3})\b/];
@@ -184,13 +184,13 @@ it.each(filesIn(UI_RULE_SCOPE))("%s uses theme tokens only and no capitals", (fi
 
 `UI_RULE_SCOPE` starts as `["src/components/app", "src/app/layout.tsx"]`.
 
-- [ ] **Step 2: Run it and see it fail.** Run: `pnpm exec vitest run tests/core/ui-rules.test.ts`. Expected: FAIL on `app-header.tsx` (`uppercase`, `bg-sky-50`).
-- [ ] **Step 3: Replace the palette in `globals.css`.** Light: `--background #ffffff`, `--foreground #0b0b0c`, `--card #ffffff`, `--popover #ffffff`, `--muted #f4f4f5`, `--muted-foreground #6b6b70`, `--secondary #f4f4f5`, `--border #e6e6e9`, `--input #d4d4d8`, `--primary #0b0b0c`, `--primary-foreground #ffffff`, `--ring #a1a1aa`, `--warning #d97706`, `--destructive #dc2626`, `--success #059669`. Dark: the values in the `:root` block of the mockups file, with `--primary #ededee` and `--primary-foreground #0b0b0c`. `--radius: 10px`. Map `--color-warning` and `--color-success` in `@theme inline`. Apply the `-foreground` pairs shadcn expects.
-- [ ] **Step 4: Follow the system theme.** `theme-provider.tsx` wraps `next-themes` with `attribute="class"` and `defaultTheme="system"`; `layout.tsx` uses it, drops `bg-slate-50 text-slate-900` for `bg-background text-foreground`, and passes the resolved theme to `Toaster`.
-- [ ] **Step 5: Write `status-dot.tsx` and restyle the files in scope.** The header's two pills become plain muted text with a dot and keep their `data-testid` and their words (`Replay mode`, `Synthetic data`). The `HIGHLIGHT` map becomes token tints: `bg-warning/15`, `bg-destructive/15`, `bg-success/15`, `bg-muted`.
-- [ ] **Step 6: Move the browser test off capital-letter text.** In `tests/e2e/demo.spec.ts`: every `toHaveText("<STATE>")` on `case-status`, `policy-status` and `brief-status` becomes `toHaveAttribute("data-state", "<STATE>")`; `getByText("REVIEW_REQUIRED")` becomes `locator('[data-state="REVIEW_REQUIRED"]')`; the `fsm-path` pattern becomes `/Unassessed.*Needs context\s*at T5.*Review required\s*at T11/s`.
-- [ ] **Step 7: Run the checks.** Run: `pnpm exec vitest run tests/core/ui-rules.test.ts && pnpm e2e`. Expected: both PASS.
-- [ ] **Step 8: Commit.**
+- [x] **Step 2: Run it and see it fail.** Run: `pnpm exec vitest run tests/core/ui-rules.test.ts`. Expected: FAIL on `app-header.tsx` (`uppercase`, `bg-sky-50`).
+- [x] **Step 3: Replace the palette in `globals.css`.** Light: `--background #ffffff`, `--foreground #0b0b0c`, `--card #ffffff`, `--popover #ffffff`, `--muted #f4f4f5`, `--muted-foreground #6b6b70`, `--secondary #f4f4f5`, `--border #e6e6e9`, `--input #d4d4d8`, `--primary #0b0b0c`, `--primary-foreground #ffffff`, `--ring #a1a1aa`, `--warning #d97706`, `--destructive #dc2626`, `--success #059669`. Dark: the values in the `:root` block of the mockups file, with `--primary #ededee` and `--primary-foreground #0b0b0c`. `--radius: 10px`. Map `--color-warning` and `--color-success` in `@theme inline`. Apply the `-foreground` pairs shadcn expects.
+- [x] **Step 4: Follow the system theme.** `theme-provider.tsx` wraps `next-themes` with `attribute="class"` and `defaultTheme="system"`; `layout.tsx` uses it, drops `bg-slate-50 text-slate-900` for `bg-background text-foreground`, and passes the resolved theme to `Toaster`.
+- [x] **Step 5: Write `status-dot.tsx` and restyle the files in scope.** The header's two pills become plain muted text with a dot and keep their `data-testid` and their words (`Replay mode`, `Synthetic data`). The `HIGHLIGHT` map becomes token tints: `bg-warning/15`, `bg-destructive/15`, `bg-success/15`, `bg-muted`.
+- [x] **Step 6: Move the browser test off capital-letter text.** In `tests/e2e/demo.spec.ts`: every `toHaveText("<STATE>")` on `case-status`, `policy-status` and `brief-status` becomes `toHaveAttribute("data-state", "<STATE>")`; `getByText("REVIEW_REQUIRED")` becomes `locator('[data-state="REVIEW_REQUIRED"]')`; the `fsm-path` pattern becomes `/Unassessed.*Needs context\s*at T5.*Review required\s*at T11/s`.
+- [x] **Step 7: Run the checks.** Run: `pnpm exec vitest run tests/core/ui-rules.test.ts && pnpm e2e`. Expected: both PASS.
+- [x] **Step 8: Commit.**
 
 ```bash
 git add src/app/globals.css src/app/layout.tsx src/components/app tests/core/ui-rules.test.ts tests/helpers/ui-scope.ts tests/e2e/demo.spec.ts
