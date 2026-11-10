@@ -7,7 +7,7 @@
  * warnings only and are never claimed as proof.
  */
 import { z } from "zod";
-import { reduceMonitor } from "../runtime/monitorReducer";
+import { NondeterministicMonitorError, reduceMonitor } from "../runtime/monitorReducer";
 import type { EvidenceState } from "../types";
 import type { Inventory, Monitor, PolicyParagraph, RulesDoc } from "./schema";
 import { MONITOR_EVENTS, collectPredicates } from "./schema";
@@ -173,7 +173,7 @@ export function runScenario(scenario: Scenario, policy: ScenarioPolicy): Scenari
   const uses = collectPredicates(compiled.guard);
   let state: string = monitor.initial_state;
 
-  scenario.steps.forEach((step, index) => {
+  for (const [index, step] of scenario.steps.entries()) {
     // Bind the scenario's assignment (by key, or by bare name) to the guard's predicates.
     const assessments: Record<string, EvidenceState> = {};
     for (const use of uses) {
@@ -184,13 +184,20 @@ export function runScenario(scenario: Scenario, policy: ScenarioPolicy): Scenari
       }
       assessments[use.key] = value;
     }
-    const out = reduceMonitor({
-      monitor,
-      guard: compiled.guard,
-      state,
-      event: { id: `scenario:${scenario.name}:${index + 1}`, type: step.event, seq: index + 1 },
-      assessments,
-    });
+    let out: ReturnType<typeof reduceMonitor>;
+    try {
+      out = reduceMonitor({
+        monitor,
+        guard: compiled.guard,
+        state,
+        event: { id: `scenario:${scenario.name}:${index + 1}`, type: step.event, seq: index + 1 },
+        assessments,
+      });
+    } catch (err) {
+      // A monitor the validator already rejected (two transitions tied) has no defined behavior to test.
+      if (!(err instanceof NondeterministicMonitorError)) throw err;
+      return { ...base, resolved_rule_id: resolved.ruleId, pass: false, failures: [...failures, `step ${index + 1}: ${err.message}`], steps };
+    }
     steps.push({
       event: step.event,
       result: out.result,
@@ -207,7 +214,7 @@ export function runScenario(scenario: Scenario, policy: ScenarioPolicy): Scenari
     for (const effect of step.expect_effects ?? []) {
       if (!out.effects.includes(effect)) failures.push(`step ${index + 1}: expected effect ${effect}, got [${out.effects.join(", ")}]`);
     }
-  });
+  }
 
   const last = steps[steps.length - 1];
   if (state !== scenario.expect.final_state) failures.push(`expected final state ${scenario.expect.final_state}, got ${state}`);

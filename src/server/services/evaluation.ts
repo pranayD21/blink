@@ -266,6 +266,14 @@ function persistMonitorRuns(tx: DbOrTx, caseId: string, claim: LoadedClaim, poli
   const dedupeKey = `policy:${caseId}:${key}`;
   let finding: FindingRow | null = tx.select().from(findings).where(eq(findings.dedupeKey, dedupeKey)).get() ?? null;
 
+  // A statement the expert completes later in the same call ("…that's from a trade survey") passes through
+  // NEEDS_CONTEXT on the way to NOT_TRIGGERED. The steps are stored as history, but no finding is opened for
+  // a question the call itself answered: the reviewer would only be acknowledging noise.
+  const settlesQuietly =
+    stepCount > 0 &&
+    !evaluation.monitors.some((run) => run.steps[stepCount - 1].conflictFlag) &&
+    initialFindingState(aggregateMonitorStates(evaluation.monitors.map((run) => run.steps[stepCount - 1].nextState))) === null;
+
   for (let i = 0; i < stepCount; i++) {
     const turnLabel = evaluation.monitors[0].steps[i].turnLabel;
     const at = turnLabel ? ` at ${turnLabel}` : "";
@@ -309,7 +317,7 @@ function persistMonitorRuns(tx: DbOrTx, caseId: string, claim: LoadedClaim, poli
 
     if (!finding) {
       const initial = initialFindingState(aggregate);
-      if (!initial) continue; // nothing triggered and nothing missing: no finding
+      if (!initial || settlesQuietly) continue; // nothing triggered and nothing left missing: no finding
       const lead = evaluation.monitors.find((run) => summary.reviewRules.includes(run.ruleId) || summary.contextRules.includes(run.ruleId));
       const created = createFinding(tx, {
         caseId,

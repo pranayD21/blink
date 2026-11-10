@@ -15,7 +15,7 @@ import { nowIso } from "../clock";
 import { type DbOrTx, toJson } from "../db/client";
 import { analysisRuns, claimQuotes, claims, processingIssues } from "../db/schema";
 import { newId } from "../ids";
-import { applyCaseEvent } from "./caseStatus";
+import { applyCaseEvent, syncCaseStatus } from "./caseStatus";
 import { insertClaimVersion, supersedeClaim } from "./claimsCore";
 import { reevaluateCase, runComparison } from "./evaluation";
 import { createFinding, openTask } from "./findingsCore";
@@ -175,7 +175,14 @@ export function persistAnalysis(tx: DbOrTx, input: PersistAnalysisInput): Analys
   const current = loadCurrentClaims(tx, caseId);
   for (const claim of current.filter(isEvaluable)) runComparison(tx, caseId, claim);
 
+  // ── Evaluate policy, then staleness and status ───────────────────────────
+  applyCaseEvent(tx, getCase(tx, caseId), "ANALYSIS_SUCCEEDED", { actorId: "system", cause: "analysis finished" });
+  const evaluation = reevaluateCase(tx, caseId, { actorId: "system", reason: "analysis", eventType: "CLAIM_EVALUATED", eventToken: `run:${runId}`, runId });
+  report.findingsOpened += evaluation.findingsOpened;
+  report.stale = evaluation.stale.map((s) => `${s.label}: ${s.reason}`);
+
   // ── AI-suggested concerns: labeled, can open work, never auto-closed ─────
+  // Raised after the policy findings so those keep the first numbers (F1, F2, …) on the case.
   for (const concern of grounding.suggestedConcerns) {
     const keys = concern.claimKeys.map(mapKey);
     // A concern about claims carried over unchanged was already raised by the earlier run.
@@ -199,12 +206,8 @@ export function persistAnalysis(tx: DbOrTx, input: PersistAnalysisInput): Analys
       report.findingsOpened++;
     }
   }
+  if (report.suggestedConcerns > 0) syncCaseStatus(tx, caseId, { actorId: "system", cause: "AI-suggested concern raised" });
 
-  // ── Evaluate policy, then staleness and status ───────────────────────────
-  applyCaseEvent(tx, getCase(tx, caseId), "ANALYSIS_SUCCEEDED", { actorId: "system", cause: "analysis finished" });
-  const evaluation = reevaluateCase(tx, caseId, { actorId: "system", reason: "analysis", eventType: "CLAIM_EVALUATED", eventToken: `run:${runId}`, runId });
-  report.findingsOpened += evaluation.findingsOpened;
-  report.stale = evaluation.stale.map((s) => `${s.label}: ${s.reason}`);
 
   tx.update(analysisRuns)
     .set({ status: "succeeded", stage: "Done", reportJson: toJson(report), callSummary: grounding.callSummary, llmCallId: input.llmCallId, policyVersionId: evaluation.policyVersionId, finishedAt: nowIso() })

@@ -56,6 +56,8 @@ export interface ValidationIssue {
   transition_id?: string;
   clause_id?: string;
   paragraph?: string;
+  /** For NONDETERMINISTIC: one concrete evidence assignment in which two transitions both match. */
+  counterexample?: { state: string; event: string; result: string; assignment: Record<string, string>; transitions: string[] };
   message: string;
 }
 
@@ -437,6 +439,7 @@ export function validatePolicy(input: ValidationInput): ValidationReport {
           code: "NONDETERMINISTIC",
           monitor_id: monitor.monitor_id,
           transition_id: cx.transitions[0],
+          counterexample: { state: cx.state, event: cx.event, result: cx.result, assignment: { ...cx.assignment }, transitions: [...cx.transitions] },
           message: `monitor ${monitor.monitor_id}: transitions ${cx.transitions.join(" and ")} both match in ${cx.state} on ${cx.event} when the guard is ${cx.result} (e.g. ${assignment})`,
         }),
       );
