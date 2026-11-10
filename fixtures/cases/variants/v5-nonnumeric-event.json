@@ -1,0 +1,90 @@
+{
+  "id": "V5",
+  "title": "nonnumeric event",
+  "tests": "\"they're about to announce a recall, not public yet\" → R3",
+  "packet": "halvorsen",
+  "expert": "halvorsen",
+  "transcript": "[00:00:05] Analyst (Priya): Anything on product quality?\n[00:00:27] Expert (R. Castellano): Halvorsen is about to announce a recall on the H-400 line. It's not public yet.\n[00:00:49] Analyst (Priya): Let's not go further on that.\n[00:01:11] Expert (R. Castellano): Fair enough.\n",
+  "expected": {
+    "findings": [
+      {
+        "turns": [
+          "T2"
+        ],
+        "rules": [
+          "R3"
+        ],
+        "expect_state": "REVIEW_REQUIRED"
+      }
+    ],
+    "non_findings": [],
+    "assertions": [
+      {
+        "turn": "T2",
+        "predicate": "nonpublic_corporate_event",
+        "state": "supported"
+      }
+    ]
+  },
+  "extraction_note": "Hand-labeled claims in the extract-v1 output shape, for deterministic tests without a model call.",
+  "extraction": {
+    "claims": [
+      {
+        "logical_key": "C1",
+        "fields": {
+          "summary": "Halvorsen is about to announce a recall of its H-400 line, which the expert says is not yet public.",
+          "speaker": "expert",
+          "subject_entity": {
+            "name": "Halvorsen",
+            "kind": "issuer"
+          },
+          "metric": null,
+          "event_kind": "product",
+          "period": {
+            "label": "about to announce",
+            "fiscal_year": null,
+            "fiscal_quarter": null,
+            "calendar_year": null,
+            "calendar_quarter": null,
+            "relative": "future"
+          },
+          "value": null,
+          "scope": "company_wide",
+          "scope_detail": "H-400 line",
+          "knowledge_basis": "unstated",
+          "access_timing": "unknown",
+          "confidentiality_signals": [
+            "It's not public yet",
+            "about to announce"
+          ],
+          "qualifications": [],
+          "is_correction_of": null
+        },
+        "quotes": [
+          {
+            "turn_id": "T2",
+            "quote": "Halvorsen is about to announce a recall on the H-400 line. It's not public yet.",
+            "role": "primary",
+            "supports_fields": [
+              "subject_entity",
+              "event_kind",
+              "period",
+              "confidentiality_signals"
+            ]
+          }
+        ],
+        "links": [],
+        "solicited_by_analyst": "no",
+        "field_uncertainty": []
+      }
+    ],
+    "suggested_concerns": [],
+    "missing_context_questions": [
+      {
+        "claim_key": "C1",
+        "question": "How does the expert know about the planned recall, and when did they learn it?"
+      }
+    ],
+    "call_summary": "The expert said Halvorsen is about to announce a recall on its H-400 line and that this is not yet public; the analyst stopped the topic."
+  }
+}

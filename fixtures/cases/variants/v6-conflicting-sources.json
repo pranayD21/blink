@@ -1,0 +1,118 @@
+{
+  "id": "V6",
+  "title": "conflicting sources",
+  "tests": "the expert says \"I read it in the 10-Q\" and then \"my old boss told me\" for the same figure → knowledge_basis conflict → review task",
+  "packet": "halvorsen",
+  "expert": "halvorsen",
+  "transcript": "[00:00:05] Analyst (Priya): How is Halvorsen's revenue tracking this quarter?\n[00:00:27] Expert (R. Castellano): Halvorsen's revenue is running about five percent below plan this quarter. I read it in the 10-Q.\n[00:00:49] Analyst (Priya): Okay. And how confident are you in that number?\n[00:01:11] Expert (R. Castellano): Very. My old boss told me that figure last week.\n",
+  "expected": {
+    "findings": [
+      {
+        "turns": [
+          "T2"
+        ],
+        "rules": [
+          "R4"
+        ],
+        "expect_state": "REVIEW_REQUIRED",
+        "conflict": true,
+        "notes": "internal_source_claimed is in conflict, so R1 and R2 are indeterminate and a review task opens for the conflict."
+      }
+    ],
+    "non_findings": [],
+    "assertions": [
+      {
+        "turn": "T2",
+        "predicate": "internal_source_claimed",
+        "state": "conflict"
+      }
+    ]
+  },
+  "extraction_note": "Hand-labeled claims in the extract-v1 output shape, for deterministic tests without a model call.",
+  "extraction": {
+    "claims": [
+      {
+        "logical_key": "C1",
+        "fields": {
+          "summary": "Halvorsen's revenue is running about five percent below plan this quarter; the expert attributed the figure first to the 10-Q and then to their former boss.",
+          "speaker": "expert",
+          "subject_entity": {
+            "name": "Halvorsen",
+            "kind": "issuer"
+          },
+          "metric": {
+            "category": "revenue",
+            "label": "revenue versus plan"
+          },
+          "event_kind": "none",
+          "period": {
+            "label": "this quarter",
+            "fiscal_year": null,
+            "fiscal_quarter": null,
+            "calendar_year": null,
+            "calendar_quarter": null,
+            "relative": "current"
+          },
+          "value": {
+            "number": 5,
+            "unit": "percent",
+            "direction": "down",
+            "baseline": "below plan"
+          },
+          "scope": "company_wide",
+          "scope_detail": null,
+          "knowledge_basis": "insider_conversation",
+          "access_timing": "after_employment",
+          "confidentiality_signals": [],
+          "qualifications": [
+            "about"
+          ],
+          "is_correction_of": null
+        },
+        "quotes": [
+          {
+            "turn_id": "T2",
+            "quote": "Halvorsen's revenue is running about five percent below plan this quarter.",
+            "role": "primary",
+            "supports_fields": [
+              "subject_entity",
+              "metric",
+              "value",
+              "period",
+              "scope"
+            ]
+          },
+          {
+            "turn_id": "T2",
+            "quote": "I read it in the 10-Q.",
+            "role": "source_attribution",
+            "supports_fields": [
+              "knowledge_basis"
+            ]
+          },
+          {
+            "turn_id": "T4",
+            "quote": "My old boss told me that figure last week.",
+            "role": "source_attribution",
+            "supports_fields": [
+              "knowledge_basis",
+              "access_timing"
+            ]
+          }
+        ],
+        "links": [],
+        "solicited_by_analyst": "yes",
+        "field_uncertainty": [
+          {
+            "field": "knowledge_basis",
+            "kind": "conflicting_statements",
+            "note": "The expert said \"I read it in the 10-Q\" (public source) and then \"My old boss told me that figure last week\" (insider conversation) for the same figure."
+          }
+        ]
+      }
+    ],
+    "suggested_concerns": [],
+    "missing_context_questions": [],
+    "call_summary": "The expert said Halvorsen's revenue is about five percent below plan this quarter and gave two different sources for the figure: the 10-Q and a former boss."
+  }
+}

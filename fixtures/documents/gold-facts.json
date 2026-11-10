@@ -1,0 +1,26 @@
+{
+  "note": "Hand-written expected facts for the curated documents. Used by tests and by `pnpm eval` to score the docfacts-v1 extraction; the app itself uses facts extracted by the model (recorded).",
+  "documents": {
+    "hlvp-10q-q2fy27": [
+      { "fact_id": "F1", "entity": "Halvorsen Pumps, Inc.", "metric_category": "orders", "event_kind": "none", "period": { "fy": 2027, "q": 2 }, "scope": "company_wide", "value": { "number": 8, "unit": "percent", "direction": "down" }, "quote": "For the second quarter of fiscal 2027, total company orders decreased 8% compared with the prior-year period, reflecting softer distributor restocking." },
+      { "fact_id": "F2", "entity": "Halvorsen Pumps, Inc.", "metric_category": "other", "event_kind": "none", "period": { "fy": 2027, "q": 2 }, "scope": "company_wide", "value": { "number": 412000000, "unit": "usd", "direction": null }, "quote": "Backlog at quarter end was $412 million." }
+    ],
+    "hlvp-investor-day-2026-10-15": [
+      { "fact_id": "F1", "entity": "Halvorsen Pumps, Inc.", "metric_category": "inventory", "event_kind": "none", "period": null, "scope": "company_wide", "value": null, "quote": "Management noted that channel inventory is normalizing and reaffirmed full-year guidance." },
+      { "fact_id": "F2", "entity": "Halvorsen Pumps, Inc.", "metric_category": "guidance", "event_kind": "none", "period": { "fy": 2027, "q": null }, "scope": "company_wide", "value": null, "quote": "Management noted that channel inventory is normalizing and reaffirmed full-year guidance." }
+    ],
+    "pvdi-survey-2026-10": [
+      { "fact_id": "F1", "entity": "Pump & Valve Distributor Index", "metric_category": "orders", "event_kind": "none", "period": null, "scope": "sample", "value": { "number": 18, "unit": "percent", "direction": "down" }, "quote": "Pump & Valve Distributor Index: participating distributors reported orders down 18% year over year in the September quarter across the surveyed sample." }
+    ],
+    "steel-costs-news-2026-10": [
+      { "fact_id": "F1", "entity": "Industry", "metric_category": "input_costs", "event_kind": "none", "period": null, "scope": "industry_aggregate", "value": { "number": 12, "unit": "percent", "direction": "up" }, "quote": "Hot-rolled steel prices rose 12% over the past six months, pressuring pump manufacturers' margins." }
+    ],
+    "brightwater-8k-2026-11-10": [
+      { "fact_id": "F1", "entity": "Halvorsen Pumps", "metric_category": null, "event_kind": "contract_change", "period": null, "scope": "single_customer", "value": null, "quote": "Brightwater Flow Systems announced it was awarded the Cardinal Utilities multi-year supply contract, replacing incumbent supplier Halvorsen Pumps." },
+      { "fact_id": "F2", "entity": "Brightwater Flow Systems", "metric_category": null, "event_kind": "contract_change", "period": null, "scope": "single_customer", "value": null, "quote": "Brightwater Flow Systems announced it was awarded the Cardinal Utilities multi-year supply contract, replacing incumbent supplier Halvorsen Pumps." }
+    ],
+    "hlvp-earnings-call-q2fy27": [
+      { "fact_id": "F1", "entity": "Halvorsen Pumps, Inc.", "metric_category": "pricing", "event_kind": "none", "period": { "fy": 2027, "q": 2 }, "scope": "company_wide", "value": null, "quote": "Pricing actions have held; we are seeing modest lead-time improvement." }
+    ]
+  }
+}

@@ -1,0 +1,698 @@
+{
+  "findings": [
+    {
+      "id": "G1",
+      "rules": [
+        "R1",
+        "R2",
+        "R4"
+      ],
+      "turns": [
+        "T5",
+        "T11"
+      ],
+      "must_link": true,
+      "expect_state": "REVIEW_REQUIRED",
+      "escalation": true,
+      "expect_history": [
+        "UNASSESSED",
+        "NEEDS_CONTEXT",
+        "REVIEW_REQUIRED"
+      ],
+      "notes": "Evaluated at T5 alone: company, period, source unknown → NEEDS_CONTEXT. At T11: supported → REVIEW_REQUIRED; R2 requests escalation"
+    },
+    {
+      "id": "G2",
+      "rules": [
+        "R3"
+      ],
+      "turns": [
+        "T15"
+      ],
+      "expect_state": "REVIEW_REQUIRED"
+    },
+    {
+      "id": "G3",
+      "rules": [
+        "R1"
+      ],
+      "turns": [
+        "T17"
+      ],
+      "expect_state": "NEEDS_CONTEXT",
+      "clarification": "Source of the margin observation? Demo answer: 'Expert confirms it reflects Halvorsen's public Q1 earnings-call commentary' → knowledge_basis public_source → NOT_TRIGGERED_PENDING_ACK → no_concern"
+    }
+  ],
+  "non_findings": [
+    {
+      "turns": [
+        "T7"
+      ],
+      "why": "industry aggregate (P6)"
+    },
+    {
+      "turns": [
+        "T9"
+      ],
+      "why": "industry end-market color"
+    },
+    {
+      "turns": [
+        "T13"
+      ],
+      "why": "matches public Q2 10-Q (exact_match)"
+    },
+    {
+      "turns": [
+        "T19"
+      ],
+      "why": "public news source"
+    },
+    {
+      "turns": [
+        "T21"
+      ],
+      "why": "industry pricing"
+    }
+  ],
+  "comparisons": [
+    {
+      "turn": "T11",
+      "expect": "mismatch_only",
+      "reasons": [
+        "period",
+        "scope"
+      ]
+    },
+    {
+      "turn": "T13",
+      "expect": "exact_match"
+    },
+    {
+      "turn": "T15",
+      "expect": "mismatch_only",
+      "reasons": [
+        "PUBLISHED_AFTER_CALL"
+      ]
+    }
+  ],
+  "extraction_note": "Hand-labeled claims in the same shape the extract-v1 prompt returns. Used by the dev-only \"load gold claims\" path (source = gold, no model call) and by service tests, so the review flow can be exercised without the network. Never shown as model output.",
+  "extraction": {
+    "claims": [
+      {
+        "logical_key": "C1",
+        "fields": {
+          "summary": "Halvorsen's West region Q3 bookings were tracking down about twenty percent versus last year, according to a Salesforce pipeline dashboard the expert can still log into after leaving the company.",
+          "speaker": "expert",
+          "subject_entity": {
+            "name": "Halvorsen",
+            "kind": "issuer"
+          },
+          "metric": {
+            "category": "bookings",
+            "label": "Q3 bookings, West region"
+          },
+          "event_kind": "none",
+          "period": {
+            "label": "this quarter (Q3)",
+            "fiscal_year": 2027,
+            "fiscal_quarter": 3,
+            "calendar_year": null,
+            "calendar_quarter": null,
+            "relative": "current"
+          },
+          "value": {
+            "number": 20,
+            "unit": "percent",
+            "direction": "down",
+            "baseline": "versus last year"
+          },
+          "scope": "segment_or_region",
+          "scope_detail": "West region",
+          "knowledge_basis": "internal_system",
+          "access_timing": "after_employment",
+          "confidentiality_signals": [],
+          "qualifications": [
+            "about",
+            "were tracking"
+          ],
+          "is_correction_of": null
+        },
+        "quotes": [
+          {
+            "turn_id": "T5",
+            "quote": "orders fell off a cliff. They're down about twenty percent.",
+            "role": "primary",
+            "supports_fields": [
+              "metric",
+              "value"
+            ]
+          },
+          {
+            "turn_id": "T11",
+            "quote": "That's Halvorsen's West region, this quarter.",
+            "role": "context",
+            "supports_fields": [
+              "subject_entity",
+              "scope",
+              "period"
+            ]
+          },
+          {
+            "turn_id": "T11",
+            "quote": "I still have a login to their pipeline dashboard in Salesforce. They never shut it off when I left.",
+            "role": "source_attribution",
+            "supports_fields": [
+              "knowledge_basis",
+              "access_timing"
+            ]
+          },
+          {
+            "turn_id": "T11",
+            "quote": "When I checked last week, Q3 bookings were tracking down twenty percent versus last year.",
+            "role": "context",
+            "supports_fields": [
+              "metric",
+              "value",
+              "period",
+              "access_timing"
+            ]
+          }
+        ],
+        "links": [],
+        "solicited_by_analyst": "no",
+        "field_uncertainty": []
+      },
+      {
+        "logical_key": "C2",
+        "fields": {
+          "summary": "Distributors across the industry are soft because they overbought in 2025 and are working through inventory.",
+          "speaker": "expert",
+          "subject_entity": {
+            "name": null,
+            "kind": "industry"
+          },
+          "metric": {
+            "category": "inventory",
+            "label": "distributor inventory and demand"
+          },
+          "event_kind": "none",
+          "period": {
+            "label": "right now",
+            "fiscal_year": null,
+            "fiscal_quarter": null,
+            "calendar_year": null,
+            "calendar_quarter": null,
+            "relative": "current"
+          },
+          "value": {
+            "number": null,
+            "unit": null,
+            "direction": "down",
+            "baseline": null
+          },
+          "scope": "industry_aggregate",
+          "scope_detail": null,
+          "knowledge_basis": "personal_observation",
+          "access_timing": "not_applicable",
+          "confidentiality_signals": [],
+          "qualifications": [],
+          "is_correction_of": null
+        },
+        "quotes": [
+          {
+            "turn_id": "T7",
+            "quote": "Distributors broadly are soft right now. Everyone overbought in 2025 and they're working through inventory.",
+            "role": "primary",
+            "supports_fields": [
+              "subject_entity",
+              "metric",
+              "scope",
+              "period",
+              "value"
+            ]
+          }
+        ],
+        "links": [],
+        "solicited_by_analyst": "no",
+        "field_uncertainty": []
+      },
+      {
+        "logical_key": "C3",
+        "fields": {
+          "summary": "Across distributors, pricing is holding and lead times have shortened considerably.",
+          "speaker": "expert",
+          "subject_entity": {
+            "name": null,
+            "kind": "industry"
+          },
+          "metric": {
+            "category": "pricing",
+            "label": "industry pricing and lead times"
+          },
+          "event_kind": "none",
+          "period": {
+            "label": "right now",
+            "fiscal_year": null,
+            "fiscal_quarter": null,
+            "calendar_year": null,
+            "calendar_quarter": null,
+            "relative": "current"
+          },
+          "value": {
+            "number": null,
+            "unit": null,
+            "direction": "flat",
+            "baseline": null
+          },
+          "scope": "industry_aggregate",
+          "scope_detail": null,
+          "knowledge_basis": "personal_observation",
+          "access_timing": "not_applicable",
+          "confidentiality_signals": [],
+          "qualifications": [],
+          "is_correction_of": null
+        },
+        "quotes": [
+          {
+            "turn_id": "T7",
+            "quote": "Pricing is holding though, and lead times have come in a lot.",
+            "role": "primary",
+            "supports_fields": [
+              "metric",
+              "value"
+            ]
+          },
+          {
+            "turn_id": "T7",
+            "quote": "Distributors broadly are soft right now.",
+            "role": "context",
+            "supports_fields": [
+              "subject_entity",
+              "scope",
+              "period"
+            ]
+          }
+        ],
+        "links": [],
+        "solicited_by_analyst": "no",
+        "field_uncertainty": []
+      },
+      {
+        "logical_key": "C4",
+        "fields": {
+          "summary": "By end market, municipal water demand is fine, oil and gas midstream is weak, and general industrial is flat.",
+          "speaker": "expert",
+          "subject_entity": {
+            "name": null,
+            "kind": "industry"
+          },
+          "metric": {
+            "category": "other",
+            "label": "end-market demand"
+          },
+          "event_kind": "none",
+          "period": {
+            "label": null,
+            "fiscal_year": null,
+            "fiscal_quarter": null,
+            "calendar_year": null,
+            "calendar_quarter": null,
+            "relative": "current"
+          },
+          "value": null,
+          "scope": "industry_aggregate",
+          "scope_detail": null,
+          "knowledge_basis": "personal_observation",
+          "access_timing": "not_applicable",
+          "confidentiality_signals": [],
+          "qualifications": [],
+          "is_correction_of": null
+        },
+        "quotes": [
+          {
+            "turn_id": "T9",
+            "quote": "Municipal water is fine. Oil and gas midstream is the weak spot, and general industrial is flat.",
+            "role": "primary",
+            "supports_fields": [
+              "subject_entity",
+              "metric",
+              "scope"
+            ]
+          }
+        ],
+        "links": [],
+        "solicited_by_analyst": "no",
+        "field_uncertainty": []
+      },
+      {
+        "logical_key": "C5",
+        "fields": {
+          "summary": "Halvorsen said on its Q2 report that orders were down high single digits.",
+          "speaker": "expert",
+          "subject_entity": {
+            "name": "Halvorsen",
+            "kind": "issuer"
+          },
+          "metric": {
+            "category": "orders",
+            "label": "orders"
+          },
+          "event_kind": "none",
+          "period": {
+            "label": "Q2 report",
+            "fiscal_year": 2027,
+            "fiscal_quarter": 2,
+            "calendar_year": null,
+            "calendar_quarter": null,
+            "relative": "prior"
+          },
+          "value": {
+            "number": null,
+            "unit": "percent",
+            "direction": "down",
+            "baseline": null
+          },
+          "scope": "company_wide",
+          "scope_detail": null,
+          "knowledge_basis": "public_source",
+          "access_timing": "not_applicable",
+          "confidentiality_signals": [],
+          "qualifications": [
+            "high single digits"
+          ],
+          "is_correction_of": null
+        },
+        "quotes": [
+          {
+            "turn_id": "T13",
+            "quote": "On the Q2 report they said orders were down high single digits",
+            "role": "primary",
+            "supports_fields": [
+              "subject_entity",
+              "metric",
+              "period",
+              "value",
+              "scope",
+              "knowledge_basis"
+            ]
+          }
+        ],
+        "links": [
+          {
+            "to": "C1",
+            "kind": "elaborates"
+          }
+        ],
+        "solicited_by_analyst": "no",
+        "field_uncertainty": []
+      },
+      {
+        "logical_key": "C6",
+        "fields": {
+          "summary": "Brightwater has been pricing aggressively in the utilities segment.",
+          "speaker": "expert",
+          "subject_entity": {
+            "name": "Brightwater",
+            "kind": "competitor"
+          },
+          "metric": {
+            "category": "pricing",
+            "label": "competitor pricing in utilities"
+          },
+          "event_kind": "none",
+          "period": {
+            "label": null,
+            "fiscal_year": null,
+            "fiscal_quarter": null,
+            "calendar_year": null,
+            "calendar_quarter": null,
+            "relative": "current"
+          },
+          "value": null,
+          "scope": "segment_or_region",
+          "scope_detail": "utilities",
+          "knowledge_basis": "unstated",
+          "access_timing": "not_applicable",
+          "confidentiality_signals": [],
+          "qualifications": [],
+          "is_correction_of": null
+        },
+        "quotes": [
+          {
+            "turn_id": "T15",
+            "quote": "Brightwater has been aggressive on price in utilities.",
+            "role": "primary",
+            "supports_fields": [
+              "subject_entity",
+              "metric",
+              "scope"
+            ]
+          }
+        ],
+        "links": [],
+        "solicited_by_analyst": "no",
+        "field_uncertainty": []
+      },
+      {
+        "logical_key": "C7",
+        "fields": {
+          "summary": "The Cardinal Utilities contract is being re-bid and Halvorsen is losing it; the expert said this has not been announced.",
+          "speaker": "expert",
+          "subject_entity": {
+            "name": "Halvorsen",
+            "kind": "issuer"
+          },
+          "metric": null,
+          "event_kind": "contract_change",
+          "period": {
+            "label": "being re-bid",
+            "fiscal_year": null,
+            "fiscal_quarter": null,
+            "calendar_year": null,
+            "calendar_quarter": null,
+            "relative": "current"
+          },
+          "value": null,
+          "scope": "single_customer",
+          "scope_detail": "Cardinal Utilities",
+          "knowledge_basis": "unstated",
+          "access_timing": "unknown",
+          "confidentiality_signals": [
+            "between us",
+            "That hasn't been announced yet",
+            "keep it quiet"
+          ],
+          "qualifications": [],
+          "is_correction_of": null
+        },
+        "quotes": [
+          {
+            "turn_id": "T15",
+            "quote": "And between us, the Cardinal Utilities contract is being re-bid and Halvorsen is out. That hasn't been announced yet, so keep it quiet.",
+            "role": "primary",
+            "supports_fields": [
+              "subject_entity",
+              "event_kind",
+              "scope",
+              "period",
+              "confidentiality_signals"
+            ]
+          }
+        ],
+        "links": [],
+        "solicited_by_analyst": "no",
+        "field_uncertainty": []
+      },
+      {
+        "logical_key": "C8",
+        "fields": {
+          "summary": "Halvorsen's margins were under pressure well before the expert left the company.",
+          "speaker": "expert",
+          "subject_entity": {
+            "name": "Halvorsen",
+            "kind": "issuer"
+          },
+          "metric": {
+            "category": "margin",
+            "label": "margins"
+          },
+          "event_kind": "none",
+          "period": {
+            "label": "well before I left",
+            "fiscal_year": null,
+            "fiscal_quarter": null,
+            "calendar_year": null,
+            "calendar_quarter": null,
+            "relative": "prior"
+          },
+          "value": {
+            "number": null,
+            "unit": null,
+            "direction": "down",
+            "baseline": null
+          },
+          "scope": "company_wide",
+          "scope_detail": null,
+          "knowledge_basis": "unstated",
+          "access_timing": "during_employment",
+          "confidentiality_signals": [],
+          "qualifications": [],
+          "is_correction_of": null
+        },
+        "quotes": [
+          {
+            "turn_id": "T17",
+            "quote": "I'll just say Halvorsen's margins were under pressure well before I left.",
+            "role": "primary",
+            "supports_fields": [
+              "subject_entity",
+              "metric",
+              "period",
+              "value",
+              "scope",
+              "access_timing"
+            ]
+          }
+        ],
+        "links": [],
+        "solicited_by_analyst": "no",
+        "field_uncertainty": []
+      },
+      {
+        "logical_key": "C9",
+        "fields": {
+          "summary": "Hot-rolled steel is up about twelve percent over six months, squeezing manufacturers' margins, according to what the expert has read.",
+          "speaker": "expert",
+          "subject_entity": {
+            "name": null,
+            "kind": "industry"
+          },
+          "metric": {
+            "category": "input_costs",
+            "label": "hot-rolled steel price"
+          },
+          "event_kind": "none",
+          "period": {
+            "label": "over six months",
+            "fiscal_year": null,
+            "fiscal_quarter": null,
+            "calendar_year": null,
+            "calendar_quarter": null,
+            "relative": "current"
+          },
+          "value": {
+            "number": 12,
+            "unit": "percent",
+            "direction": "up",
+            "baseline": "over six months"
+          },
+          "scope": "industry_aggregate",
+          "scope_detail": null,
+          "knowledge_basis": "public_source",
+          "access_timing": "not_applicable",
+          "confidentiality_signals": [],
+          "qualifications": [
+            "about",
+            "From what I've read"
+          ],
+          "is_correction_of": null
+        },
+        "quotes": [
+          {
+            "turn_id": "T19",
+            "quote": "From what I've read, hot-rolled is up about twelve percent over six months, which squeezes everyone's margins.",
+            "role": "primary",
+            "supports_fields": [
+              "subject_entity",
+              "metric",
+              "value",
+              "period",
+              "scope",
+              "knowledge_basis"
+            ]
+          }
+        ],
+        "links": [],
+        "solicited_by_analyst": "no",
+        "field_uncertainty": []
+      },
+      {
+        "logical_key": "C10",
+        "fields": {
+          "summary": "The industry pushed through two price increases this year, which distributors accepted because lead times were long last year.",
+          "speaker": "expert",
+          "subject_entity": {
+            "name": null,
+            "kind": "industry"
+          },
+          "metric": {
+            "category": "pricing",
+            "label": "industry price increases"
+          },
+          "event_kind": "none",
+          "period": {
+            "label": "this year",
+            "fiscal_year": null,
+            "fiscal_quarter": null,
+            "calendar_year": null,
+            "calendar_quarter": null,
+            "relative": "current"
+          },
+          "value": {
+            "number": 2,
+            "unit": "units",
+            "direction": "up",
+            "baseline": null
+          },
+          "scope": "industry_aggregate",
+          "scope_detail": null,
+          "knowledge_basis": "personal_observation",
+          "access_timing": "not_applicable",
+          "confidentiality_signals": [],
+          "qualifications": [
+            "Mostly yes"
+          ],
+          "is_correction_of": null
+        },
+        "quotes": [
+          {
+            "turn_id": "T21",
+            "quote": "The industry pushed two price increases this year, and distributors accepted them because lead times were so long last year.",
+            "role": "primary",
+            "supports_fields": [
+              "subject_entity",
+              "metric",
+              "value",
+              "period",
+              "scope"
+            ]
+          }
+        ],
+        "links": [],
+        "solicited_by_analyst": "no",
+        "field_uncertainty": []
+      }
+    ],
+    "suggested_concerns": [
+      {
+        "title": "Expert kept sharing after the analyst's confidentiality reminder",
+        "claim_keys": [
+          "C8"
+        ],
+        "rationale": "Right after the analyst asked the expert not to share anything confidential (T16), the expert volunteered a view on Halvorsen's margins (T17). The compiled policy has no rule for this pattern, so it is raised for the reviewer's judgment."
+      }
+    ],
+    "missing_context_questions": [
+      {
+        "claim_key": "C8",
+        "question": "What is the source of the margin observation — the expert's time at Halvorsen, or public commentary?"
+      },
+      {
+        "claim_key": "C7",
+        "question": "How did the expert learn about the Cardinal Utilities re-bid, and when?"
+      }
+    ],
+    "call_summary": "The expert, a former Halvorsen Pumps regional sales director who left in July 2026, described soft distributor demand, stable pricing, and steel cost pressure across the pump industry. The expert also gave a twenty percent decline figure that was later attributed to Halvorsen's West region for the current quarter, sourced from a Salesforce dashboard the expert can still access, and mentioned an unannounced re-bid of the Cardinal Utilities contract."
+  }
+}

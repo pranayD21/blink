@@ -1,0 +1,22 @@
+[00:00:05] Moderator (Meridian): This call is being recorded for compliance purposes. The expert has confirmed they will not share confidential information from any current or former employer. Please go ahead.
+[00:00:21] Analyst (Priya): Thanks for making time. Could you start with a quick overview of your background?
+[00:00:30] Expert (R. Castellano): Sure. I spent about seven years at Halvorsen Pumps, most recently as regional sales director for the West. I left in July. Before that I was at Brightwater for about five years as a territory manager.
+[00:01:02] Analyst (Priya): Great. Big picture, how does demand look for industrial pumps heading into year-end?
+[00:01:10] Expert (R. Castellano): Honestly, orders fell off a cliff. They're down about twenty percent.
+[00:01:18] Analyst (Priya): Is that something you're seeing across distributors generally?
+[00:01:24] Expert (R. Castellano): Distributors broadly are soft right now. Everyone overbought in 2025 and they're working through inventory. Pricing is holding though, and lead times have come in a lot.
+[00:02:05] Analyst (Priya): Which end markets are weakest?
+[00:02:10] Expert (R. Castellano): Municipal water is fine. Oil and gas midstream is the weak spot, and general industrial is flat.
+[00:02:40] Analyst (Priya): Going back to the twenty percent, where does that number come from?
+[00:02:47] Expert (R. Castellano): That's Halvorsen's West region, this quarter. I still have a login to their pipeline dashboard in Salesforce. They never shut it off when I left. When I checked last week, Q3 bookings were tracking down twenty percent versus last year.
+[00:03:15] Analyst (Priya): Understood. Has Halvorsen said anything publicly about orders?
+[00:03:21] Expert (R. Castellano): On the Q2 report they said orders were down high single digits, so it has clearly gotten worse since then.
+[00:03:40] Analyst (Priya): How do you think about Halvorsen's competitive position versus Brightwater?
+[00:03:47] Expert (R. Castellano): Brightwater has been aggressive on price in utilities. And between us, the Cardinal Utilities contract is being re-bid and Halvorsen is out. That hasn't been announced yet, so keep it quiet.
+[00:04:10] Analyst (Priya): I want to be careful here. Please don't share anything confidential.
+[00:04:15] Expert (R. Castellano): Of course, sorry. Let's move on. I'll just say Halvorsen's margins were under pressure well before I left.
+[00:04:20] Analyst (Priya): How are input costs affecting manufacturers?
+[00:04:26] Expert (R. Castellano): Steel is the big one. From what I've read, hot-rolled is up about twelve percent over six months, which squeezes everyone's margins.
+[00:04:50] Analyst (Priya): And pricing power, can manufacturers pass that through?
+[00:04:56] Expert (R. Castellano): Mostly yes. The industry pushed two price increases this year, and distributors accepted them because lead times were so long last year.
+[00:05:30] Analyst (Priya): Thanks, that's very helpful. That's all my questions.

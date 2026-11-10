@@ -1,0 +1,19 @@
+{
+  "title": "Halvorsen Pumps — distributor demand check",
+  "issuer": "Halvorsen Pumps, Inc.",
+  "ticker": "HLVP",
+  "aliases": ["Halvorsen", "HLVP", "Halvorsen Pumps"],
+  "issuer_fiscal": {
+    "fiscal_year_end_month": 1,
+    "fiscal_quarters_note": "FY2027 runs Feb 1 2026 – Jan 31 2027. Q1 Feb–Apr, Q2 May–Jul, Q3 Aug–Oct, Q4 Nov–Jan.",
+    "last_reported": { "fy": 2027, "q": 2, "reported_on": "2026-09-08" },
+    "next_report_expected": "2026-12-02"
+  },
+  "call_date": "2026-11-03",
+  "research_questions": [
+    "How is end-market demand for industrial pumps trending into year-end?",
+    "Is pricing holding across the distributor channel?",
+    "How are input costs (steel, castings) affecting manufacturers?"
+  ],
+  "analyst_notes": "Expert sourced via Meridian Expert Network. Network compliance attestation on file."
+}

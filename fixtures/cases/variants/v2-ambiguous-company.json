@@ -1,0 +1,115 @@
+{
+  "id": "V2",
+  "title": "ambiguous company",
+  "tests": "\"one of the big three pump makers is down 20%\" → about_covered_issuer unknown → NEEDS_CONTEXT",
+  "packet": "halvorsen",
+  "expert": "halvorsen",
+  "transcript": "[00:00:05] Analyst (Priya): How are the large manufacturers doing?\n[00:00:27] Expert (R. Castellano): One of the big three pump makers is down twenty percent on orders this quarter. I saw it in their internal sales report.\n[00:00:49] Analyst (Priya): Which one?\n[00:01:11] Expert (R. Castellano): I'd rather not say which.\n",
+  "expected": {
+    "findings": [
+      {
+        "turns": [
+          "T2"
+        ],
+        "rules": [
+          "R1"
+        ],
+        "expect_state": "NEEDS_CONTEXT"
+      }
+    ],
+    "non_findings": [],
+    "assertions": [
+      {
+        "turn": "T2",
+        "predicate": "about_covered_issuer",
+        "state": "unknown"
+      }
+    ]
+  },
+  "extraction_note": "Hand-labeled claims in the extract-v1 output shape, for deterministic tests without a model call.",
+  "extraction": {
+    "claims": [
+      {
+        "logical_key": "C1",
+        "fields": {
+          "summary": "An unnamed one of the three largest pump makers has orders down twenty percent this quarter, according to an internal sales report the expert saw.",
+          "speaker": "expert",
+          "subject_entity": {
+            "name": null,
+            "kind": "unknown"
+          },
+          "metric": {
+            "category": "orders",
+            "label": "orders"
+          },
+          "event_kind": "none",
+          "period": {
+            "label": "this quarter",
+            "fiscal_year": null,
+            "fiscal_quarter": null,
+            "calendar_year": null,
+            "calendar_quarter": null,
+            "relative": "current"
+          },
+          "value": {
+            "number": 20,
+            "unit": "percent",
+            "direction": "down",
+            "baseline": null
+          },
+          "scope": "company_wide",
+          "scope_detail": null,
+          "knowledge_basis": "internal_document",
+          "access_timing": "unknown",
+          "confidentiality_signals": [],
+          "qualifications": [],
+          "is_correction_of": null
+        },
+        "quotes": [
+          {
+            "turn_id": "T2",
+            "quote": "One of the big three pump makers is down twenty percent on orders this quarter.",
+            "role": "primary",
+            "supports_fields": [
+              "metric",
+              "value",
+              "period",
+              "scope"
+            ]
+          },
+          {
+            "turn_id": "T2",
+            "quote": "I saw it in their internal sales report.",
+            "role": "source_attribution",
+            "supports_fields": [
+              "knowledge_basis"
+            ]
+          },
+          {
+            "turn_id": "T4",
+            "quote": "I'd rather not say which.",
+            "role": "context",
+            "supports_fields": []
+          }
+        ],
+        "links": [],
+        "solicited_by_analyst": "no",
+        "field_uncertainty": [
+          {
+            "field": "subject_entity",
+            "kind": "ambiguous",
+            "note": "The expert declined to name which of the three manufacturers this is."
+          }
+        ]
+      }
+    ],
+    "suggested_concerns": [],
+    "missing_context_questions": [
+      {
+        "claim_key": "C1",
+        "question": "Which manufacturer is the expert referring to?"
+      }
+    ],
+    "call_summary": "The expert said one of the three largest pump makers has orders down twenty percent this quarter, citing an internal sales report, and declined to name the company."
+  }
+}

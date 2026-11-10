@@ -1,0 +1,193 @@
+{
+  "id": "V3",
+  "title": "correction",
+  "tests": "\"Orders fell twenty percent.\" / \"At Halvorsen this quarter?\" / \"No, across our distributor sample last year.\" → sample scope, prior period; earlier claim kept and linked as corrected; the analyst's suggestion is not attributed",
+  "packet": "halvorsen",
+  "expert": "halvorsen",
+  "transcript": "[00:00:05] Analyst (Priya): What are you seeing on demand?\n[00:00:27] Expert (R. Castellano): Orders fell twenty percent.\n[00:00:49] Analyst (Priya): At Halvorsen this quarter?\n[00:01:11] Expert (R. Castellano): No, across our distributor sample last year.\n",
+  "expected": {
+    "findings": [
+      {
+        "turns": [
+          "T2"
+        ],
+        "rules": [
+          "R1"
+        ],
+        "expect_state": "NEEDS_CONTEXT",
+        "accept_states": [
+          "NEEDS_CONTEXT",
+          "NOT_TRIGGERED_PENDING_ACK"
+        ],
+        "notes": "The earlier, ambiguous statement is kept and evaluated; a later correction does not resolve it automatically."
+      }
+    ],
+    "non_findings": [
+      {
+        "turns": [
+          "T4"
+        ],
+        "why": "sample scope and prior period"
+      }
+    ],
+    "assertions": [
+      {
+        "turn": "T4",
+        "field": "scope",
+        "equals": "sample"
+      },
+      {
+        "turn": "T4",
+        "field": "period.relative",
+        "equals": "prior"
+      },
+      {
+        "turn": "T4",
+        "predicate": "about_covered_issuer",
+        "state": "refuted"
+      },
+      {
+        "turn": "T2",
+        "predicate": "about_covered_issuer",
+        "state": "unknown",
+        "primary_only": true
+      },
+      {
+        "turn": "T4",
+        "corrects_turn": "T2"
+      }
+    ]
+  },
+  "extraction_note": "Hand-labeled claims in the extract-v1 output shape, for deterministic tests without a model call.",
+  "extraction": {
+    "claims": [
+      {
+        "logical_key": "C1",
+        "fields": {
+          "summary": "Orders fell twenty percent (company, period, and source not stated at this point).",
+          "speaker": "expert",
+          "subject_entity": {
+            "name": null,
+            "kind": "unknown"
+          },
+          "metric": {
+            "category": "orders",
+            "label": "orders"
+          },
+          "event_kind": "none",
+          "period": {
+            "label": null,
+            "fiscal_year": null,
+            "fiscal_quarter": null,
+            "calendar_year": null,
+            "calendar_quarter": null,
+            "relative": "unspecified"
+          },
+          "value": {
+            "number": 20,
+            "unit": "percent",
+            "direction": "down",
+            "baseline": null
+          },
+          "scope": "unspecified",
+          "scope_detail": null,
+          "knowledge_basis": "unstated",
+          "access_timing": "not_applicable",
+          "confidentiality_signals": [],
+          "qualifications": [],
+          "is_correction_of": null
+        },
+        "quotes": [
+          {
+            "turn_id": "T2",
+            "quote": "Orders fell twenty percent.",
+            "role": "primary",
+            "supports_fields": [
+              "metric",
+              "value"
+            ]
+          }
+        ],
+        "links": [],
+        "solicited_by_analyst": "no",
+        "field_uncertainty": []
+      },
+      {
+        "logical_key": "C2",
+        "fields": {
+          "summary": "The twenty percent order decline was across the expert's distributor sample last year, not at Halvorsen this quarter.",
+          "speaker": "expert",
+          "subject_entity": {
+            "name": null,
+            "kind": "industry"
+          },
+          "metric": {
+            "category": "orders",
+            "label": "orders across a distributor sample"
+          },
+          "event_kind": "none",
+          "period": {
+            "label": "last year",
+            "fiscal_year": null,
+            "fiscal_quarter": null,
+            "calendar_year": null,
+            "calendar_quarter": null,
+            "relative": "prior"
+          },
+          "value": {
+            "number": 20,
+            "unit": "percent",
+            "direction": "down",
+            "baseline": null
+          },
+          "scope": "sample",
+          "scope_detail": "the expert's distributor sample",
+          "knowledge_basis": "personal_observation",
+          "access_timing": "not_applicable",
+          "confidentiality_signals": [],
+          "qualifications": [],
+          "is_correction_of": "C1"
+        },
+        "quotes": [
+          {
+            "turn_id": "T4",
+            "quote": "No, across our distributor sample last year.",
+            "role": "primary",
+            "supports_fields": [
+              "subject_entity",
+              "scope",
+              "period",
+              "knowledge_basis"
+            ]
+          },
+          {
+            "turn_id": "T2",
+            "quote": "Orders fell twenty percent.",
+            "role": "context",
+            "supports_fields": [
+              "metric",
+              "value"
+            ]
+          },
+          {
+            "turn_id": "T3",
+            "quote": "At Halvorsen this quarter?",
+            "role": "context",
+            "supports_fields": []
+          }
+        ],
+        "links": [
+          {
+            "to": "C1",
+            "kind": "corrects"
+          }
+        ],
+        "solicited_by_analyst": "no",
+        "field_uncertainty": []
+      }
+    ],
+    "suggested_concerns": [],
+    "missing_context_questions": [],
+    "call_summary": "The expert first said orders fell twenty percent, then clarified that the figure was across a distributor sample last year, rejecting the analyst's suggestion that it was Halvorsen this quarter."
+  }
+}

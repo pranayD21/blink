@@ -1,0 +1,198 @@
+{
+  "policy": "blink-demo-policy-v1.md",
+  "authored_by": "Reviewer-authored before any model tuning (BLINK_BUILD_SPEC §17.8). These are the activation gate.",
+  "scenarios": [
+    {
+      "name": "R1 fires when issuer, operating metric and internal source are all supported",
+      "rule_id": "R1",
+      "source_paragraph": "P2",
+      "steps": [
+        {
+          "event": "CLAIM_EVALUATED",
+          "assignment": {
+            "about_covered_issuer": "supported",
+            "company_specific_operating_metric": "supported",
+            "internal_source_claimed": "supported"
+          }
+        }
+      ],
+      "expect": {
+        "final_state": "REVIEW_REQUIRED",
+        "effects": [
+          "OPEN_REVIEW_TASK"
+        ]
+      }
+    },
+    {
+      "name": "R1 asks for context when the source is unknown, then fires once it is supplied",
+      "rule_id": "R1",
+      "source_paragraph": "P2",
+      "steps": [
+        {
+          "event": "CLAIM_EVALUATED",
+          "assignment": {
+            "about_covered_issuer": "supported",
+            "company_specific_operating_metric": "supported",
+            "internal_source_claimed": "unknown"
+          },
+          "expect_state": "NEEDS_CONTEXT",
+          "expect_effects": [
+            "OPEN_CONTEXT_TASK"
+          ]
+        },
+        {
+          "event": "CONTEXT_UPDATED",
+          "assignment": {
+            "about_covered_issuer": "supported",
+            "company_specific_operating_metric": "supported",
+            "internal_source_claimed": "supported"
+          }
+        }
+      ],
+      "expect": {
+        "final_state": "REVIEW_REQUIRED",
+        "effects": [
+          "OPEN_REVIEW_TASK"
+        ]
+      }
+    },
+    {
+      "name": "R1 does not fire on an industry aggregate (P6 exception)",
+      "rule_id": "R1",
+      "source_paragraph": "P2",
+      "steps": [
+        {
+          "event": "CLAIM_EVALUATED",
+          "assignment": {
+            "about_covered_issuer": "supported",
+            "company_specific_operating_metric": "refuted",
+            "internal_source_claimed": "supported"
+          }
+        }
+      ],
+      "expect": {
+        "final_state": "NOT_TRIGGERED",
+        "effects": []
+      }
+    },
+    {
+      "name": "R2 requests escalation on post-employment access to an internal source",
+      "rule_id": "R2",
+      "source_paragraph": "P3",
+      "steps": [
+        {
+          "event": "CLAIM_EVALUATED",
+          "assignment": {
+            "post_employment_access": "supported",
+            "internal_source_claimed": "supported"
+          }
+        }
+      ],
+      "expect": {
+        "final_state": "REVIEW_REQUIRED",
+        "effects": [
+          "OPEN_REVIEW_TASK",
+          "REQUEST_ESCALATION"
+        ]
+      }
+    },
+    {
+      "name": "R3 opens review and flags the conflict when confidentiality evidence conflicts",
+      "rule_id": "R3",
+      "source_paragraph": "P4",
+      "note": "P4 says review on indeterminate, so a conflict still reaches REVIEW_REQUIRED.",
+      "steps": [
+        {
+          "event": "CLAIM_EVALUATED",
+          "assignment": {
+            "about_covered_issuer": "supported",
+            "nonpublic_corporate_event": "supported",
+            "confidentiality_signal_present": "conflict"
+          }
+        }
+      ],
+      "expect": {
+        "final_state": "REVIEW_REQUIRED",
+        "effects": [
+          "OPEN_REVIEW_TASK"
+        ],
+        "conflict_flag": true
+      }
+    },
+    {
+      "name": "R4 does not fire when a public match is verified (P5 exception)",
+      "rule_id": "R4",
+      "source_paragraph": "P5",
+      "steps": [
+        {
+          "event": "CLAIM_EVALUATED",
+          "assignment": {
+            "expert_recent_issuer_employee": "supported",
+            "about_covered_issuer": "supported",
+            "company_specific_operating_metric": "supported",
+            "current_or_unreported_period": "supported",
+            "public_match_verified": "supported"
+          }
+        }
+      ],
+      "expect": {
+        "final_state": "NOT_TRIGGERED",
+        "effects": []
+      }
+    },
+    {
+      "name": "R4 does not fire when the expert left more than twelve months ago",
+      "rule_id": "R4",
+      "source_paragraph": "P5",
+      "note": "Expert left 14 months before the call: expert_recent_issuer_employee is refuted.",
+      "steps": [
+        {
+          "event": "CLAIM_EVALUATED",
+          "assignment": {
+            "expert_recent_issuer_employee": "refuted",
+            "about_covered_issuer": "supported",
+            "company_specific_operating_metric": "supported",
+            "current_or_unreported_period": "supported",
+            "public_match_verified": "refuted"
+          }
+        }
+      ],
+      "expect": {
+        "final_state": "NOT_TRIGGERED",
+        "effects": []
+      }
+    },
+    {
+      "name": "A later false result never clears a finding that is already REVIEW_REQUIRED",
+      "rule_id": "R1",
+      "source_paragraph": "P2",
+      "note": "Unhandled event: state unchanged, AUDIT_ONLY. Only a person can close review.",
+      "steps": [
+        {
+          "event": "CLAIM_EVALUATED",
+          "assignment": {
+            "about_covered_issuer": "supported",
+            "company_specific_operating_metric": "supported",
+            "internal_source_claimed": "supported"
+          },
+          "expect_state": "REVIEW_REQUIRED"
+        },
+        {
+          "event": "CLAIM_EVALUATED",
+          "assignment": {
+            "about_covered_issuer": "supported",
+            "company_specific_operating_metric": "supported",
+            "internal_source_claimed": "refuted"
+          }
+        }
+      ],
+      "expect": {
+        "final_state": "REVIEW_REQUIRED",
+        "effects": [
+          "AUDIT_ONLY"
+        ],
+        "no_transition": true
+      }
+    }
+  ]
+}

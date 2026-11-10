@@ -1,0 +1,114 @@
+{
+  "id": "V1",
+  "title": "negation",
+  "tests": "\"I don't have any access to their systems anymore\" → internal_source refuted, no R2",
+  "packet": "halvorsen",
+  "expert": "halvorsen",
+  "transcript": "[00:00:05] Analyst (Priya): Do you still have any visibility into Halvorsen's order book?\n[00:00:27] Expert (R. Castellano): No. I don't have any access to their systems anymore. I handed everything back when I left in July.\n[00:00:49] Analyst (Priya): Understood. So what are you seeing on demand?\n[00:01:11] Expert (R. Castellano): What I hear from the distributors I work with now is that orders for industrial pumps are down maybe ten percent this fall. That's their view, not a Halvorsen number.\n",
+  "expected": {
+    "findings": [],
+    "non_findings": [
+      {
+        "turns": [
+          "T4"
+        ],
+        "why": "distributor sample observed from outside; the expert denies any system access"
+      }
+    ],
+    "assertions": [
+      {
+        "turn": "T4",
+        "predicate": "internal_source_claimed",
+        "state": "refuted"
+      },
+      {
+        "turn": "T4",
+        "predicate": "post_employment_access",
+        "state": "refuted"
+      }
+    ]
+  },
+  "extraction_note": "Hand-labeled claims in the extract-v1 output shape, for deterministic tests without a model call.",
+  "extraction": {
+    "claims": [
+      {
+        "logical_key": "C1",
+        "fields": {
+          "summary": "Distributors the expert works with report industrial pump orders down about ten percent this fall; the expert says this is not a Halvorsen figure.",
+          "speaker": "expert",
+          "subject_entity": {
+            "name": null,
+            "kind": "industry"
+          },
+          "metric": {
+            "category": "orders",
+            "label": "industrial pump orders"
+          },
+          "event_kind": "none",
+          "period": {
+            "label": "this fall",
+            "fiscal_year": null,
+            "fiscal_quarter": null,
+            "calendar_year": null,
+            "calendar_quarter": null,
+            "relative": "current"
+          },
+          "value": {
+            "number": 10,
+            "unit": "percent",
+            "direction": "down",
+            "baseline": null
+          },
+          "scope": "sample",
+          "scope_detail": "distributors the expert works with",
+          "knowledge_basis": "personal_observation",
+          "access_timing": "not_applicable",
+          "confidentiality_signals": [],
+          "qualifications": [
+            "maybe",
+            "That's their view, not a Halvorsen number."
+          ],
+          "is_correction_of": null
+        },
+        "quotes": [
+          {
+            "turn_id": "T4",
+            "quote": "What I hear from the distributors I work with now is that orders for industrial pumps are down maybe ten percent this fall.",
+            "role": "primary",
+            "supports_fields": [
+              "subject_entity",
+              "metric",
+              "value",
+              "period",
+              "scope",
+              "knowledge_basis"
+            ]
+          },
+          {
+            "turn_id": "T4",
+            "quote": "That's their view, not a Halvorsen number.",
+            "role": "context",
+            "supports_fields": [
+              "subject_entity",
+              "scope"
+            ]
+          },
+          {
+            "turn_id": "T2",
+            "quote": "I don't have any access to their systems anymore.",
+            "role": "context",
+            "supports_fields": [
+              "access_timing"
+            ]
+          }
+        ],
+        "links": [],
+        "solicited_by_analyst": "no",
+        "field_uncertainty": []
+      }
+    ],
+    "suggested_concerns": [],
+    "missing_context_questions": [],
+    "call_summary": "The expert said they no longer have any access to Halvorsen's systems and relayed what distributors report about industrial pump orders."
+  }
+}

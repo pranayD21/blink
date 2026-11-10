@@ -1,0 +1,189 @@
+{
+  "id": "V4",
+  "title": "fiscal mismatch",
+  "tests": "\"calendar Q3\" vs fiscal Q3 FY2027 resolution",
+  "packet": "halvorsen",
+  "expert": "halvorsen",
+  "transcript": "[00:00:05] Analyst (Priya): How did Halvorsen's order intake trend through the year?\n[00:00:27] Expert (R. Castellano): From the weekly sales flash I used to get before I left, Halvorsen's calendar Q2 orders were up about three percent.\n[00:00:49] Analyst (Priya): And more recently?\n[00:01:11] Expert (R. Castellano): In calendar Q3 Halvorsen's orders were down fifteen percent. A former colleague on the sales ops team sent me the numbers in October.\n",
+  "expected": {
+    "findings": [
+      {
+        "turns": [
+          "T2"
+        ],
+        "rules": [
+          "R1"
+        ],
+        "expect_state": "REVIEW_REQUIRED",
+        "notes": "Calendar Q2 2026 (Apr–Jun) falls in fiscal Q1–Q2 FY2027, already reported: R4 must NOT fire."
+      },
+      {
+        "turns": [
+          "T4"
+        ],
+        "rules": [
+          "R1",
+          "R2",
+          "R4"
+        ],
+        "expect_state": "REVIEW_REQUIRED",
+        "escalation": true,
+        "notes": "Calendar Q3 2026 (Jul–Sep) reaches into fiscal Q3 FY2027, not yet reported: R4 fires. Read naively as fiscal Q3 of FY2026 it would look reported."
+      }
+    ],
+    "non_findings": [],
+    "assertions": [
+      {
+        "turn": "T2",
+        "predicate": "current_or_unreported_period",
+        "state": "refuted"
+      },
+      {
+        "turn": "T4",
+        "predicate": "current_or_unreported_period",
+        "state": "supported"
+      }
+    ]
+  },
+  "extraction_note": "Hand-labeled claims in the extract-v1 output shape, for deterministic tests without a model call.",
+  "extraction": {
+    "claims": [
+      {
+        "logical_key": "C1",
+        "fields": {
+          "summary": "Halvorsen's calendar Q2 orders were up about three percent, per an internal weekly sales flash the expert received while employed.",
+          "speaker": "expert",
+          "subject_entity": {
+            "name": "Halvorsen",
+            "kind": "issuer"
+          },
+          "metric": {
+            "category": "orders",
+            "label": "orders"
+          },
+          "event_kind": "none",
+          "period": {
+            "label": "calendar Q2",
+            "fiscal_year": null,
+            "fiscal_quarter": null,
+            "calendar_year": 2026,
+            "calendar_quarter": 2,
+            "relative": "prior"
+          },
+          "value": {
+            "number": 3,
+            "unit": "percent",
+            "direction": "up",
+            "baseline": null
+          },
+          "scope": "company_wide",
+          "scope_detail": null,
+          "knowledge_basis": "internal_document",
+          "access_timing": "during_employment",
+          "confidentiality_signals": [],
+          "qualifications": [
+            "about"
+          ],
+          "is_correction_of": null
+        },
+        "quotes": [
+          {
+            "turn_id": "T2",
+            "quote": "Halvorsen's calendar Q2 orders were up about three percent.",
+            "role": "primary",
+            "supports_fields": [
+              "subject_entity",
+              "metric",
+              "value",
+              "period",
+              "scope"
+            ]
+          },
+          {
+            "turn_id": "T2",
+            "quote": "From the weekly sales flash I used to get before I left",
+            "role": "source_attribution",
+            "supports_fields": [
+              "knowledge_basis",
+              "access_timing"
+            ]
+          }
+        ],
+        "links": [],
+        "solicited_by_analyst": "no",
+        "field_uncertainty": []
+      },
+      {
+        "logical_key": "C2",
+        "fields": {
+          "summary": "Halvorsen's calendar Q3 orders were down fifteen percent, per figures a former colleague sent the expert in October.",
+          "speaker": "expert",
+          "subject_entity": {
+            "name": "Halvorsen",
+            "kind": "issuer"
+          },
+          "metric": {
+            "category": "orders",
+            "label": "orders"
+          },
+          "event_kind": "none",
+          "period": {
+            "label": "calendar Q3",
+            "fiscal_year": null,
+            "fiscal_quarter": null,
+            "calendar_year": 2026,
+            "calendar_quarter": 3,
+            "relative": "prior"
+          },
+          "value": {
+            "number": 15,
+            "unit": "percent",
+            "direction": "down",
+            "baseline": null
+          },
+          "scope": "company_wide",
+          "scope_detail": null,
+          "knowledge_basis": "insider_conversation",
+          "access_timing": "after_employment",
+          "confidentiality_signals": [],
+          "qualifications": [],
+          "is_correction_of": null
+        },
+        "quotes": [
+          {
+            "turn_id": "T4",
+            "quote": "In calendar Q3 Halvorsen's orders were down fifteen percent.",
+            "role": "primary",
+            "supports_fields": [
+              "subject_entity",
+              "metric",
+              "value",
+              "period",
+              "scope"
+            ]
+          },
+          {
+            "turn_id": "T4",
+            "quote": "A former colleague on the sales ops team sent me the numbers in October.",
+            "role": "source_attribution",
+            "supports_fields": [
+              "knowledge_basis",
+              "access_timing"
+            ]
+          }
+        ],
+        "links": [
+          {
+            "to": "C1",
+            "kind": "elaborates"
+          }
+        ],
+        "solicited_by_analyst": "yes",
+        "field_uncertainty": []
+      }
+    ],
+    "suggested_concerns": [],
+    "missing_context_questions": [],
+    "call_summary": "The expert gave Halvorsen order trends for calendar Q2 and calendar Q3, attributing the first to an internal sales flash received while employed and the second to figures a former colleague sent in October."
+  }
+}

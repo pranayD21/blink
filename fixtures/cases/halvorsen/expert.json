@@ -1,0 +1,11 @@
+{
+  "name": "R. Castellano",
+  "current_employer": "Independent consultant",
+  "current_title": "Advisor, industrial distribution",
+  "employment": [
+    { "employer": "Halvorsen Pumps, Inc.", "title": "Regional Sales Director, West", "start": "2019-03-01", "end": "2026-07-15" },
+    { "employer": "Brightwater Flow Systems", "title": "Territory Manager", "start": "2014-06-01", "end": "2019-02-15" }
+  ],
+  "network": "Meridian Expert Network",
+  "network_attestation": { "no_current_confidentiality_conflicts": true, "signed_on": "2026-10-30" }
+}

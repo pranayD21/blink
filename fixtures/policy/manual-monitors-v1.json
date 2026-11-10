@@ -1,0 +1,770 @@
+{
+  "label": "Hand-written fallback for blink-demo-policy-v1 (compile_source = manual)",
+  "note": "Used only if live AI compilation is unavailable. Goes through the same validator, scenarios, and owner approval as an AI compile, and is labeled \"manual\" in the UI.",
+  "policy": "blink-demo-policy-v1.md",
+  "inventory": {
+    "clauses": [
+      {
+        "clause_id": "C1",
+        "paragraph": "P1",
+        "verbatim": "This policy applies to all calls between Blink Demo Capital investment personnel and external experts arranged through an approved expert network.",
+        "kind": "definition",
+        "plain_meaning": "Scope: the policy covers every call between the firm's investment staff and experts arranged through an approved expert network.",
+        "cross_refs": [],
+        "ambiguity": null
+      },
+      {
+        "clause_id": "C2",
+        "paragraph": "P2",
+        "verbatim": "Compliance must review any statement by an expert that describes company-specific operating results, such as orders, bookings, revenue, margins, pricing, inventory, or headcount, for a covered issuer, where the expert attributes the information to internal company systems, internal documents, or conversations with current employees.",
+        "kind": "duty",
+        "plain_meaning": "Compliance must review an expert's statement of company-specific operating results for a covered issuer when the expert attributes it to internal systems, internal documents, or current employees.",
+        "cross_refs": [
+          "P6",
+          "P7"
+        ],
+        "ambiguity": null
+      },
+      {
+        "clause_id": "C3",
+        "paragraph": "P3",
+        "verbatim": "Compliance must review, and escalate to a senior compliance officer, any statement indicating that an expert accessed a former employer's internal systems or documents after their employment ended.",
+        "kind": "escalation",
+        "plain_meaning": "Any statement showing the expert accessed a former employer's internal systems or documents after leaving must be reviewed and escalated to a senior compliance officer.",
+        "cross_refs": [
+          "P7"
+        ],
+        "ambiguity": null
+      },
+      {
+        "clause_id": "C4",
+        "paragraph": "P4",
+        "verbatim": "Compliance must review any statement describing an unannounced corporate event at a covered issuer, such as the gain or loss of a material contract, a pending transaction, litigation, or a regulatory action, where the expert indicates the information is confidential or not yet announced.",
+        "kind": "duty",
+        "plain_meaning": "Compliance must review a statement about an unannounced corporate event at a covered issuer when the expert signals it is confidential or not yet announced.",
+        "cross_refs": [
+          "P7"
+        ],
+        "ambiguity": null
+      },
+      {
+        "clause_id": "C5",
+        "paragraph": "P5",
+        "verbatim": "Experts who were employed by a covered issuer within the last twelve months may not discuss that issuer's current-period operating results.",
+        "kind": "prohibition",
+        "plain_meaning": "An expert who left a covered issuer within twelve months may not discuss its current-period operating results.",
+        "cross_refs": [
+          "P6",
+          "P7"
+        ],
+        "ambiguity": null
+      },
+      {
+        "clause_id": "C6",
+        "paragraph": "P5",
+        "verbatim": "Any such statement requires compliance review",
+        "kind": "duty",
+        "plain_meaning": "A statement that breaks the twelve-month restriction must be reviewed by compliance.",
+        "cross_refs": [],
+        "ambiguity": null
+      },
+      {
+        "clause_id": "C7",
+        "paragraph": "P5",
+        "verbatim": "unless the information has been publicly disclosed and compliance verifies the public source",
+        "kind": "exception",
+        "plain_meaning": "No review under this paragraph when the information is already public and compliance has verified the public source.",
+        "cross_refs": [],
+        "ambiguity": null
+      },
+      {
+        "clause_id": "C8",
+        "paragraph": "P6",
+        "verbatim": "Observations that concern the industry as a whole or an aggregated sample of companies, and do not identify a specific covered issuer, are permitted and do not require review on that basis alone.",
+        "kind": "exception",
+        "plain_meaning": "Industry-wide or aggregated-sample observations that do not identify a covered issuer need no review on that basis alone.",
+        "cross_refs": [
+          "P2",
+          "P5"
+        ],
+        "ambiguity": null
+      },
+      {
+        "clause_id": "C9",
+        "paragraph": "P7",
+        "verbatim": "Where a statement may fall under paragraphs 2 through 5 but the company, time period, or source of the information is unclear, compliance must seek clarification before reaching a conclusion.",
+        "kind": "evidence_requirement",
+        "plain_meaning": "When the company, period, or source is unclear for a statement that may fall under paragraphs 2–5, compliance must ask for clarification before concluding.",
+        "cross_refs": [
+          "P2",
+          "P3",
+          "P4",
+          "P5"
+        ],
+        "ambiguity": null
+      },
+      {
+        "clause_id": "C10",
+        "paragraph": "P8",
+        "verbatim": "Analysts may not hold more than three calls with the same expert in a calendar quarter.",
+        "kind": "prohibition",
+        "plain_meaning": "An analyst may hold at most three calls with the same expert per calendar quarter.",
+        "cross_refs": [],
+        "ambiguity": null
+      },
+      {
+        "clause_id": "C11",
+        "paragraph": "P9",
+        "verbatim": "Compliance retains discretion to review any portion of a call and must document the basis for each decision.",
+        "kind": "discretion",
+        "plain_meaning": "Compliance may review any part of a call and must document the basis for each decision.",
+        "cross_refs": [],
+        "ambiguity": null
+      }
+    ]
+  },
+  "rules": [
+    {
+      "rule_id": "R1",
+      "source_clause_ids": [
+        "C2",
+        "C9"
+      ],
+      "intent": "Internal-source operating claim about the covered issuer",
+      "guard": {
+        "root": "g",
+        "nodes": [
+          {
+            "id": "g",
+            "op": "and",
+            "children": [
+              "a",
+              "b",
+              "c"
+            ]
+          },
+          {
+            "id": "a",
+            "op": "pred",
+            "name": "about_covered_issuer"
+          },
+          {
+            "id": "b",
+            "op": "pred",
+            "name": "company_specific_operating_metric"
+          },
+          {
+            "id": "c",
+            "op": "pred",
+            "name": "internal_source_claimed"
+          }
+        ]
+      },
+      "on_true": "open_review",
+      "on_indeterminate": "open_context_task",
+      "severity": "high",
+      "exception_clause_ids": [
+        "C8"
+      ]
+    },
+    {
+      "rule_id": "R2",
+      "source_clause_ids": [
+        "C3",
+        "C9"
+      ],
+      "intent": "Access to a former employer's internal information after employment ended",
+      "guard": {
+        "root": "g",
+        "nodes": [
+          {
+            "id": "g",
+            "op": "and",
+            "children": [
+              "a",
+              "b"
+            ]
+          },
+          {
+            "id": "a",
+            "op": "pred",
+            "name": "post_employment_access"
+          },
+          {
+            "id": "b",
+            "op": "pred",
+            "name": "internal_source_claimed"
+          }
+        ]
+      },
+      "on_true": "open_review_and_escalate",
+      "on_indeterminate": "open_context_task",
+      "severity": "high",
+      "exception_clause_ids": []
+    },
+    {
+      "rule_id": "R3",
+      "source_clause_ids": [
+        "C4"
+      ],
+      "intent": "Unannounced corporate event at the covered issuer",
+      "guard": {
+        "root": "g",
+        "nodes": [
+          {
+            "id": "g",
+            "op": "and",
+            "children": [
+              "a",
+              "b",
+              "c"
+            ]
+          },
+          {
+            "id": "a",
+            "op": "pred",
+            "name": "about_covered_issuer"
+          },
+          {
+            "id": "b",
+            "op": "pred",
+            "name": "nonpublic_corporate_event"
+          },
+          {
+            "id": "c",
+            "op": "pred",
+            "name": "confidentiality_signal_present"
+          }
+        ]
+      },
+      "on_true": "open_review",
+      "on_indeterminate": "open_review",
+      "severity": "high",
+      "exception_clause_ids": []
+    },
+    {
+      "rule_id": "R4",
+      "source_clause_ids": [
+        "C5",
+        "C6",
+        "C9"
+      ],
+      "intent": "Recent issuer employee discussing current-period operating results",
+      "guard": {
+        "root": "g",
+        "nodes": [
+          {
+            "id": "g",
+            "op": "and",
+            "children": [
+              "a",
+              "b",
+              "c",
+              "d",
+              "e"
+            ]
+          },
+          {
+            "id": "a",
+            "op": "pred",
+            "name": "expert_recent_issuer_employee",
+            "params": {
+              "months": 12
+            }
+          },
+          {
+            "id": "b",
+            "op": "pred",
+            "name": "about_covered_issuer"
+          },
+          {
+            "id": "c",
+            "op": "pred",
+            "name": "company_specific_operating_metric"
+          },
+          {
+            "id": "d",
+            "op": "pred",
+            "name": "current_or_unreported_period"
+          },
+          {
+            "id": "e",
+            "op": "not",
+            "children": [
+              "f"
+            ]
+          },
+          {
+            "id": "f",
+            "op": "pred",
+            "name": "public_match_verified"
+          }
+        ]
+      },
+      "on_true": "open_review",
+      "on_indeterminate": "open_context_task",
+      "severity": "medium",
+      "exception_clause_ids": [
+        "C7",
+        "C8"
+      ]
+    }
+  ],
+  "unsupported_clauses": [
+    {
+      "clause_id": "C10",
+      "reason": "Call-count limits per analyst and expert are outside the predicate vocabulary, which evaluates statements within a single call."
+    },
+    {
+      "clause_id": "C11",
+      "reason": "Discretionary review cannot be automated; the reviewer applies it manually and Blink records the basis for each decision."
+    }
+  ],
+  "monitors": [
+    {
+      "monitor_id": "M1",
+      "rule_id": "R1",
+      "scope": "claim",
+      "initial_state": "UNASSESSED",
+      "states": [
+        "UNASSESSED",
+        "NEEDS_CONTEXT",
+        "REVIEW_REQUIRED",
+        "NOT_TRIGGERED"
+      ],
+      "transitions": [
+        {
+          "id": "M1-T1",
+          "from": [
+            "UNASSESSED",
+            "NEEDS_CONTEXT",
+            "NOT_TRIGGERED"
+          ],
+          "event": "CLAIM_EVALUATED",
+          "guard_ref": "rule",
+          "result_is": "true",
+          "to": "REVIEW_REQUIRED",
+          "effects": [
+            "OPEN_REVIEW_TASK",
+            "CLOSE_CONTEXT_TASK"
+          ],
+          "priority": 1
+        },
+        {
+          "id": "M1-T2",
+          "from": [
+            "UNASSESSED",
+            "NEEDS_CONTEXT",
+            "NOT_TRIGGERED"
+          ],
+          "event": "CONTEXT_UPDATED",
+          "guard_ref": "rule",
+          "result_is": "true",
+          "to": "REVIEW_REQUIRED",
+          "effects": [
+            "OPEN_REVIEW_TASK",
+            "CLOSE_CONTEXT_TASK"
+          ],
+          "priority": 1
+        },
+        {
+          "id": "M1-T3",
+          "from": [
+            "UNASSESSED",
+            "NEEDS_CONTEXT",
+            "NOT_TRIGGERED"
+          ],
+          "event": "CLAIM_EVALUATED",
+          "guard_ref": "rule",
+          "result_is": "indeterminate",
+          "to": "NEEDS_CONTEXT",
+          "effects": [
+            "OPEN_CONTEXT_TASK"
+          ],
+          "priority": 1
+        },
+        {
+          "id": "M1-T4",
+          "from": [
+            "UNASSESSED",
+            "NEEDS_CONTEXT",
+            "NOT_TRIGGERED"
+          ],
+          "event": "CONTEXT_UPDATED",
+          "guard_ref": "rule",
+          "result_is": "indeterminate",
+          "to": "NEEDS_CONTEXT",
+          "effects": [
+            "OPEN_CONTEXT_TASK"
+          ],
+          "priority": 1
+        },
+        {
+          "id": "M1-T5",
+          "from": [
+            "UNASSESSED",
+            "NEEDS_CONTEXT",
+            "NOT_TRIGGERED"
+          ],
+          "event": "CLAIM_EVALUATED",
+          "guard_ref": "rule",
+          "result_is": "false",
+          "to": "NOT_TRIGGERED",
+          "effects": [
+            "CLOSE_CONTEXT_TASK"
+          ],
+          "priority": 1
+        },
+        {
+          "id": "M1-T6",
+          "from": [
+            "UNASSESSED",
+            "NEEDS_CONTEXT",
+            "NOT_TRIGGERED"
+          ],
+          "event": "CONTEXT_UPDATED",
+          "guard_ref": "rule",
+          "result_is": "false",
+          "to": "NOT_TRIGGERED",
+          "effects": [
+            "CLOSE_CONTEXT_TASK"
+          ],
+          "priority": 1
+        }
+      ],
+      "default_event_behavior": "NO_STATE_CHANGE_AND_AUDIT"
+    },
+    {
+      "monitor_id": "M2",
+      "rule_id": "R2",
+      "scope": "claim",
+      "initial_state": "UNASSESSED",
+      "states": [
+        "UNASSESSED",
+        "NEEDS_CONTEXT",
+        "REVIEW_REQUIRED",
+        "NOT_TRIGGERED"
+      ],
+      "transitions": [
+        {
+          "id": "M2-T1",
+          "from": [
+            "UNASSESSED",
+            "NEEDS_CONTEXT",
+            "NOT_TRIGGERED"
+          ],
+          "event": "CLAIM_EVALUATED",
+          "guard_ref": "rule",
+          "result_is": "true",
+          "to": "REVIEW_REQUIRED",
+          "effects": [
+            "OPEN_REVIEW_TASK",
+            "REQUEST_ESCALATION",
+            "CLOSE_CONTEXT_TASK"
+          ],
+          "priority": 1
+        },
+        {
+          "id": "M2-T2",
+          "from": [
+            "UNASSESSED",
+            "NEEDS_CONTEXT",
+            "NOT_TRIGGERED"
+          ],
+          "event": "CONTEXT_UPDATED",
+          "guard_ref": "rule",
+          "result_is": "true",
+          "to": "REVIEW_REQUIRED",
+          "effects": [
+            "OPEN_REVIEW_TASK",
+            "REQUEST_ESCALATION",
+            "CLOSE_CONTEXT_TASK"
+          ],
+          "priority": 1
+        },
+        {
+          "id": "M2-T3",
+          "from": [
+            "UNASSESSED",
+            "NEEDS_CONTEXT",
+            "NOT_TRIGGERED"
+          ],
+          "event": "CLAIM_EVALUATED",
+          "guard_ref": "rule",
+          "result_is": "indeterminate",
+          "to": "NEEDS_CONTEXT",
+          "effects": [
+            "OPEN_CONTEXT_TASK"
+          ],
+          "priority": 1
+        },
+        {
+          "id": "M2-T4",
+          "from": [
+            "UNASSESSED",
+            "NEEDS_CONTEXT",
+            "NOT_TRIGGERED"
+          ],
+          "event": "CONTEXT_UPDATED",
+          "guard_ref": "rule",
+          "result_is": "indeterminate",
+          "to": "NEEDS_CONTEXT",
+          "effects": [
+            "OPEN_CONTEXT_TASK"
+          ],
+          "priority": 1
+        },
+        {
+          "id": "M2-T5",
+          "from": [
+            "UNASSESSED",
+            "NEEDS_CONTEXT",
+            "NOT_TRIGGERED"
+          ],
+          "event": "CLAIM_EVALUATED",
+          "guard_ref": "rule",
+          "result_is": "false",
+          "to": "NOT_TRIGGERED",
+          "effects": [
+            "CLOSE_CONTEXT_TASK"
+          ],
+          "priority": 1
+        },
+        {
+          "id": "M2-T6",
+          "from": [
+            "UNASSESSED",
+            "NEEDS_CONTEXT",
+            "NOT_TRIGGERED"
+          ],
+          "event": "CONTEXT_UPDATED",
+          "guard_ref": "rule",
+          "result_is": "false",
+          "to": "NOT_TRIGGERED",
+          "effects": [
+            "CLOSE_CONTEXT_TASK"
+          ],
+          "priority": 1
+        }
+      ],
+      "default_event_behavior": "NO_STATE_CHANGE_AND_AUDIT"
+    },
+    {
+      "monitor_id": "M3",
+      "rule_id": "R3",
+      "scope": "claim",
+      "initial_state": "UNASSESSED",
+      "states": [
+        "UNASSESSED",
+        "REVIEW_REQUIRED",
+        "NOT_TRIGGERED"
+      ],
+      "transitions": [
+        {
+          "id": "M3-T1",
+          "from": [
+            "UNASSESSED",
+            "NOT_TRIGGERED"
+          ],
+          "event": "CLAIM_EVALUATED",
+          "guard_ref": "rule",
+          "result_is": "true",
+          "to": "REVIEW_REQUIRED",
+          "effects": [
+            "OPEN_REVIEW_TASK"
+          ],
+          "priority": 1
+        },
+        {
+          "id": "M3-T2",
+          "from": [
+            "UNASSESSED",
+            "NOT_TRIGGERED"
+          ],
+          "event": "CONTEXT_UPDATED",
+          "guard_ref": "rule",
+          "result_is": "true",
+          "to": "REVIEW_REQUIRED",
+          "effects": [
+            "OPEN_REVIEW_TASK"
+          ],
+          "priority": 1
+        },
+        {
+          "id": "M3-T3",
+          "from": [
+            "UNASSESSED",
+            "NOT_TRIGGERED"
+          ],
+          "event": "CLAIM_EVALUATED",
+          "guard_ref": "rule",
+          "result_is": "indeterminate",
+          "to": "REVIEW_REQUIRED",
+          "effects": [
+            "OPEN_REVIEW_TASK"
+          ],
+          "priority": 1
+        },
+        {
+          "id": "M3-T4",
+          "from": [
+            "UNASSESSED",
+            "NOT_TRIGGERED"
+          ],
+          "event": "CONTEXT_UPDATED",
+          "guard_ref": "rule",
+          "result_is": "indeterminate",
+          "to": "REVIEW_REQUIRED",
+          "effects": [
+            "OPEN_REVIEW_TASK"
+          ],
+          "priority": 1
+        },
+        {
+          "id": "M3-T5",
+          "from": [
+            "UNASSESSED",
+            "NOT_TRIGGERED"
+          ],
+          "event": "CLAIM_EVALUATED",
+          "guard_ref": "rule",
+          "result_is": "false",
+          "to": "NOT_TRIGGERED",
+          "effects": [
+            "AUDIT_ONLY"
+          ],
+          "priority": 1
+        },
+        {
+          "id": "M3-T6",
+          "from": [
+            "UNASSESSED",
+            "NOT_TRIGGERED"
+          ],
+          "event": "CONTEXT_UPDATED",
+          "guard_ref": "rule",
+          "result_is": "false",
+          "to": "NOT_TRIGGERED",
+          "effects": [
+            "AUDIT_ONLY"
+          ],
+          "priority": 1
+        }
+      ],
+      "default_event_behavior": "NO_STATE_CHANGE_AND_AUDIT"
+    },
+    {
+      "monitor_id": "M4",
+      "rule_id": "R4",
+      "scope": "claim",
+      "initial_state": "UNASSESSED",
+      "states": [
+        "UNASSESSED",
+        "NEEDS_CONTEXT",
+        "REVIEW_REQUIRED",
+        "NOT_TRIGGERED"
+      ],
+      "transitions": [
+        {
+          "id": "M4-T1",
+          "from": [
+            "UNASSESSED",
+            "NEEDS_CONTEXT",
+            "NOT_TRIGGERED"
+          ],
+          "event": "CLAIM_EVALUATED",
+          "guard_ref": "rule",
+          "result_is": "true",
+          "to": "REVIEW_REQUIRED",
+          "effects": [
+            "OPEN_REVIEW_TASK",
+            "CLOSE_CONTEXT_TASK"
+          ],
+          "priority": 1
+        },
+        {
+          "id": "M4-T2",
+          "from": [
+            "UNASSESSED",
+            "NEEDS_CONTEXT",
+            "NOT_TRIGGERED"
+          ],
+          "event": "CONTEXT_UPDATED",
+          "guard_ref": "rule",
+          "result_is": "true",
+          "to": "REVIEW_REQUIRED",
+          "effects": [
+            "OPEN_REVIEW_TASK",
+            "CLOSE_CONTEXT_TASK"
+          ],
+          "priority": 1
+        },
+        {
+          "id": "M4-T3",
+          "from": [
+            "UNASSESSED",
+            "NEEDS_CONTEXT",
+            "NOT_TRIGGERED"
+          ],
+          "event": "CLAIM_EVALUATED",
+          "guard_ref": "rule",
+          "result_is": "indeterminate",
+          "to": "NEEDS_CONTEXT",
+          "effects": [
+            "OPEN_CONTEXT_TASK"
+          ],
+          "priority": 1
+        },
+        {
+          "id": "M4-T4",
+          "from": [
+            "UNASSESSED",
+            "NEEDS_CONTEXT",
+            "NOT_TRIGGERED"
+          ],
+          "event": "CONTEXT_UPDATED",
+          "guard_ref": "rule",
+          "result_is": "indeterminate",
+          "to": "NEEDS_CONTEXT",
+          "effects": [
+            "OPEN_CONTEXT_TASK"
+          ],
+          "priority": 1
+        },
+        {
+          "id": "M4-T5",
+          "from": [
+            "UNASSESSED",
+            "NEEDS_CONTEXT",
+            "NOT_TRIGGERED"
+          ],
+          "event": "CLAIM_EVALUATED",
+          "guard_ref": "rule",
+          "result_is": "false",
+          "to": "NOT_TRIGGERED",
+          "effects": [
+            "CLOSE_CONTEXT_TASK"
+          ],
+          "priority": 1
+        },
+        {
+          "id": "M4-T6",
+          "from": [
+            "UNASSESSED",
+            "NEEDS_CONTEXT",
+            "NOT_TRIGGERED"
+          ],
+          "event": "CONTEXT_UPDATED",
+          "guard_ref": "rule",
+          "result_is": "false",
+          "to": "NOT_TRIGGERED",
+          "effects": [
+            "CLOSE_CONTEXT_TASK"
+          ],
+          "priority": 1
+        }
+      ],
+      "default_event_behavior": "NO_STATE_CHANGE_AND_AUDIT"
+    }
+  ]
+}

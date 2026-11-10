@@ -1,0 +1,263 @@
+{
+  "id": "V8",
+  "title": "harmless topic change",
+  "tests": "a long discussion of public industry trends → zero policy findings",
+  "packet": "halvorsen",
+  "expert": "halvorsen",
+  "transcript": "[00:00:05] Analyst (Priya): Let's talk about the broader industry. What are the big themes?\n[00:00:27] Expert (R. Castellano): The big one is reshoring. A lot of pump demand follows new plant construction, and the trade press has covered how many projects were announced over the past two years.\n[00:00:49] Analyst (Priya): How about municipal spending?\n[00:01:11] Expert (R. Castellano): Municipal water budgets are public, and most large utilities have published capital plans that are flat to slightly up for next year.\n[00:01:33] Analyst (Priya): And on the distributor side?\n[00:01:55] Expert (R. Castellano): The October Pump and Valve Distributor Index showed orders down eighteen percent across the surveyed sample. That matches what I see when I visit distributors.\n[00:02:17] Analyst (Priya): Any view on technology changes?\n[00:02:39] Expert (R. Castellano): Variable-speed drives keep gaining share across the industry. Every manufacturer talks about it on their earnings calls.\n",
+  "expected": {
+    "findings": [],
+    "non_findings": [
+      {
+        "turns": [
+          "T2"
+        ],
+        "why": "industry trend from the trade press"
+      },
+      {
+        "turns": [
+          "T4"
+        ],
+        "why": "published municipal capital plans"
+      },
+      {
+        "turns": [
+          "T6"
+        ],
+        "why": "industry survey sample"
+      },
+      {
+        "turns": [
+          "T8"
+        ],
+        "why": "industry technology trend from earnings calls"
+      }
+    ],
+    "assertions": []
+  },
+  "extraction_note": "Hand-labeled claims in the extract-v1 output shape, for deterministic tests without a model call.",
+  "extraction": {
+    "claims": [
+      {
+        "logical_key": "C1",
+        "fields": {
+          "summary": "Reshoring is driving pump demand through new plant construction, as covered in the trade press.",
+          "speaker": "expert",
+          "subject_entity": {
+            "name": null,
+            "kind": "industry"
+          },
+          "metric": {
+            "category": "other",
+            "label": "pump demand from plant construction"
+          },
+          "event_kind": "none",
+          "period": {
+            "label": "over the past two years",
+            "fiscal_year": null,
+            "fiscal_quarter": null,
+            "calendar_year": null,
+            "calendar_quarter": null,
+            "relative": "prior"
+          },
+          "value": {
+            "number": null,
+            "unit": null,
+            "direction": "up",
+            "baseline": null
+          },
+          "scope": "industry_aggregate",
+          "scope_detail": null,
+          "knowledge_basis": "public_source",
+          "access_timing": "not_applicable",
+          "confidentiality_signals": [],
+          "qualifications": [],
+          "is_correction_of": null
+        },
+        "quotes": [
+          {
+            "turn_id": "T2",
+            "quote": "A lot of pump demand follows new plant construction, and the trade press has covered how many projects were announced over the past two years.",
+            "role": "primary",
+            "supports_fields": [
+              "subject_entity",
+              "metric",
+              "period",
+              "scope",
+              "knowledge_basis"
+            ]
+          }
+        ],
+        "links": [],
+        "solicited_by_analyst": "no",
+        "field_uncertainty": []
+      },
+      {
+        "logical_key": "C2",
+        "fields": {
+          "summary": "Large utilities' published capital plans for next year are flat to slightly up.",
+          "speaker": "expert",
+          "subject_entity": {
+            "name": null,
+            "kind": "industry"
+          },
+          "metric": {
+            "category": "capex",
+            "label": "municipal utility capital plans"
+          },
+          "event_kind": "none",
+          "period": {
+            "label": "next year",
+            "fiscal_year": null,
+            "fiscal_quarter": null,
+            "calendar_year": null,
+            "calendar_quarter": null,
+            "relative": "future"
+          },
+          "value": {
+            "number": null,
+            "unit": null,
+            "direction": "flat",
+            "baseline": null
+          },
+          "scope": "industry_aggregate",
+          "scope_detail": null,
+          "knowledge_basis": "public_source",
+          "access_timing": "not_applicable",
+          "confidentiality_signals": [],
+          "qualifications": [],
+          "is_correction_of": null
+        },
+        "quotes": [
+          {
+            "turn_id": "T4",
+            "quote": "Municipal water budgets are public, and most large utilities have published capital plans that are flat to slightly up for next year.",
+            "role": "primary",
+            "supports_fields": [
+              "subject_entity",
+              "metric",
+              "value",
+              "period",
+              "scope",
+              "knowledge_basis"
+            ]
+          }
+        ],
+        "links": [],
+        "solicited_by_analyst": "no",
+        "field_uncertainty": []
+      },
+      {
+        "logical_key": "C3",
+        "fields": {
+          "summary": "The October Pump and Valve Distributor Index showed orders down eighteen percent across its surveyed sample.",
+          "speaker": "expert",
+          "subject_entity": {
+            "name": null,
+            "kind": "industry"
+          },
+          "metric": {
+            "category": "orders",
+            "label": "distributor orders (PVDI)"
+          },
+          "event_kind": "none",
+          "period": {
+            "label": "October index",
+            "fiscal_year": null,
+            "fiscal_quarter": null,
+            "calendar_year": null,
+            "calendar_quarter": null,
+            "relative": "current"
+          },
+          "value": {
+            "number": 18,
+            "unit": "percent",
+            "direction": "down",
+            "baseline": null
+          },
+          "scope": "sample",
+          "scope_detail": "PVDI surveyed sample",
+          "knowledge_basis": "industry_survey",
+          "access_timing": "not_applicable",
+          "confidentiality_signals": [],
+          "qualifications": [],
+          "is_correction_of": null
+        },
+        "quotes": [
+          {
+            "turn_id": "T6",
+            "quote": "The October Pump and Valve Distributor Index showed orders down eighteen percent across the surveyed sample.",
+            "role": "primary",
+            "supports_fields": [
+              "subject_entity",
+              "metric",
+              "value",
+              "period",
+              "scope",
+              "knowledge_basis"
+            ]
+          }
+        ],
+        "links": [],
+        "solicited_by_analyst": "no",
+        "field_uncertainty": []
+      },
+      {
+        "logical_key": "C4",
+        "fields": {
+          "summary": "Variable-speed drives are gaining share across the industry, as manufacturers say on earnings calls.",
+          "speaker": "expert",
+          "subject_entity": {
+            "name": null,
+            "kind": "industry"
+          },
+          "metric": {
+            "category": "other",
+            "label": "variable-speed drive adoption"
+          },
+          "event_kind": "none",
+          "period": {
+            "label": null,
+            "fiscal_year": null,
+            "fiscal_quarter": null,
+            "calendar_year": null,
+            "calendar_quarter": null,
+            "relative": "current"
+          },
+          "value": {
+            "number": null,
+            "unit": null,
+            "direction": "up",
+            "baseline": null
+          },
+          "scope": "industry_aggregate",
+          "scope_detail": null,
+          "knowledge_basis": "public_source",
+          "access_timing": "not_applicable",
+          "confidentiality_signals": [],
+          "qualifications": [],
+          "is_correction_of": null
+        },
+        "quotes": [
+          {
+            "turn_id": "T8",
+            "quote": "Variable-speed drives keep gaining share across the industry. Every manufacturer talks about it on their earnings calls.",
+            "role": "primary",
+            "supports_fields": [
+              "subject_entity",
+              "metric",
+              "scope",
+              "knowledge_basis"
+            ]
+          }
+        ],
+        "links": [],
+        "solicited_by_analyst": "no",
+        "field_uncertainty": []
+      }
+    ],
+    "suggested_concerns": [],
+    "missing_context_questions": [],
+    "call_summary": "The expert discussed public industry trends: reshoring, municipal capital plans, a distributor survey, and variable-speed drive adoption."
+  }
+}
