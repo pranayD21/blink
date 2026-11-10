@@ -100,7 +100,8 @@ export function loadMetrics(db: DbOrTx) {
   }
 
   // ── Cost and latency per stage: real tokens × list price ──────────────────
-  const calls = db.select().from(llmCalls).all();
+  // Calls made by `pnpm eval` are measurement, not review work, so they are left out of the cost table.
+  const calls = db.select().from(llmCalls).all().filter((c) => !fromJson<{ eval?: string }>(c.refJson, {}).eval);
   const stages = new Map<string, { stage: string; calls: number; replayed: number; inputTokens: number; outputTokens: number; cacheReadTokens: number; costUsd: number; latencyMs: number }>();
   const costByCase = new Map<string, number>();
   for (const call of calls) {
