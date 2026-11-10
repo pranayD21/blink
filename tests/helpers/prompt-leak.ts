@@ -12,6 +12,7 @@ import { BRIEF_SYSTEM, buildBriefUser } from "@/server/llm/prompts/brief";
 import { DOCFACTS_SYSTEM, buildDocFactsUser } from "@/server/llm/prompts/docfacts";
 import { EXTRACT_SYSTEM, buildExtractUser } from "@/server/llm/prompts/extract";
 import { FIELD_GUIDE } from "@/server/llm/prompts/fields";
+import { LIVE_SYSTEM, buildLiveContext, buildLiveUser } from "@/server/llm/prompts/live";
 import { ASSEMBLY_SYSTEM, PASS_A_SYSTEM, PASS_B_SYSTEM, SCENARIOS_SYSTEM, buildAssemblyUser, buildPassAUser, buildPassBUser, buildScenariosUser } from "@/server/llm/prompts/policy";
 
 const FIXTURES = join(__dirname, "..", "..", "fixtures");
@@ -56,6 +57,9 @@ export function promptSources(): string[] {
     FIELD_GUIDE,
     EXTRACT_SYSTEM,
     buildExtractUser({ ctx: EMPTY_CTX, researchQuestions: [], expert: EMPTY_EXPERT, turns: [] }),
+    LIVE_SYSTEM,
+    buildLiveContext({ ctx: EMPTY_CTX, expert: EMPTY_EXPERT, researchQuestions: [] }),
+    buildLiveUser({ turns: [], newTurnLabel: "", claimsSoFar: [] }),
     PASS_A_SYSTEM,
     buildPassAUser([]),
     PASS_B_SYSTEM,

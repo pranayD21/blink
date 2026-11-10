@@ -120,7 +120,7 @@ interface Recording {
   prompt_version: string;
   recorded_at: string;
   latency_ms: number;
-  request: { system: string; user: string; effort: string; max_tokens: number };
+  request: { system: string | string[]; user: string; effort: string; max_tokens: number };
   response: { id: string | null; model: string; stop_reason: string | null; usage: LlmUsage; parsed_output: unknown };
 }
 
@@ -133,7 +133,11 @@ export interface StructuredCallOptions<T extends z.ZodType> {
   stage: string;
   promptVersion: string;
   schema: T;
-  system: string;
+  /**
+   * One system block, or several sent in order. The last block carries the cache marker, so a fixed
+   * prefix split across blocks is cached as a whole.
+   */
+  system: string | string[];
   user: string;
   effort: "low" | "medium" | "high";
   maxTokens?: number;
@@ -165,13 +169,20 @@ export function requestHashFor(opts: Pick<StructuredCallOptions<z.ZodType>, "sta
   return hashOf({
     model: opts.model ?? llmModel(),
     prompt_version: opts.promptVersion,
-    system: opts.system,
+    // A single string hashes exactly as before lists existing, so every older recording keeps its hash.
+    system: typeof opts.system === "string" ? opts.system : opts.system.join("\n"),
     user: opts.user,
     effort: opts.effort,
     max_tokens: opts.maxTokens ?? 32000,
     schema: opts.stage,
     ...(opts.thinking === "disabled" ? { thinking: "disabled" } : {}),
   });
+}
+
+/** One text block per element, with the cache marker on the last. */
+export function systemBlocks(system: string | string[]): { type: "text"; text: string; cache_control?: { type: "ephemeral" } }[] {
+  const texts = typeof system === "string" ? [system] : system;
+  return texts.map((text, i) => (i === texts.length - 1 ? { type: "text", text, cache_control: { type: "ephemeral" } } : { type: "text", text }));
 }
 
 export async function structuredCall<T extends z.ZodType>(opts: StructuredCallOptions<T>): Promise<StructuredCallResult<z.infer<T>>> {
@@ -248,7 +259,7 @@ export async function structuredCall<T extends z.ZodType>(opts: StructuredCallOp
       max_tokens: maxTokens,
       thinking: opts.thinking === "disabled" ? { type: "disabled" } : { type: "adaptive" },
       output_config: { effort: opts.effort, format: betaZodOutputFormat(opts.schema) },
-      system: [{ type: "text", text: opts.system, cache_control: { type: "ephemeral" } }],
+      system: systemBlocks(opts.system),
       messages: [{ role: "user", content: opts.user }],
       // A safety classifier could decline compliance text about insider trading; the server-side fallback
       // re-runs a declined request on the recommended model (D5). Claude Haiku 5.5 has no fallback, so a
