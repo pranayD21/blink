@@ -224,6 +224,7 @@ describe("brief workflow, eligibility, and release check", () => {
     reviewBlockers: [],
     ineligibleCitations: [],
     newlyStale: [],
+    leaks: [],
   };
 
   it("passes when everything holds", () => expect(checkRelease(okRelease)).toEqual([]));
@@ -242,6 +243,26 @@ describe("brief workflow, eligibility, and release check", () => {
     expect(codes({ reviewBlockers: [{ code: "PROCESSING_ISSUE_OPEN", message: "m" }] })).toEqual(["PROCESSING_ISSUE_OPEN"]);
     expect(codes({ ineligibleCitations: [{ claimKey: "C7", detail: "restricted" }] })).toEqual(["CLAIM_NOT_ELIGIBLE"]);
     expect(codes({ newlyStale: [{ dependent: "approval", reason: "claim changed" }] })).toEqual(["STALE_DEPENDENCY"]);
+  });
+
+  it("a leaking summary fails with SUMMARY_LEAK, naming the passage and kind but never the hidden text", () => {
+    const failures = checkRelease({ ...okRelease, leaks: [{ passage: "F1 · T5", kind: "figure", detail: "20" }] });
+    expect(failures).toEqual([{ code: "SUMMARY_LEAK", message: "the summary repeats a figure from hidden passage F1 · T5", ref: "F1 · T5" }]);
+    const quote = checkRelease({ ...okRelease, leaks: [{ passage: "F2 · T15", kind: "quote", detail: "the cardinal utilities contract is being" }] });
+    expect(quote[0].message).toBe("the summary repeats a quote from hidden passage F2 · T15");
+    expect(quote[0].message).not.toContain("cardinal");
+  });
+
+  it("a claim quoting a turn of an undecided live finding is restricted", () => {
+    const live = (state: string, outcome: string | null, stale = false) => ({ claimLogicalKey: null, turnLabels: ["T7"], label: "F4", state, decision: outcome ? { outcome, stale } : null });
+    const onT7 = { ...claim, turnLabels: ["T7"] };
+    expect(claimEligibility(onT7, [live("REVIEW_REQUIRED", null)])).toMatchObject({ eligible: false, reason: "restricted" });
+    expect(claimEligibility(onT7, [live("DISPOSITIONED", "restricted_exclude")])).toMatchObject({ eligible: false, reason: "restricted" });
+    expect(claimEligibility(onT7, [live("DISPOSITIONED", "cleared_for_research", true)])).toMatchObject({ eligible: false, reason: "restricted" });
+    expect(claimEligibility(onT7, [live("DISPOSITIONED", "cleared_for_research")])).toEqual({ eligible: true });
+    expect(claimEligibility(onT7, [live("DISPOSITIONED", "no_concern")])).toEqual({ eligible: true });
+    expect(claimEligibility({ ...claim, turnLabels: ["T9"] }, [live("REVIEW_REQUIRED", null)])).toEqual({ eligible: true });
+    expect(claimEligibility(claim, [live("REVIEW_REQUIRED", null)])).toEqual({ eligible: true }); // no turns known: nothing to match
   });
 
   it("lists every failure at once (the red checklist)", () => {

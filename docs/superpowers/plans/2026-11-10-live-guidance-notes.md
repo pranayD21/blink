@@ -197,3 +197,14 @@ Step 1 is done: `pnpm live:prepare` (`scripts/prepare-live-call.sh`) resets `dat
 7. During the call, say at least one thing the demo policy restricts. For example, have the expert give a company figure and say it comes from an internal system they can still access.
 8. Press **Stop**.
 9. Tell the agent the call is done. It reads the record back (Steps 3 and 4).
+
+## Task 22: the release snapshot and the summary leak check
+
+- What counts as hidden is wider than the brief's wording, to fail closed: a `live` finding's passages are hidden unless the finding is DISPOSITIONED with `cleared_for_research` or `no_concern` on a decision that is not stale (`liveFindingCleared` in `src/core/workflow/brief.ts`). The same predicate decides whether a claim quoting one of its turns is eligible. So an undecided, reopened or stale live flag hides as well as a `restricted_*` one; at release time those also block through FINDING_OPEN or DECISION_STALE.
+- A hidden passage's `numbers` are `numbersIn(text)` (exported from `src/core/release/leak.ts`): digits as the leak check reads them, plus whole numbers 2 to 100 spelled out. The words "zero" and "one" are left out because they are usually not figures ("the big one"); the digits 0 and 1 still count.
+- A hidden passage's `names` are the restricted claim's `subject_entity.name` and `scope_detail`, plus `namePhrases(text)`: runs of two or more consecutive capitalised words ("Cardinal Utilities"). A one-letter word ("I") breaks a run and punctuation after a word ends it. A run that opens a sentence is kept both whole and without its first word. A single capitalised word on its own is not a name, so a lone company name in the hidden text is caught only when it is in the claim's fields.
+- `visible` collects numbers and names from every eligible claim: its quotes, every string and number in its fields, and its `subject_entity.name` and `scope_detail`. "Halvorsen" is visible (C8), so the summary may say it.
+- The leak check reads the brief's section headings as well as its sentences, since both are released.
+- A passage recorded on an earlier transcript version is placed on the current one: the same turn text keeps the offsets. If the text changed, the hidden words are looked for in the same turn and then in any turn. If they are not found, the whole turn with that label is hidden.
+- `Eligibility` gained an optional `finding` (the label of the finding that made the claim ineligible). The release uses it to label passages "F1 · T5".
+- The demo's template briefs (v1 and v2) pass the leak check; `pnpm demo:check` releases both.

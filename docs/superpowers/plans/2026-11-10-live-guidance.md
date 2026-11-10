@@ -1012,7 +1012,7 @@ ReleaseFailure["code"] gains: "SUMMARY_LEAK"
 - A passage is restricted when it is a quote of a claim whose eligibility reason is `restricted`, or a `finding_passages` row of a `live` finding whose latest decision is `restricted_exclude` or `restricted_escalate_to_legal`.
 - A claim that quotes any turn of a `live` finding not decided `cleared_for_research` or `no_concern` is not eligible, with reason `restricted`.
 
-- [ ] **Step 1: Write the failing tests** in `tests/services/release.test.ts`, on `seedAnalyzed()` and the existing helpers.
+- [x] **Step 1: Write the failing tests** in `tests/services/release.test.ts`, on `seedAnalyzed()` and the existing helpers.
 
 ```ts
 it("release stores a transcript with the restricted quotes blanked", () => {
@@ -1032,10 +1032,10 @@ it("a claim on a turn that is flagged live-only is not eligible", () => { /* liv
 
 Add to `tests/core/workflow.test.ts`: `checkRelease` with one leak returns a failure with code `SUMMARY_LEAK` whose message names the passage label and kind and does not contain the passage text.
 
-- [ ] **Step 2: Run them and see them fail.** Run: `pnpm exec vitest run tests/services/release.test.ts tests/core/workflow.test.ts`. Expected: FAIL.
-- [ ] **Step 3: Implement.** In `releaseBrief`, after the staleness pass: compute `restrictedOnCase`, run `findLeaks` over the brief's sentences, pass `leaks` to `checkRelease`. On success, `redactTurns` over the current transcript's turns, and store the result, its hash and the count on the release row. A leak's message is `the summary repeats a <kind> from hidden passage <label>`; it never includes the text.
-- [ ] **Step 4: Run the tests.** Run: `pnpm db:generate && pnpm test`. Expected: PASS.
-- [ ] **Step 5: Commit.**
+- [x] **Step 2: Run them and see them fail.** Run: `pnpm exec vitest run tests/services/release.test.ts tests/core/workflow.test.ts`. Expected: FAIL.
+- [x] **Step 3: Implement.** In `releaseBrief`, after the staleness pass: compute `restrictedOnCase`, run `findLeaks` over the brief's sentences, pass `leaks` to `checkRelease`. On success, `redactTurns` over the current transcript's turns, and store the result, its hash and the count on the release row. A leak's message is `the summary repeats a <kind> from hidden passage <label>`; it never includes the text.
+- [x] **Step 4: Run the tests.** Run: `pnpm db:generate && pnpm test`. Expected: PASS.
+- [x] **Step 5: Commit.**
 
 ```bash
 git add src/server/services/redaction.ts src/server/db/schema.ts drizzle src/core/workflow/brief.ts src/server/services/release.ts src/server/services/briefs.ts tests/services/release.test.ts tests/core/workflow.test.ts

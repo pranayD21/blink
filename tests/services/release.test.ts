@@ -3,18 +3,22 @@
  * server and each failure is named; a corrected transcript reopens exactly
  * what depended on the changed turn.
  */
-import { eq } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
+import { sha256Hex } from "@/core/deps/hash";
+import type { RedactedTurn } from "@/core/release/redact";
 import { beforeEach, describe, expect, it } from "vitest";
 import { listAudit, verifyAuditChain } from "@/server/audit/log";
 import { getDb, transact } from "@/server/db/client";
-import { approvals, attestations, briefs, decisions, processingIssues } from "@/server/db/schema";
+import { approvals, attestations, briefs, decisions, findingPassages, processingIssues, releases } from "@/server/db/schema";
 import { newId } from "@/server/ids";
-import { approveBrief, briefWorkspace, editBrief, getBrief, releasedBriefs } from "@/server/services/briefs";
+import { approveBrief, briefWorkspace, editBrief, eligibilityForCase, getBrief, releasedBriefs } from "@/server/services/briefs";
 import { latestAttestation } from "@/server/services/caseStatus";
 import { createReviewerFinding } from "@/server/services/findings";
-import { loadCurrentClaims } from "@/server/services/loaders";
+import { type FindingRow, createFinding } from "@/server/services/findingsCore";
+import { currentTranscript, loadCurrentClaims, turnsOfVersion } from "@/server/services/loaders";
+import { restrictedOnCase } from "@/server/services/redaction";
 import { releaseBrief } from "@/server/services/release";
-import { CASE, G1, G2, G3, STEEL, appError, approve, attest, completeReview, draftTemplate, findingOn, findingsOf, release, reviewAndApprove, seedAnalyzed, statusOf, uploadV2, user } from "../helpers/db";
+import { CASE, G1, G2, G3, STEEL, appError, approve, attest, completeReview, dispose, draftTemplate, findingOn, findingsOf, release, reviewAndApprove, seedAnalyzed, statusOf, uploadV2, user } from "../helpers/db";
 
 beforeEach(seedAnalyzed);
 
@@ -214,5 +218,112 @@ describe("transcript v2: a correction to T19 (§12.3, demo steps 8–9)", () => 
   it("uploading identical text is refused: there is nothing to re-analyze", async () => {
     await uploadV2();
     await expect(uploadV2()).rejects.toMatchObject({ status: 409, code: "TRANSCRIPT_UNCHANGED" });
+  });
+});
+
+describe("release snapshots the blanked transcript and refuses a leaking summary (live guidance, section 5)", () => {
+  const releaseRow = () => getDb().select().from(releases).where(eq(releases.caseId, CASE)).orderBy(desc(releases.releasedAt)).get()!;
+
+  /** A live finding on one turn of the current transcript, the way the end of a call raises one. */
+  function liveFindingOn(turnLabel: string): FindingRow {
+    return transact((tx) => {
+      const turn = turnsOfVersion(tx, currentTranscript(tx, CASE)!.id).find((t) => t.label === turnLabel)!;
+      const { finding } = createFinding(tx, { caseId: CASE, claimLogicalKey: null, origin: "live", title: "Flagged during the call", severity: "high", state: "REVIEW_REQUIRED", reasonCodes: ["LIVE_ONLY", `TURN:${turnLabel}`], dedupeKey: `live-test:${turnLabel}`, createdBy: "system" });
+      tx.insert(findingPassages).values({ id: newId("fp"), findingId: finding.id, turnId: turn.id, startChar: 0, endChar: turn.text.length }).run();
+      return finding;
+    });
+  }
+
+  it("release stores a transcript with the restricted quotes blanked", () => {
+    const brief = reviewAndApprove();
+    const r = release(brief.id);
+    expect(r.released).toBe(true);
+    const row = releaseRow();
+    const text = row.redactedTranscriptJson!;
+    expect(text).not.toContain("I still have a login"); // F1 was restricted
+    expect(text).not.toContain("Cardinal"); // F2 was restricted
+    expect(text).toContain("well before I left"); // F3 was cleared
+    expect(row.hiddenPassages).toBeGreaterThanOrEqual(2);
+    expect(row.transcriptVersionId).toBe(currentTranscript(getDb(), CASE)!.id);
+    expect(row.redactedTranscriptHash).toBe(sha256Hex(text));
+    // The snapshot is turns of segments: a hidden run carries only its length.
+    const turns = JSON.parse(text) as RedactedTurn[];
+    expect(turns.find((t) => t.label === "T15")!.segments).toEqual([{ text: "Brightwater has been aggressive on price in utilities. " }, { hidden: expect.any(Number) }]);
+  });
+
+  it("a summary that repeats a restricted figure cannot be released", () => {
+    completeReview();
+    const draft = draftTemplate();
+    const sections = briefWorkspace(getDb(), CASE, user("marcus")).brief!.sections;
+    // C2 is eligible; "twenty percent" is F1's restricted figure.
+    sections[0].sentences.push({ text: "Distributors are soft, with orders down about twenty percent.", claim_ids: ["C2"] });
+    const edited = transact((tx) => editBrief(tx, draft.id, { sections, expectedVersion: draft.version }, user("marcus")));
+    approve(edited.id);
+    const result = release(edited.id);
+    expect(result).toMatchObject({ released: false });
+    expect(codes(result)).toContain("SUMMARY_LEAK");
+    const leak = result.released ? null : result.failures.find((f) => f.code === "SUMMARY_LEAK")!;
+    expect(leak!.message).toBe("the summary repeats a figure from hidden passage F1 · T5");
+    expect(statusOf()).toBe("APPROVED");
+    expect(getDb().select().from(releases).all()).toEqual([]);
+    // The blocked attempt is audited without the hidden text.
+    const blocked = listAudit(getDb(), CASE).at(-1)!;
+    expect(blocked.type).toBe("RELEASE_BLOCKED");
+    expect(JSON.stringify(blocked)).not.toContain("orders fell off a cliff");
+  });
+
+  it("the demo's template summary passes the leak check", () => {
+    const brief = reviewAndApprove();
+    expect(codes(release(brief.id))).not.toContain("SUMMARY_LEAK");
+  });
+
+  it("the snapshot does not change when a corrected transcript arrives later", async () => {
+    const brief = reviewAndApprove();
+    expect(release(brief.id)).toMatchObject({ released: true });
+    const before = releaseRow();
+
+    await uploadV2();
+
+    const after = releaseRow();
+    expect(after.redactedTranscriptHash).toBe(before.redactedTranscriptHash);
+    expect(after.redactedTranscriptJson).toBe(before.redactedTranscriptJson);
+    expect(after.transcriptVersionId).toBe(before.transcriptVersionId);
+    expect(after.transcriptVersionId).not.toBe(currentTranscript(getDb(), CASE)!.id);
+    expect(releasedBriefs(getDb())[0].standing).toBe("under_re_review");
+  });
+
+  it("a claim on a turn that is flagged live-only is not eligible", () => {
+    liveFindingOn("T7");
+    const eligibility = eligibilityForCase(getDb(), CASE);
+    const of = (key: string) => eligibility.claims.find((c) => c.claim.row.logicalKey === key)!.eligibility;
+    expect(of("C2")).toMatchObject({ eligible: false, reason: "restricted" }); // C2 and C3 quote T7
+    expect(of("C3")).toMatchObject({ eligible: false, reason: "restricted" });
+    expect(of("C4")).toEqual({ eligible: true }); // T9 is not flagged
+  });
+
+  it("a live passage compliance kept hidden is blanked in the snapshot; one it cleared is shown", () => {
+    const kept = liveFindingOn("T21");
+    const cleared = liveFindingOn("T9");
+    completeReview();
+    dispose(kept.id, "restricted_exclude", "marcus");
+    dispose(cleared.id, "cleared_for_research", "marcus");
+    const brief = draftTemplate();
+    expect(brief.sentencesJson).not.toContain("two price increases"); // C10 quotes T21
+    approve(brief.id);
+    expect(release(brief.id)).toMatchObject({ released: true });
+    const turns = JSON.parse(releaseRow().redactedTranscriptJson!) as RedactedTurn[];
+    expect(turns.find((t) => t.label === "T21")!.segments).toEqual([{ hidden: expect.any(Number) }]);
+    expect(releaseRow().redactedTranscriptJson).toContain("Municipal water is fine");
+  });
+
+  it("restrictedOnCase labels each hidden passage by finding and turn, and keeps eligible names visible", () => {
+    completeReview();
+    const r = restrictedOnCase(getDb(), CASE);
+    expect(r.passages.map((p) => p.label)).toEqual(expect.arrayContaining(["F1 · T5", "F1 · T11", "F2 · T15"]));
+    const t5 = r.passages.find((p) => p.label === "F1 · T5")!;
+    expect(t5.numbers).toContain(20);
+    expect(r.passages.find((p) => p.label === "F2 · T15")!.names).toContain("Cardinal Utilities");
+    expect(r.visible.names.has("Halvorsen")).toBe(true); // F3's claim is about Halvorsen too
+    expect(r.visible.numbers.has(20)).toBe(false);
   });
 });

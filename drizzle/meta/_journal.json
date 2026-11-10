@@ -15,6 +15,13 @@
       "when": 1794319765612,
       "tag": "0001_dear_angel",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1794326522618,
+      "tag": "0002_thankful_sister_grimm",
+      "breakpoints": true
     }
   ]
 }

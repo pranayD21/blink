@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { findLeaks, spellNumber } from "@/core/release/leak";
+import { findLeaks, namePhrases, numbersIn, spellNumber } from "@/core/release/leak";
 
 const hidden = [{ label: "F1 · T5", text: "They're down about twenty percent in the West region.", numbers: [20], names: ["West region"] }];
 const none = { numbers: new Set<number>(), names: new Set<string>() };
@@ -92,4 +92,21 @@ describe("summary leak check", () => {
   // Names with internal punctuation are not matched across spellings.
   it("J.P. Morgan is not matched by JP Morgan", () =>
     expect(findLeaks(["JP Morgan reported."], [{ label: "F7", text: "x", numbers: [], names: ["J.P. Morgan"] }], none)).toEqual([]));
+});
+
+describe("reading figures and names out of a passage", () => {
+  it("numbersIn reads digits by value and whole numbers spelled out, but not the words zero and one", () => {
+    expect(numbersIn("Q3 bookings were tracking down twenty percent, 1,200 units, 4.5 points.").sort((a, b) => a - b)).toEqual([3, 20, 1200, 4.5].sort((a, b) => a - b));
+    expect(numbersIn("up twenty-one percent")).toEqual([21]);
+    expect(numbersIn("Steel is the big one.")).toEqual([]);
+    expect(numbersIn("1 of 0")).toEqual([1, 0]);
+  });
+
+  it("namePhrases takes runs of two or more capitalised words; a lone I is not part of one", () => {
+    expect(namePhrases("And between us, the Cardinal Utilities contract is being re-bid and Halvorsen is out.")).toEqual(["Cardinal Utilities"]);
+    expect(namePhrases("When I checked last week, Q3 bookings fell.")).toEqual([]);
+    expect(namePhrases("They met New York Life. Done.")).toEqual(["New York Life"]);
+    // A sentence opener is capitalised by grammar: the run is kept with and without it.
+    expect(namePhrases("Ok. Then Cardinal Utilities said so.")).toEqual(["Then Cardinal Utilities", "Cardinal Utilities"]);
+  });
 });

@@ -596,6 +596,12 @@ export const releases = sqliteTable(
     briefHash: text("brief_hash").notNull(),
     audience: text("audience").notNull().default("analyst"), // +
     releasedAt: text("released_at").notNull(),
+    // The transcript the banker may read, frozen at release with every restricted passage blanked
+    // (RedactedTurn[]). Null on releases made before snapshots existed.
+    transcriptVersionId: text("transcript_version_id"),
+    redactedTranscriptJson: text("redacted_transcript_json"),
+    redactedTranscriptHash: text("redacted_transcript_hash"),
+    hiddenPassages: integer("hidden_passages"),
   },
   (t) => [index("releases_case_idx").on(t.caseId)],
 );

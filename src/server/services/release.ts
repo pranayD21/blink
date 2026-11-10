@@ -8,16 +8,20 @@
  */
 import { and, desc, eq } from "drizzle-orm";
 import { z } from "zod";
+import { type BriefSection, sha256Hex } from "@/core/deps/hash";
+import { findLeaks } from "@/core/release/leak";
+import { redactTurns } from "@/core/release/redact";
 import { type ReleaseFailure, checkRelease, transitionBrief } from "@/core/workflow/brief";
 import { type Actor, requireReviewer } from "../auth/actor";
 import { appendAudit } from "../audit/log";
 import { nowIso } from "../clock";
-import type { DbOrTx } from "../db/client";
+import { type DbOrTx, fromJson, toJson } from "../db/client";
 import { approvals, briefs, releases } from "../db/schema";
 import { newId } from "../ids";
 import { AUDIENCES, getBrief, ineligibleCitations } from "./briefs";
 import { applyCaseEvent, computeReviewBlockers, syncCaseStatus } from "./caseStatus";
-import { getCase } from "./loaders";
+import { currentTranscript, getCase, turnsOfVersion } from "./loaders";
+import { restrictedOnCase } from "./redaction";
 import { endSession } from "./sessions";
 import { runStalenessPass } from "./staleness";
 
@@ -38,6 +42,11 @@ export function releaseBrief(tx: DbOrTx, briefId: string, input: ReleaseInput, a
   const caseRow = getCase(tx, caseId);
   const approval = tx.select().from(approvals).where(eq(approvals.briefId, brief.id)).orderBy(desc(approvals.createdAt), desc(approvals.id)).limit(1).get() ?? null;
 
+  // Compare the summary's exact text (headings and sentences) with every hidden passage.
+  const restricted = restrictedOnCase(tx, caseId);
+  const summary = fromJson<BriefSection[]>(brief.sentencesJson, []).flatMap((section) => [section.heading, ...section.sentences.map((s) => s.text)]);
+  const leaks = findLeaks(summary, restricted.passages, restricted.visible);
+
   const failures = checkRelease({
     actorRole: actor.role,
     audience: input.audience,
@@ -48,6 +57,7 @@ export function releaseBrief(tx: DbOrTx, briefId: string, input: ReleaseInput, a
     reviewBlockers: computeReviewBlockers(tx, caseId),
     ineligibleCitations: ineligibleCitations(tx, brief),
     newlyStale: newlyStale.map((s) => ({ dependent: s.label, reason: s.reason })),
+    leaks,
   });
 
   if (failures.length > 0) {
@@ -55,9 +65,29 @@ export function releaseBrief(tx: DbOrTx, briefId: string, input: ReleaseInput, a
     return { released: false, failures };
   }
 
+  // Freeze the transcript the banker may read: the current version, every restricted passage blanked.
+  // A later correction does not touch it; the staleness rules mark the release under re-review instead.
+  const transcript = currentTranscript(tx, caseId);
+  const redacted = redactTurns(transcript ? turnsOfVersion(tx, transcript.id) : [], restricted.spans);
+  const redactedJson = toJson(redacted.turns);
+
   const releaseId = newId("rel");
   const now = nowIso();
-  tx.insert(releases).values({ id: releaseId, caseId, briefId: brief.id, actorId: actor.id, briefHash: brief.contentHash, audience: input.audience, releasedAt: now }).run();
+  tx.insert(releases)
+    .values({
+      id: releaseId,
+      caseId,
+      briefId: brief.id,
+      actorId: actor.id,
+      briefHash: brief.contentHash,
+      audience: input.audience,
+      releasedAt: now,
+      transcriptVersionId: transcript?.id ?? null,
+      redactedTranscriptJson: redactedJson,
+      redactedTranscriptHash: sha256Hex(redactedJson),
+      hiddenPassages: redacted.hiddenPassages,
+    })
+    .run();
   const next = transitionBrief(brief.status, "RELEASE");
   if (next.ok) tx.update(briefs).set({ status: next.next, version: brief.version + 1 }).where(eq(briefs.id, brief.id)).run();
   // An earlier released version is now superseded for the analyst.
@@ -67,6 +97,6 @@ export function releaseBrief(tx: DbOrTx, briefId: string, input: ReleaseInput, a
   }
   applyCaseEvent(tx, caseRow, "BRIEF_RELEASED", { actorId: actor.id, cause: `brief v${brief.versionNo} released` }, { strict: true });
   endSession(tx, caseId, actor.id, "blink");
-  appendAudit(tx, { actorId: actor.id, type: "BRIEF_RELEASED", entityType: "brief", entityId: brief.id, caseId, payload: { version: brief.versionNo, brief_hash: brief.contentHash, audience: input.audience, release: releaseId, approval: approval?.id ?? null } });
+  appendAudit(tx, { actorId: actor.id, type: "BRIEF_RELEASED", entityType: "brief", entityId: brief.id, caseId, payload: { version: brief.versionNo, brief_hash: brief.contentHash, audience: input.audience, release: releaseId, approval: approval?.id ?? null, transcript_version: transcript?.id ?? null, redacted_transcript_hash: sha256Hex(redactedJson), hidden_passages: redacted.hiddenPassages } });
   return { released: true, releaseId, briefHash: brief.contentHash };
 }

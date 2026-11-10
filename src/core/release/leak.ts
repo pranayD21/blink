@@ -101,6 +101,53 @@ function sharedRuns(sentenceWords: readonly string[], passageGrams: ReadonlySet<
   return runs;
 }
 
+/**
+ * Every figure a text states, for building a passage's `numbers` and the visible set: digits by value
+ * (as the leak check reads them) and whole numbers 2 to 100 spelled out. The words "zero" and "one" are
+ * left out because they are mostly not figures ("the big one"); the digits 0 and 1 still count.
+ */
+export function numbersIn(text: string): number[] {
+  const found = new Set(digitNumbers(text));
+  const w = words(text);
+  for (let n = 2; n <= 100; n++) if (mentionsSpelled(w, n)) found.add(n);
+  return [...found];
+}
+
+const CAPITALISED = /^\p{Lu}[\p{L}\p{M}'’-]+$/u;
+
+/**
+ * Proper-name candidates: runs of two or more consecutive capitalised words ("Cardinal Utilities").
+ * A one-letter word ("I", "A") breaks a run, and punctuation after a word ends it. A run that opens a
+ * sentence is kept both whole and without its first word, since the opener is capitalised by grammar.
+ */
+export function namePhrases(text: string): string[] {
+  const out: string[] = [];
+  const add = (run: string[]) => {
+    const phrase = run.join(" ");
+    if (run.length >= 2 && !out.includes(phrase)) out.push(phrase);
+  };
+  let run: string[] = [];
+  let runOpensSentence = false;
+  let atSentenceStart = true;
+  const flush = () => {
+    add(run);
+    if (runOpensSentence) add(run.slice(1));
+    run = [];
+  };
+  for (const token of text.normalize("NFKC").split(/\s+/)) {
+    const core = token.replace(/^[^\p{L}\p{N}]+/u, "").replace(/[^\p{L}\p{N}]+$/u, "");
+    const trailing = token.slice(token.lastIndexOf(core) + core.length);
+    if (core.length > 0 && CAPITALISED.test(core)) {
+      if (run.length === 0) runOpensSentence = atSentenceStart;
+      run.push(core);
+    } else flush();
+    if (/[^\p{L}\p{N}'’]/u.test(trailing)) flush();
+    if (core.length > 0 || trailing.length > 0) atSentenceStart = /[.!?]/.test(trailing);
+  }
+  flush();
+  return out;
+}
+
 export function findLeaks(
   sentences: readonly string[],
   hidden: readonly HiddenPassage[],

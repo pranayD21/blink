@@ -10,13 +10,13 @@ import { type Actor, isReviewer, requireReviewer } from "../auth/actor";
 import { appendAudit } from "../audit/log";
 import { nowIso } from "../clock";
 import { type DbOrTx, fromJson, toJson } from "../db/client";
-import { approvals, briefs, cases, dependencies, findings, jobs, llmCalls, releases } from "../db/schema";
+import { approvals, briefs, cases, dependencies, findingPassages, findings, jobs, llmCalls, releases, turns } from "../db/schema";
 import { conflict, forbidden, notFound, unprocessable, versionConflict } from "../errors";
 import { newId } from "../ids";
 import { enqueueJob } from "../jobs/queue";
 import { applyCaseEvent, computeReviewBlockers } from "./caseStatus";
 import { findingLabel, latestDecision } from "./findingsCore";
-import { type LoadedClaim, getCase, isEvaluable, loadCurrentClaims, loadPolicy } from "./loaders";
+import { type LoadedClaim, type TurnRow, getCase, isEvaluable, loadCurrentClaims, loadPolicy } from "./loaders";
 import { type LabeledEdge, claimLabel, recordDependencies } from "./staleness";
 
 export type BriefRow = typeof briefs.$inferSelect;
@@ -50,15 +50,47 @@ export interface CaseEligibility {
   withheldCount: number;
 }
 
+export interface LivePassage {
+  findingId: string;
+  /** The turn the passage was recorded on; it may belong to an earlier transcript version. */
+  turn: TurnRow;
+  start: number;
+  end: number;
+}
+
+/** The passages every `live` finding on the case hid, by finding id. */
+export function livePassagesForCase(tx: DbOrTx, caseId: string): Map<string, LivePassage[]> {
+  const live = tx.select().from(findings).where(and(eq(findings.caseId, caseId), eq(findings.origin, "live"))).all();
+  const out = new Map<string, LivePassage[]>(live.map((f) => [f.id, []]));
+  if (live.length === 0) return out;
+  const rows = tx.select().from(findingPassages).where(inArray(findingPassages.findingId, live.map((f) => f.id))).all();
+  const turnIds = [...new Set(rows.map((r) => r.turnId))];
+  const turnById = new Map((turnIds.length > 0 ? tx.select().from(turns).where(inArray(turns.id, turnIds)).all() : []).map((t) => [t.id, t]));
+  for (const r of rows) {
+    const turn = turnById.get(r.turnId);
+    // A passage whose turn row is gone cannot be placed; Task 13 raises unmapped flags as issues instead.
+    if (turn) out.get(r.findingId)!.push({ findingId: r.findingId, turn, start: r.startChar, end: r.endChar });
+  }
+  return out;
+}
+
 export function eligibilityForCase(tx: DbOrTx, caseId: string): CaseEligibility {
   const findingRows = tx.select().from(findings).where(eq(findings.caseId, caseId)).all();
+  const live = livePassagesForCase(tx, caseId);
   const forCheck = findingRows.map((f) => {
     const decision = latestDecision(tx, f.id);
-    return { claimLogicalKey: f.claimLogicalKey, label: findingLabel(f), state: f.state, decision: decision ? { outcome: decision.outcome, stale: decision.stale } : null };
+    const passages = live.get(f.id);
+    return {
+      claimLogicalKey: f.claimLogicalKey,
+      label: findingLabel(f),
+      state: f.state,
+      decision: decision ? { outcome: decision.outcome, stale: decision.stale } : null,
+      ...(passages ? { turnLabels: [...new Set(passages.map((p) => p.turn.label))] } : {}),
+    };
   });
   const claims = loadCurrentClaims(tx, caseId)
     .filter((c) => c.fields.speaker === "expert")
-    .map((claim) => ({ claim, eligibility: claimEligibility({ logicalKey: claim.row.logicalKey, status: claim.row.status }, forCheck) }));
+    .map((claim) => ({ claim, eligibility: claimEligibility({ logicalKey: claim.row.logicalKey, status: claim.row.status, turnLabels: claim.turnLabels }, forCheck) }));
   const eligible = claims.filter((c) => c.eligibility.eligible).map((c) => c.claim);
   return { claims, eligible, eligibleKeys: new Set(eligible.map((c) => c.row.logicalKey)), withheldCount: claims.filter((c) => !c.eligibility.eligible && c.eligibility.reason === "restricted").length };
 }

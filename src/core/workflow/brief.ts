@@ -39,6 +39,8 @@ export function transitionBrief(status: BriefStatus, event: BriefEvent): BriefTr
 export interface EligibilityClaim {
   logicalKey: string;
   status: "proposed" | "reviewer_corrected" | "rejected";
+  /** The turns the claim quotes, matched against the turns a live finding hid. */
+  turnLabels?: readonly string[];
 }
 
 export interface EligibilityFinding {
@@ -46,27 +48,46 @@ export interface EligibilityFinding {
   label: string;
   state: string;
   decision: { outcome: string | null; stale: boolean } | null;
+  /** Set on a `live` finding: the turns it hid. A claim quoting any of them shares its fate. */
+  turnLabels?: readonly string[];
 }
 
-export type Eligibility = { eligible: true } | { eligible: false; reason: "rejected" | "finding_open" | "decision_stale" | "restricted"; detail: string };
+export type Eligibility =
+  | { eligible: true }
+  /** `finding` is the label of the finding that made the claim ineligible, when one did. */
+  | { eligible: false; reason: "rejected" | "finding_open" | "decision_stale" | "restricted"; detail: string; finding?: string };
 
 const RELEASABLE_OUTCOMES = new Set(["cleared_for_research", "no_concern"]);
+
+/** A live flag releases its turns only once compliance has cleared them, on a decision that still stands. */
+export function liveFindingCleared(f: EligibilityFinding): boolean {
+  return f.state === "DISPOSITIONED" && !!f.decision && !f.decision.stale && !!f.decision.outcome && RELEASABLE_OUTCOMES.has(f.decision.outcome);
+}
 
 /**
  * A claim may be cited in a brief only if it is not rejected and either no
  * finding references it, or every finding referencing it is DISPOSITIONED
  * with outcome cleared_for_research or no_concern and a non-stale decision.
+ * A claim quoting any turn a live finding hid is restricted until that
+ * finding is cleared the same way (fail closed, spec section 5).
  */
 export function claimEligibility(claim: EligibilityClaim, findings: readonly EligibilityFinding[]): Eligibility {
   if (claim.status === "rejected") return { eligible: false, reason: "rejected", detail: "the claim was rejected" };
+  const quoted = new Set(claim.turnLabels ?? []);
+  for (const f of findings) {
+    const shared = (f.turnLabels ?? []).filter((t) => quoted.has(t));
+    if (shared.length > 0 && !liveFindingCleared(f)) {
+      return { eligible: false, reason: "restricted", detail: `it quotes ${shared.join(", ")}, which live finding ${f.label} keeps hidden`, finding: f.label };
+    }
+  }
   for (const f of findings) {
     if (f.claimLogicalKey !== claim.logicalKey) continue;
     if (f.state !== "DISPOSITIONED" || !f.decision) {
-      return { eligible: false, reason: "finding_open", detail: `finding ${f.label} is ${f.state}` };
+      return { eligible: false, reason: "finding_open", detail: `finding ${f.label} is ${f.state}`, finding: f.label };
     }
-    if (f.decision.stale) return { eligible: false, reason: "decision_stale", detail: `the decision on finding ${f.label} is stale` };
+    if (f.decision.stale) return { eligible: false, reason: "decision_stale", detail: `the decision on finding ${f.label} is stale`, finding: f.label };
     if (!f.decision.outcome || !RELEASABLE_OUTCOMES.has(f.decision.outcome)) {
-      return { eligible: false, reason: "restricted", detail: `finding ${f.label} was dispositioned ${f.decision.outcome}` };
+      return { eligible: false, reason: "restricted", detail: `finding ${f.label} was dispositioned ${f.decision.outcome}`, finding: f.label };
     }
   }
   return { eligible: true };
@@ -148,6 +169,8 @@ export interface ReleaseCheckInput {
   ineligibleCitations: { claimKey: string; detail: string }[];
   /** Dependents that the in-transaction staleness pass just turned stale. */
   newlyStale: { dependent: string; reason: string }[];
+  /** What `findLeaks` found when comparing the summary with every hidden passage. */
+  leaks: { passage: string; kind: string; detail: string }[];
 }
 
 export interface ReleaseFailure {
@@ -167,7 +190,8 @@ export interface ReleaseFailure {
     | "ATTESTATION_STALE"
     | "NO_TRANSCRIPT"
     | "CLAIM_NOT_ELIGIBLE"
-    | "STALE_DEPENDENCY";
+    | "STALE_DEPENDENCY"
+    | "SUMMARY_LEAK";
   message: string;
   ref?: string;
 }
@@ -212,6 +236,15 @@ export function checkRelease(input: ReleaseCheckInput): ReleaseFailure[] {
   }
   for (const s of input.newlyStale) {
     failures.push({ code: "STALE_DEPENDENCY", message: `${s.dependent} went stale during the release check: ${s.reason}` });
+  }
+  // The message names the passage and what kind of thing leaked, never the matched text, so two
+  // figures from one passage are one line.
+  const leakMessages = new Set<string>();
+  for (const l of input.leaks) {
+    const message = `the summary repeats a ${l.kind} from hidden passage ${l.passage}`;
+    if (leakMessages.has(message)) continue;
+    leakMessages.add(message);
+    failures.push({ code: "SUMMARY_LEAK", message, ref: l.passage });
   }
   return failures;
 }
