@@ -20,9 +20,12 @@ import { POST as postOutage } from "@/app/api/calls/[id]/outages/route";
 import { POST as postToken } from "@/app/api/calls/[id]/stt-token/route";
 import { POST as postTurn } from "@/app/api/calls/[id]/turns/route";
 import { POST as postCall } from "@/app/api/calls/route";
+import { GET as getScriptTurns } from "@/app/api/dev/script-turns/route";
 import { getDb, resetDbForTests } from "@/server/db/client";
 import { users } from "@/server/db/schema";
-import { seedDatabase } from "@/server/services/seed";
+import { loadActor } from "@/server/auth/actor";
+import { callableCases } from "@/server/services/live";
+import { halvorsenLiveTurns, seedDatabase } from "@/server/services/seed";
 import { CASE } from "../helpers/db";
 
 type Handler<P> = (req: NextRequest, ctx: { params: Promise<P> }) => Promise<Response>;
@@ -140,5 +143,40 @@ describe("stt token route", () => {
     const missing = await call(postToken, "priya", { params: { id }, body: {} });
     expect(missing.status).toBe(502);
     expect(missing.json.error.code).toBe("STT_UNAVAILABLE");
+  });
+});
+
+describe("scripted call route", () => {
+  it("is not there unless scripted calls are allowed, whoever asks", async () => {
+    vi.stubEnv("BLINK_ALLOW_SCRIPTED_CALLS", "");
+    for (const who of ["priya", "marcus", null]) {
+      const res = await call(getScriptTurns, who, { method: "GET" });
+      expect(res.status, String(who)).toBe(404);
+      expect(res.json.error.code).toBe("NOT_FOUND");
+    }
+  });
+
+  it("where allowed, gives a banker the scripted turns: speaker and words only", async () => {
+    vi.stubEnv("BLINK_ALLOW_SCRIPTED_CALLS", "1");
+    const res = await call(getScriptTurns, "priya", { method: "GET" });
+    expect(res.status).toBe(200);
+    expect(res.json.turns).toEqual(halvorsenLiveTurns().map((t) => ({ speaker: t.speaker, text: t.text })));
+    expect((await call(getScriptTurns, "marcus", { method: "GET" })).status).toBe(403);
+    expect((await call(getScriptTurns, null, { method: "GET" })).status).toBe(401);
+  });
+});
+
+describe("the control page's cases", () => {
+  const casesOf = (id: string) => callableCases(getDb(), loadActor(getDb(), `user_${id}`)).map((c) => c.id);
+
+  it("a banker sees their own cases at intake, nobody else sees them, and an ended call takes the case off", async () => {
+    expect(casesOf("priya")).toEqual([CASE]);
+    expect(casesOf("sam")).toEqual([]);
+    expect(casesOf("marcus")).toEqual([]);
+    const { id } = await start();
+    expect(casesOf("priya")).toEqual([CASE]); // still at intake while the call is live
+    await call(postTurn, "priya", { params: { id }, body: turn });
+    expect((await call(postEnd, "priya", { params: { id }, body: {} })).status).toBe(200);
+    expect(casesOf("priya")).toEqual([]);
   });
 });

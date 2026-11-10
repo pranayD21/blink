@@ -4,11 +4,9 @@
  */
 import { groundExtraction, resetField } from "@/core/extraction/ground";
 import { type LlmExtraction, type LlmQuestionWire, LlmExtractionSchema } from "@/core/extraction/schema";
-import type { LiveTurn } from "@/core/live/transcript";
-import { parseTranscript } from "@/core/transcript/parse";
 import { EVIDENCE_FIELDS, type EvidenceField } from "@/core/types";
 import type { LiveReader, ReadTurnResult } from "@/server/live/reader";
-import { readFixture, readJson } from "./fixtures";
+import { readJson } from "./fixtures";
 
 /** The question of a turn that asks for no fact. */
 export const NEUTRAL_QUESTION: LlmQuestionWire = {
@@ -21,29 +19,7 @@ export const NEUTRAL_QUESTION: LlmQuestionWire = {
   scope: "unspecified",
 };
 
-const MS_PER_WORD = 375; // about 160 words a minute
-const GAP_MS = 300;
-
-const clockMs = (stamp: string): number => {
-  const [h, m, s] = stamp.split(":").map(Number);
-  return ((h * 60 + m) * 60 + s) * 1000;
-};
-
-/**
- * Transcript v1 as the live app would send it. A moderator's turn is "expert", as it would be on
- * the system-audio channel. Speech starts at the turn's timestamp and ends after a speaking time
- * for its length, but always before the next turn starts.
- */
-export function halvorsenLiveTurns(): LiveTurn[] {
-  const parsed = parseTranscript(readFixture("cases", "halvorsen", "transcript-v1.txt"), { filename: "transcript-v1.txt" }).turns;
-  const starts = parsed.map((t) => clockMs(t.timestamp!));
-  return parsed.map((t, i) => {
-    const start = starts[i];
-    const spoken = start + t.text.split(/\s+/).length * MS_PER_WORD;
-    const end = i + 1 < parsed.length ? Math.min(spoken, starts[i + 1] - GAP_MS) : spoken;
-    return { seq: t.idx, speaker: t.speaker === "analyst" ? "analyst" : "expert", text: t.text, speechStartMs: start, speechEndMs: Math.max(end, start + GAP_MS) };
-  });
-}
+export { halvorsenLiveTurns } from "@/server/services/seed";
 
 const goldExtraction = (): LlmExtraction => LlmExtractionSchema.parse(readJson<{ extraction: unknown }>("cases", "halvorsen", "gold.json").extraction);
 

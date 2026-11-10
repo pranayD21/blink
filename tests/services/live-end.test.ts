@@ -4,6 +4,9 @@
  * reader is a test double and the after-call read uses the hand-labeled claims, so nothing here
  * touches the network.
  */
+import { mkdtempSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { and, eq } from "drizzle-orm";
 import { sql } from "drizzle-orm";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -67,7 +70,13 @@ beforeEach(async () => {
   call = transact((tx) => startCall(tx, { caseId: CASE }, priya()));
 });
 
-afterEach(() => setClockForTests(null));
+afterEach(() => {
+  setClockForTests(null);
+  vi.unstubAllEnvs();
+});
+
+/** The after-call read of this call is recorded (`pnpm record:live`); an empty recordings folder makes it fail for good. */
+const withoutRecordings = () => vi.stubEnv("BLINK_RECORDINGS_DIR", mkdtempSync(join(tmpdir(), "blink-no-recordings-")));
 
 describe("ending a call", () => {
   it("ending uploads the turns as transcript v1, queues the after-call read, and counts what was flagged", async () => {
@@ -202,6 +211,7 @@ describe("ending a call", () => {
   it("if keeping the live flags fails after a failed read, the case is blocked", async () => {
     await feed(22);
     end();
+    withoutRecordings();
     getDb().run(sql`DROP TABLE finding_passages`);
     const logged = vi.spyOn(console, "error").mockImplementation(() => {});
     try {
@@ -221,7 +231,8 @@ describe("ending a call", () => {
     await feed(22);
     const flagged = claimRows().filter((c) => c.flagged !== "none");
     expect(flagged.length).toBeGreaterThanOrEqual(1);
-    // The model read has no recording in replay mode, so the after-call read fails for good.
+    // With no recording in replay mode, the after-call read fails for good.
+    withoutRecordings();
     end();
     await drainJobs();
     expect(issuesOf("LLM_REPLAY_MISS")).toHaveLength(1);

@@ -23,6 +23,8 @@
     "eval": "tsx scripts/eval.ts",
     "record": "BLINK_LLM_MODE=record tsx scripts/record-demo.ts",
     "demo:check": "BLINK_LLM_MODE=replay tsx scripts/record-demo.ts",
+    "record:live": "BLINK_LLM_MODE=record tsx scripts/record-live.ts",
+    "live:check": "BLINK_LLM_MODE=replay tsx scripts/record-live.ts",
     "demo:offline": "sh scripts/offline-demo.sh",
     "audit:verify": "tsx scripts/verify-audit.ts"
   },

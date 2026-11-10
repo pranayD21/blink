@@ -9,6 +9,8 @@
 import { readFileSync, readdirSync } from "node:fs";
 import { resolve } from "node:path";
 import { eq } from "drizzle-orm";
+import type { LiveTurn } from "@/core/live/transcript";
+import { parseTranscript } from "@/core/transcript/parse";
 import { DEMO_USERS, loadActor } from "../auth/actor";
 import { appendAudit } from "../audit/log";
 import { transact } from "../db/client";
@@ -42,6 +44,31 @@ export function halvorsenCaseInput(): CreateCaseInput {
   const packet = readFixtureJson<Record<string, unknown>>("cases", "halvorsen", "packet.json");
   const expert = readFixtureJson<Record<string, unknown>>("cases", "halvorsen", "expert.json");
   return CreateCaseSchema.parse({ ...packet, expert });
+}
+
+const MS_PER_WORD = 375; // about 160 words a minute
+const GAP_MS = 300;
+
+const clockMs = (stamp: string): number => {
+  const [h, m, s] = stamp.split(":").map(Number);
+  return ((h * 60 + m) * 60 + s) * 1000;
+};
+
+/**
+ * Transcript v1 as the live app would send it. A moderator's turn is "expert", as it would be on
+ * the system-audio channel. Speech starts at the turn's timestamp and ends after a speaking time
+ * for its length, but always before the next turn starts. The scripted call (`pnpm record:live`,
+ * the dev route behind `/desktop?source=script`) and the live-call tests all play these turns.
+ */
+export function halvorsenLiveTurns(): LiveTurn[] {
+  const parsed = parseTranscript(readFixtureText("cases", "halvorsen", "transcript-v1.txt"), { filename: "transcript-v1.txt" }).turns;
+  const starts = parsed.map((t) => clockMs(t.timestamp!));
+  return parsed.map((t, i) => {
+    const start = starts[i];
+    const spoken = start + t.text.split(/\s+/).length * MS_PER_WORD;
+    const end = i + 1 < parsed.length ? Math.min(spoken, starts[i + 1] - GAP_MS) : spoken;
+    return { seq: t.idx, speaker: t.speaker === "analyst" ? "analyst" : "expert", text: t.text, speechStartMs: start, speechEndMs: Math.max(end, start + GAP_MS) };
+  });
 }
 
 export function fixturePolicyInput(file: "blink-demo-policy-v1.md" | "blink-demo-policy-v1-broken.md") {

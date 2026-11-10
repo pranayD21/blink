@@ -831,15 +831,15 @@ A deployed Blink always reads live. The scripted call exists so that tests and t
 - Consumes: `runCall`, `TurnSource` (Task 16); `halvorsenLiveTurns` logic, moved from `tests/helpers/live.ts` into `src/server/services/seed.ts` as `halvorsenLiveTurns()` and re-exported by the helper.
 - Produces: `/desktop` for the `analyst` role: the banker's cases still at intake, a Start button per case, Stop while live, and one line of stage dots; `scriptTurnSource(turns, paceMs)`; `GET /api/dev/script-turns` (404 unless `BLINK_ALLOW_SCRIPTED_CALLS=1`); scripts `record:live` and `live:check`.
 
-- [ ] **Step 1: Write `scripts/record-live.ts`.** In a scratch database: seed with the manual policy, start a call as Priya on the Halvorsen case, feed `halvorsenLiveTurns()` through `ingestTurn` with the real reader, end the call, drain the jobs, print each turn's label, pill and read status, and exit 1 unless the pill is red at T11 and no turn has a read status other than `read`. Add:
+- [x] **Step 1: Write `scripts/record-live.ts`.** In a scratch database: seed with the manual policy, start a call as Priya on the Halvorsen case, feed `halvorsenLiveTurns()` through `ingestTurn` with the real reader, end the call, drain the jobs, print each turn's label, pill and read status, and exit 1 unless the pill is red at T11 and no turn has a read status other than `read`. Add:
 
 ```json
 "record:live": "BLINK_LLM_MODE=record tsx scripts/record-live.ts",
 "live:check": "BLINK_LLM_MODE=replay tsx scripts/record-live.ts"
 ```
 
-- [ ] **Step 2: Record.** Run: `pnpm record:live`. Expected: about 22 `live_read-*.json` files and one new `extract-*.json`; exit 0. If T11 is not red, improve `LIVE_SYSTEM` with general guidance only, bump the version, delete the `live_read` recordings and record again, at most three rounds; then stop and ask the owner. Log the spend.
-- [ ] **Step 3: Write the failing browser test.**
+- [x] **Step 2: Record.** Run: `pnpm record:live`. Expected: about 22 `live_read-*.json` files and one new `extract-*.json`; exit 0. If T11 is not red, improve `LIVE_SYSTEM` with general guidance only, bump the version, delete the `live_read` recordings and record again, at most three rounds; then stop and ask the owner. Log the spend.
+- [x] **Step 3: Write the failing browser test.**
 
 ```ts
 test("a scripted call turns the pill red at the source remark and ends with a count", async ({ page, context }) => {
@@ -854,11 +854,11 @@ test("a scripted call turns the pill red at the source remark and ends with a co
 });
 ```
 
-- [ ] **Step 4: Run it and see it fail.** Expected: FAIL, 404 on `/desktop`.
-- [ ] **Step 5: Build the page and the scripted source.** The control page shows no transcript text at any point. With `?source=script` and the server flag set, it uses `scriptTurnSource` fed from the dev route; otherwise `liveTurnSource`. It posts every `PillView` to the `blink-pill` channel, and calls `window.blinkDesktop?.setPillVisible(...)` when that object exists.
-- [ ] **Step 6: Extend `tests/services/recordings.test.ts`** with one case that runs the same script in replay and expects red at T11.
-- [ ] **Step 7: Run the checks.** Run: `pnpm test && pnpm live:check && pnpm e2e`. Expected: PASS.
-- [ ] **Step 8: Commit.**
+- [x] **Step 4: Run it and see it fail.** Expected: FAIL, 404 on `/desktop`.
+- [x] **Step 5: Build the page and the scripted source.** The control page shows no transcript text at any point. With `?source=script` and the server flag set, it uses `scriptTurnSource` fed from the dev route; otherwise `liveTurnSource`. It posts every `PillView` to the `blink-pill` channel, and calls `window.blinkDesktop?.setPillVisible(...)` when that object exists.
+- [x] **Step 6: Extend `tests/services/recordings.test.ts`** with one case that runs the same script in replay and expects red at T11.
+- [x] **Step 7: Run the checks.** Run: `pnpm test && pnpm live:check && pnpm e2e`. Expected: PASS.
+- [x] **Step 8: Commit.**
 
 ```bash
 git add src/app/desktop src/components/live src/lib/live/script-source.ts src/app/api/dev scripts/record-live.ts tests/e2e-live/call.spec.ts tests/services/recordings.test.ts tests/helpers/live.ts src/server/services/seed.ts package.json fixtures/llm-recordings

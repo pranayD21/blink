@@ -170,11 +170,14 @@ const isReply = (r: unknown): r is TurnReply => {
  * Starts a call on `caseId` and runs it until `end()`. `source` may be a factory, because the live
  * source needs the call's id to mint speech-to-text tokens and the id exists only once the call does.
  * Rejects (after ending the server call) if the call cannot be created or the source cannot start.
+ * `onStage` hears each stage go down and come back, for a status line; it carries no cause, since
+ * the pill and the outage record already say why.
  */
 export async function runCall(opts: {
   caseId: string;
   source: TurnSource | ((callId: string) => TurnSource);
   onView: (v: PillView) => void;
+  onStage?: (stage: Stage, up: boolean) => void;
 }): Promise<{ callId: string; end(): Promise<void> }> {
   const { call } = await api<{ call: { id: string } }>("/api/calls", { body: { caseId: opts.caseId } });
   const base = `/api/calls/${encodeURIComponent(call.id)}`;
@@ -225,6 +228,7 @@ export async function runCall(opts: {
     state = reduceClient(state, { type: "stage_up", stage: "reading" });
     state = reduceClient(state, { type: "stage_down", stage: "reading", atMs: now - BROKEN_AFTER_MS - 1 });
     dispatch({ type: "tick", nowMs: now });
+    opts.onStage?.("reading", false);
     console.error(`Blink stopped this call: ${why}.`);
     // Reading is down from here to the end. Record it now if the server will still take it; a reading
     // outage already open is folded in, so the end does not post a second one.
@@ -264,6 +268,7 @@ export async function runCall(opts: {
       if (outages.has(stage)) return;
       outages.set(stage, { startedAtMs: now, cause: cause ?? `${stage} stopped`, shownToBanker: false });
       dispatch({ type: "stage_down", stage, atMs: now });
+      opts.onStage?.(stage, false);
       return;
     }
     const open = outages.get(stage);
@@ -271,6 +276,7 @@ export async function runCall(opts: {
     dispatch({ type: "tick", nowMs: now }); // settles shownToBanker up to this moment
     outages.delete(stage);
     dispatch({ type: "stage_up", stage });
+    opts.onStage?.(stage, true);
     void postOutage(stage, open, now);
   };
 

@@ -6,6 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { PillView } from "@/core/live/client";
 import type { Stage } from "@/core/live/health";
 import { PILL_TEXT } from "@/core/live/pill";
+import { scriptTurnSource } from "@/lib/live/script-source";
 import { type FinishedTurn, type TurnSource, runCall } from "@/lib/live/session";
 
 interface Sent {
@@ -135,6 +136,17 @@ describe("runCall", () => {
     expect(outages[0].body).toMatchObject({ stage: "hearing", cause: "the microphone track ended", startedAt: "2026-11-10T10:00:00.000Z", endedAt: "2026-11-10T10:00:01.000Z", shownToBanker: false });
   });
 
+  it("tells onStage each time a stage goes down and comes back, once each", async () => {
+    const s = scripted();
+    const heard: string[] = [];
+    await runCall({ caseId: "case_1", source: s.source, onView: () => undefined, onStage: (stage, up) => heard.push(`${stage} ${up ? "up" : "down"}`) });
+    s.stage("hearing", false, "the microphone track ended");
+    s.stage("hearing", false, "said again");
+    s.stage("hearing", true);
+    s.stage("transcribing", true); // never went down
+    expect(heard).toEqual(["hearing down", "hearing up"]);
+  });
+
   it("marks an outage shown to the banker when the pill was broken during it", async () => {
     const { stage } = await start();
     stage("transcribing", false, "closed");
@@ -236,5 +248,56 @@ describe("runCall", () => {
     expect(views.at(-1)).toEqual({ level: "ended", text: "Call ended. 2 passages hidden and sent to compliance." });
     await settle(10_000);
     expect(views.at(-1)?.level).toBe("idle");
+  });
+});
+
+describe("scriptTurnSource", () => {
+  const SCRIPT = [
+    { speaker: "analyst" as const, text: "First question." },
+    { speaker: "expert" as const, text: "First answer." },
+    { speaker: "analyst" as const, text: "Thanks." },
+  ];
+
+  it("hands over one turn every pace, timed from start(), and is done after the last", async () => {
+    const source = scriptTurnSource(SCRIPT, 150);
+    const turns: FinishedTurn[] = [];
+    let done = false;
+    void source.done.then(() => (done = true));
+    await source.start((t) => turns.push(t), () => undefined);
+    await settle(149);
+    expect(turns).toHaveLength(0);
+    await settle(1);
+    expect(turns).toHaveLength(1);
+    await settle(300);
+    expect(done).toBe(true);
+    expect(turns.map((t) => [t.speaker, t.text, t.speechStartMs, t.speechEndMs])).toEqual([
+      ["analyst", "First question.", 0, 150],
+      ["expert", "First answer.", 150, 300],
+      ["analyst", "Thanks.", 300, 450],
+    ]);
+    expect(turns[2].transcribedAtMs).toBe(Date.parse("2026-11-10T10:00:00.450Z"));
+  });
+
+  it("stop() hands over nothing more and is done at once", async () => {
+    const source = scriptTurnSource(SCRIPT, 150);
+    const turns: FinishedTurn[] = [];
+    await source.start((t) => turns.push(t), () => undefined);
+    await settle(150);
+    source.stop();
+    await source.done;
+    await settle(1000);
+    expect(turns).toHaveLength(1);
+  });
+
+  it("drives a whole call through runCall: every turn sent in order with its own times", async () => {
+    const source = scriptTurnSource(SCRIPT, 150);
+    await runCall({ caseId: "case_1", source, onView: (v) => views.push(v) });
+    await settle(500);
+    const bodies = only("/turns").map((s) => s.body);
+    expect(bodies.map((b) => [b.seq, b.speaker, b.text, b.speechStartMs, b.speechEndMs])).toEqual([
+      [1, "analyst", "First question.", 0, 150],
+      [2, "expert", "First answer.", 150, 300],
+      [3, "analyst", "Thanks.", 300, 450],
+    ]);
   });
 });

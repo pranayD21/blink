@@ -13,8 +13,9 @@ import { jobs, llmCalls } from "@/server/db/schema";
 import { runEval } from "@/server/eval/run";
 import { drainJobs } from "@/server/jobs/runner";
 import { listDocuments } from "@/server/services/documents";
+import { endCall, ingestTurn, startCall, turnsSettled } from "@/server/services/live";
 import { approvePolicy, createPolicy, policyDetail, requestCompile } from "@/server/services/policies";
-import { fixturePolicyInput, readFixtureText, seedDatabase } from "@/server/services/seed";
+import { fixturePolicyInput, halvorsenLiveTurns, readFixtureText, seedDatabase } from "@/server/services/seed";
 import { uploadTranscript } from "@/server/services/transcripts";
 import { loadWorkspace } from "@/server/services/workspace";
 import { CASE, seedEmpty, user } from "../helpers/db";
@@ -111,5 +112,35 @@ describe("pnpm eval in replay mode", () => {
       expect(f.quotes.valid, f.id).toBe(f.quotes.proposed);
       for (const c of f.comparisons ?? []) expect(c.ok, `${f.id} comparison at ${c.turn}`).toBe(true);
     }
+  });
+});
+
+describe("the scripted live call replays (pnpm live:check)", () => {
+  beforeAll(async () => {
+    resetDbForTests();
+    // The live e2e server's starting point: the manual policy, document facts extracted, Halvorsen at intake.
+    await seedDatabase({ manualPolicy: true });
+    await drainJobs();
+  });
+
+  it("the real live reader turns the pill red at T11, reads every turn, and the after-call read runs", async () => {
+    const priya = user("priya");
+    const call = transact((tx) => startCall(tx, { caseId: CASE }, priya));
+    const at = (ms: number) => new Date(Date.parse("2026-11-10T15:00:00.000Z") + ms).toISOString();
+    const decisions = [];
+    for (const t of halvorsenLiveTurns()) decisions.push(await ingestTurn(call.id, { ...t, speechEndedAt: at(t.speechEndMs), transcribedAt: at(t.speechEndMs + 200) }, priya));
+    await turnsSettled(call.id);
+
+    expect(decisions.map((d) => d.readStatus).filter((s) => s !== "read")).toEqual([]);
+    expect(decisions[10]).toMatchObject({ seq: 11, pill: { level: "red" } });
+    expect(decisions.slice(0, 10).map((d) => d.pill.level)).not.toContain("red");
+
+    const ended = transact((tx) => endCall(tx, call.id, priya));
+    expect(ended.hiddenCount).toBeGreaterThan(0);
+    await drainJobs();
+    expect(failedJobs()).toEqual([]);
+    const live = getDb().select().from(llmCalls).where(eq(llmCalls.stage, "live_read")).all();
+    expect(live).toHaveLength(22);
+    expect(getDb().select().from(llmCalls).all().every((c) => c.replayed)).toBe(true);
   });
 });

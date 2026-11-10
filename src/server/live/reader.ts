@@ -10,13 +10,19 @@ import { type GroundedClaim, type GroundingIssue, type GroundingResult, type Gro
 import { type LlmExtraction, type LlmQuestionWire, LlmLiveReadWireSchema, claimFromWire } from "@/core/extraction/schema";
 import type { CaseContext, ExpertProfile } from "@/core/types";
 import { nowMs } from "../clock";
-import { LlmError, LlmRefusal, LlmTimeout, structuredCall } from "../llm/client";
+import { LlmError, LlmRefusal, LlmTimeout, llmMode, structuredCall } from "../llm/client";
 import { LIVE_PROMPT_VERSION, LIVE_STAGE, LIVE_SYSTEM, buildLiveContext, buildLiveUser } from "../llm/prompts/live";
 
 export const LIVE_MODEL = () => process.env.BLINK_LIVE_MODEL || "claude-haiku-5-5";
 
 /** A turn the reader cannot finish in this time is recorded as not read live. */
 export const READ_TIMEOUT_MS = 2500;
+/**
+ * A recording run waits for the whole answer instead: it records what the reader says, and the
+ * time limit is not part of the request hash, so replay serves the same answer. Live and replay
+ * keep READ_TIMEOUT_MS.
+ */
+export const RECORD_TIMEOUT_MS = 30_000;
 
 export interface ReadTurnInput {
   ctx: CaseContext;
@@ -49,7 +55,7 @@ export const readTurn: LiveReader = async (input) => {
       maxTokens: 2000,
       model: LIVE_MODEL(),
       thinking: "disabled",
-      timeoutMs: READ_TIMEOUT_MS,
+      timeoutMs: llmMode() === "record" ? RECORD_TIMEOUT_MS : READ_TIMEOUT_MS,
       maxRetries: 0,
       ref: input.ref,
     });

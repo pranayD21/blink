@@ -102,6 +102,31 @@ export function startCall(tx: DbOrTx, input: z.infer<typeof StartCallSchema>, ac
   return row;
 }
 
+/** Whether the scripted call may run (`/desktop?source=script`): development and tests only, never a deployed Blink. */
+export const scriptedCallsAllowed = (): boolean => process.env.BLINK_ALLOW_SCRIPTED_CALLS === "1";
+
+export interface CallableCase {
+  id: string;
+  title: string;
+  issuer: string;
+  ticker: string;
+}
+
+/**
+ * The cases a banker can start a call on: their own, still at intake with no transcript, as
+ * `startCall` requires. Names only: nothing said on any call.
+ */
+export function callableCases(db: DbOrTx, actor: Actor): CallableCase[] {
+  if (actor.role !== "analyst") return [];
+  return db
+    .select({ id: cases.id, title: cases.title, issuer: cases.issuer, ticker: cases.ticker })
+    .from(cases)
+    .where(and(eq(cases.createdBy, actor.id), eq(cases.status, "INTAKE")))
+    .orderBy(desc(cases.createdAt))
+    .all()
+    .filter((c) => !currentTranscript(db, c.id));
+}
+
 /** The call, for the banker who started it. Anyone else gets a 404. */
 export function getCallForActor(db: DbOrTx, callId: string, actor: Actor): CallRow {
   const row = db.select().from(calls).where(eq(calls.id, callId)).get();

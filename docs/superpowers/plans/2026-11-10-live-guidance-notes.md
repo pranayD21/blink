@@ -96,6 +96,7 @@ When the owner has reported, the next step is to fill in the answers here, write
 | 2026-11-10 | 2 | Deepgram Flux: about 47 real-time streams of 7 to 8 s each, roughly 6 minutes of audio (estimate at the pay-as-you-go streaming rate; the console shows the exact figure) | about $0.05 |
 | 2026-11-10 | 5 | Anthropic: re-recorded every fixture after the prompt cleanup, one round. `pnpm record` made 19 live `claude-opus-5-5` calls ($1.19, as the script reports); `BLINK_LLM_MODE=record pnpm eval` added 8 extraction calls (about $0.32). Total from the 27 recordings' token counts priced by `costUsd` | $1.51 |
 | 2026-11-10 | 5 (fix round 1) | Anthropic: re-recorded only the stages whose request text changed: 10 live `claude-opus-5-5` calls (6 docfacts, 3 assembly, 1 scenarios), as `pnpm record` reports; the eval reused every recording | $0.43 |
+| 2026-11-10 | 17 | Anthropic: `pnpm record:live`, two runs. Run 1 (2.5 s limit): 11 `claude-haiku-5-5` reads completed and 11 timed out (aborted; their partial cost is not reported), plus 1 `claude-opus-5-5` after-call extraction, $0.200 as the script reports. Run 2 (record-mode limit 30 s): 19 Haiku reads, $0.007; the extraction and 3 reads were reused. 8 recordings left orphaned by run 1 were deleted | about $0.21 |
 
 ## Waiting on the owner
 
@@ -155,3 +156,17 @@ The SDK's per-request `timeout` stops counting once the response headers arrive,
   - Every retry of the same turn, outage or acknowledgement reuses one `Idempotency-Key`. The server stores only successes, so a retry after an error runs again, and a retry after a lost success is replayed.
   - A 2xx turn reply with an unusable shape is not retried: nothing is shown for that turn, and a momentary `reading` outage records why.
   - A refusal that stops the call also records an open `reading` outage, unless the server would refuse that too (401, 403, 404 or `CALL_NOT_LIVE`).
+
+## Task 17: the control page and the scripted call
+
+- **Every turn with a claim takes longer than the 2.5 s live limit.** In the first `pnpm record:live` run, 11 of 22 reads timed out: every expert turn that carries a claim (about 500 output tokens) and some empty ones. The 11 that finished took 1.1 to 2.5 s with about 80 output tokens and no claims. A deployed Blink on Haiku 5.5 would therefore record those turns as not read live and never turn the pill red during the call; the after-call read would still hide them. This is the Task 2 `haiku-slow` verdict seen on the real form, and it is the owner's to weigh (it is in "Waiting on the owner" already).
+- **Deviation: recording waits for the whole answer.** `readTurn` uses `RECORD_TIMEOUT_MS` (30 s) instead of `READ_TIMEOUT_MS` (2.5 s) when `BLINK_LLM_MODE=record`. The limit is not part of the request hash, so replay serves the same answers, and live and replay keep 2.5 s. Without this no recording run could finish, because the turns that matter are exactly the slow ones.
+- `LIVE_SYSTEM` was not changed: the pill was red at T11 on the first full recording (round 1 of 3).
+- What the scripted call shows, replayed, in both `pnpm live:check` and the browser test: red at T11 (C8: R1, R2, R4), T13 (C10: R4) and T15 (C12: R3). C13 at T17 is needs-context on R1. 4 passages hidden. Compared with the gold after-call findings (T5+T11, T15, T17 needs-context), T13 is an extra flag: the gold compares T13 to a public figure (exact match). It is worth looking at when the thresholds are tuned on the development calls.
+- The after-call read of the live transcript is now recorded (`extract-83017799ad425e1e.json`). Two tests in `live-end.test.ts` relied on it failing in replay, so they now point `BLINK_RECORDINGS_DIR` at an empty folder.
+- Additions beyond the brief's signatures:
+  - `scriptTurnSource(turns, paceMs)` also returns `done`, a promise that resolves after the last turn. The control page ends a scripted call there, since the browser test never presses Stop.
+  - `runCall` takes an optional `onStage(stage, up)`, which drives the control page's stage dots. Without it the reading stage cannot be seen from outside the session.
+  - `callableCases(db, actor)` and `scriptedCallsAllowed()` live in `src/server/services/live.ts`. The flag is not in `src/server/env.ts`, because importing that file into the app makes Turbopack trace the whole project.
+  - `GET /api/dev/script-turns` checks the flag before the session, so without it everyone gets 404, even with no cookie. With it, a banker gets `{ turns: [{ speaker, text }] }`, a reviewer gets 403, and a request with no cookie gets 401.
+- `?pace=` is clamped to 50 to 10,000 ms (default 1,500). The control page shows a one-line note when a call is scripted.
