@@ -40,6 +40,43 @@ verdict: haiku-slow
 
 What this does and does not say: the verdict is for Haiku 5.5 with this form size and Flux with the plan's `eot_threshold=0.8`. Two levers sit inside the plan and were not tried here: a smaller form (fewer fields means fewer output tokens), and starting the reader on `EagerEndOfTurn` instead of waiting for `EndOfTurn` (Flux's `eager_eot_threshold`). Either could cut a second or more, and neither needs a different vendor. They are for the owner and the next planning step to weigh, not something this spike decided.
 
+## Spike: Mac app
+
+Task 3 Step 1, 2026-11-10. The app is built and packaged; what it can hear is not yet known. Steps 2 to 5 wait on the owner (below). Nothing in this section is a measurement yet.
+
+**What was built.** A throwaway Electron 45.2.3 app (latest stable), packaged with `@electron/packager` 20.3.0 for Apple silicon, bundle id `dev.blink.spike`, ad-hoc signed with `codesign --force --deep --sign -` (verified with `codesign --verify --deep --strict`). `NSAudioCaptureUsageDescription` and `NSMicrophoneUsageDescription` are in its `Info.plist`. Source is in the git-ignored `spike/mac/` (`main.js`, `pill.html`, `control.html`, `preload.js`). A self-test (`--selftest`) was run on the packaged app: both windows were created, it printed `pillAlwaysOnTop: true`, pill bounds 600 by 56 at the top centre of the main display, and exited 0. That proves the app launches and the pill window is set up; it does not prove the pill stays above Zoom, and it did not touch the microphone or system audio.
+
+The app has two windows:
+- **The pill**: a red rounded bar reading "Sounds like inside information. Move on.", 600 by 56, top centre, on top of everything, visible on every Space and over full-screen apps, ignoring the mouse (clicks go through it). It cannot be focused or dragged.
+- **The control window** ("Blink Spike"): three buttons, a track list, a level meter per channel, a summary and a log. `Start` asks for the microphone, then runs `getUserMedia({ audio: true })` and `getDisplayMedia({ video: true, audio: true })`; the app answers the second with `{ video: <first screen>, audio: "loopback" }`. `Start (system audio only, no video)` does the same but the app answers `{ audio: "loopback" }` with no `video`, which is the Step 3 question about Screen Recording permission. `Stop` ends the tracks.
+
+**For the owner (Step 2), about ten minutes.**
+
+App: `/Users/shaunikm/Documents/blink/spike/mac/dist/Blink Spike-darwin-arm64/Blink Spike.app`
+
+1. Open it with Finder (open the `dist/Blink Spike-darwin-arm64` folder and double-click "Blink Spike"), or in Terminal run `open "/Users/shaunikm/Documents/blink/spike/mac/dist/Blink Spike-darwin-arm64/Blink Spike.app"`. Do not run the inner `Contents/MacOS/Blink Spike` file from Terminal or an IDE: macOS would then credit the permission to the Terminal, not to this app, and the system-audio track would be silently dead. If macOS says the app cannot be opened because it is from an unidentified developer, right-click it, choose Open, then Open again.
+2. Two windows appear: a red pill at the top centre of the screen and the "Blink Spike" window.
+3. In the "Blink Spike" window click **Start**. Two permission prompts may appear; allow both:
+   - **Microphone**: click Allow.
+   - **System Audio Recording**: if a prompt appears, click Allow. If none appears and the System row stays dead, open System Settings > Privacy & Security > Screen & System Audio Recording, scroll to the "System Audio Recording Only" list (it may be the second list on the page), switch **Blink Spike** on (use the + button to add it if it is not listed), then quit the app (Cmd+Q) and open it again; macOS needs a restart of the app after a change.
+   - If macOS also asks for **Screen Recording**, allow it for now, and write down that it asked.
+4. Check the Tracks line: the `mic` row and the `system` row should both say `readyState=live`. Write down what each says.
+5. Open the Zoom app, then `https://zoom.us/test` and join the test meeting. Play the speaker test (the ringtone and the sample) with the laptop speakers, not headphones, and watch the two level meters in the "Blink Spike" window.
+6. While the speaker test plays, look at the Summary lines: they give how loud the system audio was, and how loud the microphone was in the same moments.
+7. With Zoom windowed, look at the pill: is it above the Zoom window? Then put Zoom full screen (green button, or Ctrl+Cmd+F), move your pointer to the top and check again, and try switching to another Space with a swipe. Write down whether the pill stayed on top each time. Click on the pill once: the click should pass through to Zoom.
+8. Click **Stop**, then **Start (system audio only, no video)**, play the Zoom speaker test again and note whether the system track is `live` and the level meter moves. If it fails, the Log box says why (for example `getDisplayMedia FAILED`). If this button makes macOS ask about Screen Recording, note that too.
+9. The same log is written to `/tmp/blink-spike-mac.log` (every line has a time); you can send that file instead of copying from the window.
+
+**What to report back (Step 3 asks for these five, plus one):**
+1. Is the system-audio track `live`, with a moving level, while Zoom plays? (Step 3, question 1)
+2. Is the microphone track `live`? (question 2)
+3. Does the pill stay above Zoom windowed and full screen? (question 3)
+4. In the "system audio only, no video" run, does audio still arrive? Which prompts did macOS show for each button, in particular was Screen Recording asked for? (question 4; this decides `audio grant: audio-only` against `audio grant: needs-video`)
+5. With laptop speakers, how much of the far side reaches the microphone channel? Send the two "average ... level in those moments" lines from the Summary box. (question 5)
+6. Anything odd: a prompt that never appeared, a restart you needed, the pill flickering or covering Zoom's buttons.
+
+When the owner has reported, the next step is to fill in the answers here, write `verdict: mac-app` or `verdict: fallback`, write `audio grant: audio-only` or `audio grant: needs-video`, and commit (Task 3 Steps 3 to 5).
+
 ## Spend log
 
 | Date | Task | What ran | Dollars |
@@ -50,3 +87,7 @@ What this does and does not say: the verdict is for Haiku 5.5 with this form siz
 ## Waiting on the owner
 
 - Task 2 Step 5: the verdict is `haiku-slow`, so the owner decides whether to take Groq out of the backlog (spec section 6). Until they answer, the plan continues with Haiku 5.5.
+- Task 3 Step 2: open the packaged app at `/Users/shaunikm/Documents/blink/spike/mac/dist/Blink Spike-darwin-arm64/Blink Spike.app`, press Start, allow Microphone and System Audio Recording, play the Zoom test meeting's speaker test. Instructions are in "Spike: Mac app".
+- Task 3 Step 3: waits on Step 2. The answers (system track live, mic track live, pill above Zoom, audio without video, far-side level in the mic) are filled in from the owner's report.
+- Task 3 Step 4: waits on Step 3. Writes `verdict: mac-app` or `verdict: fallback` and `audio grant: audio-only` or `needs-video`; Tasks 18 and 19 read them (Task 18 assumes `needs-video` until then).
+- Task 3 Step 5: waits on Step 4. Commit the notes as `docs(spike): record what the Mac app can hear and show`.

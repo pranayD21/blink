@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Throwaway spike code (git-ignored) must never break the checks.
+    "spike/**",
   ]),
 ]);
 
