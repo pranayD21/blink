@@ -5,8 +5,11 @@ FROM node:26-bookworm-slim
 
 # A fallback only: better-sqlite3 13 ships N-API prebuilds for linux-x64 and linux-arm64 inside its
 # package, so nothing compiles. The tools are here in case a future version or platform has none.
+# procps is not a fallback: it provides `ps`, which concurrently (through tree-kill) runs to stop
+# the web server and the worker. Without it, every stop or redeploy ended in "spawn ps ENOENT" and a
+# crash report.
 RUN apt-get update \
-  && apt-get install -y --no-install-recommends python3 make g++ \
+  && apt-get install -y --no-install-recommends python3 make g++ procps \
   && rm -rf /var/lib/apt/lists/*
 
 ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0 \

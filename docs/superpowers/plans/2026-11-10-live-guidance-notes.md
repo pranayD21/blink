@@ -356,3 +356,4 @@ Step 1 is done: `pnpm live:prepare` (`scripts/prepare-live-call.sh`) resets `dat
 - **No second round.** No labelled turn is still missed. `chu` states no company fact, and flagging talk about evading regulators or records would need a new kind of claim or predicate.
 - **Step 5 wrote no coverage file:** no turn was extracted but not flagged, in any run.
 
+- **Crash on stop (fixed after Task 43).** When a second deploy at 22:56 replaced the first container, its shutdown crashed with `Error: spawn ps ENOENT`. Railway reported that as a crash, though the new deploy came up healthy. `concurrently -k` stops its children through tree-kill, which runs `ps`, and `node:26-bookworm-slim` has no `ps`. The image now installs `procps`. The fix takes effect from the next deploy on; the container it replaces still lacks `ps`, so it can crash once more on its way out.
