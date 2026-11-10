@@ -15,6 +15,8 @@
     "test": "vitest run",
     "e2e": "playwright test",
     "eval": "tsx scripts/eval.ts",
+    "record": "BLINK_LLM_MODE=record tsx scripts/record-demo.ts",
+    "demo:check": "BLINK_LLM_MODE=replay tsx scripts/record-demo.ts",
     "audit:verify": "tsx scripts/verify-audit.ts"
   },
   "dependencies": {
