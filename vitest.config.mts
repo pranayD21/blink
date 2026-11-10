@@ -6,7 +6,7 @@ export default defineConfig({
     alias: { "@": fileURLToPath(new URL("./src", import.meta.url)) },
   },
   test: {
-    include: ["tests/core/**/*.test.ts", "tests/services/**/*.test.ts", "tests/desktop/**/*.test.ts"],
+    include: ["tests/core/**/*.test.ts", "tests/services/**/*.test.ts", "tests/desktop/**/*.test.ts", "tests/components/**/*.test.ts"],
     environment: "node",
     // Unit and service tests must never reach the network (§18.1).
     // Tests act as demo users through the switcher; the sign-in tests switch to password mode themselves.
