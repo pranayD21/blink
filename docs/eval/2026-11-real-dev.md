@@ -16,10 +16,9 @@ Spec section 11 asks how Blink does on real material. This is the development se
 
 Each (call, policy) pair is its own case with its own model call, so extraction varies from one pair to the next.
 
-- **Hidden:** a labelled turn is hidden when a claim quotes it and that claim's monitors end in `REVIEW_REQUIRED`, `ESCALATION_REQUESTED` or `NEEDS_CONTEXT`. A guard conflict at any step counts as `REVIEW_REQUIRED`, as it does in the app.
-  - The runs below read a conflict only on each monitor's last step. The rule was widened after review, and the scores could not be recomputed from the saved files, which hold no monitor steps.
-  - The labelled counts cannot change: every labelled turn is either already hidden or quoted by no claim.
-  - "Other passages hidden" could only rise. That has not been re-measured.
+- **Hidden:** a labelled turn is hidden when a claim quotes it and the case has a policy finding on that claim that compliance has not cleared. That is what the app hides on (`restrictedOnCase`, `hiddenBy`).
+  - The runs below were scored by an equivalent rule: the claim's monitors end in `REVIEW_REQUIRED`, `ESCALATION_REQUESTED` or `NEEDS_CONTEXT`, or the last step has a guard conflict.
+  - The two rules agree, because a freshly uploaded case gets exactly one evaluation pass (the `analyze_transcript` job's `reevaluateCase`). In that pass the app opens a finding exactly when the last step has a conflict or its monitors end in one of those states (`settlesQuietly` in `persistMonitorRuns`).
 - **Not extracted:** no claim quotes the turn.
 - **Not flagged:** a claim quotes the turn, but nothing flags it. `coverage-<policy>.json` then says whether the policy has a clause that covers it.
 - **Other passages hidden:** unlabelled turns that a flagged claim quotes.
@@ -100,6 +99,7 @@ Five labelled statements is far too few to tell "90%" from "80%". The first bar'
 - **The comparison with public documents.** The scratch database has no document set for these companies, so every "already public" check was unknown.
 - **The live path.** Only the after-call pipeline ran. Section 11's audio run of each call is a separate task.
 - **The sealed set** (Einhorn, Dotson) was not opened. It is run once, at the end, by a separate session.
+- **`--counts-only` does not cover one log line.** When a job's failure hook throws, `src/server/jobs/runner.ts` prints the whole error to stderr, whatever `--counts-only` says. That code is outside the eval harness and was left as it is.
 
 ## Spend
 

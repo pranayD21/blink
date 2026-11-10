@@ -344,7 +344,7 @@ Step 1 is done: `pnpm live:prepare` (`scripts/prepare-live-call.sh`) resets `dat
 ## Task 37: the real development set, scored
 
 - **Run order:** after Tasks 42 and 43, at the owner's request.
-- **How a call is scored:** `pnpm eval:real` makes a case per (call, policy) in a scratch database, uploads the transcript, and runs the `analyze_transcript` job. A labelled turn is "hidden" when a claim quotes it and that claim's monitors end in `REVIEW_REQUIRED`, `ESCALATION_REQUESTED` or `NEEDS_CONTEXT`. A guard conflict counts as review, as in the app. AI-suggested concerns are not counted.
+- **How a call is scored:** `pnpm eval:real` makes a case per (call, policy) in a scratch database, uploads the transcript, and runs the `analyze_transcript` job. A labelled turn is "hidden" when a claim quotes it and the case has an uncleared policy finding on that claim, which is the app's own hiding rule. The published runs used the equivalent rule (monitors end in a hiding state, or the last step has a conflict); the two agree because a fresh case gets one evaluation pass. AI-suggested concerns are not counted.
 - **Each policy gets its own extraction.** The extraction request does not depend on the policy, so the policies differ partly by extraction variance. That is the brief's "after-call pipeline under each policy", taken literally.
 - **Policies:**
   - Real policies are loaded with `allowCoverageGaps` (oaktree 10, sage-rock 7 and tcw 10 blocking coverage issues) and stored through `finalizeCompile`, so they end `COMPILE_FAILED`. They are never approved; the case's `active_policy_version_id` is set directly.

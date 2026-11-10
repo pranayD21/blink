@@ -16,13 +16,15 @@ import { sha256Hex } from "@/core/deps/hash";
 import { type Inventory, type Monitor, MonitorsDocSchema, type RulesDoc, RulesDocSchema } from "@/core/policy/schema";
 import { type ValidationIssue, compileRules } from "@/core/policy/validate";
 import type { CompiledPolicy } from "@/core/runtime/evaluateClaim";
+import { findingCleared } from "@/core/workflow/brief";
 import { aggregateMonitorStates } from "@/core/workflow/finding";
 import { loadActor } from "../auth/actor";
 import { getDb, transact } from "../db/client";
-import { cases, llmCalls, monitorEvaluations, monitorInstances } from "../db/schema";
+import { cases, llmCalls, monitorInstances } from "../db/schema";
 import { drainJobs } from "../jobs/runner";
 import { costUsd } from "../llm/client";
 import { latestRun } from "../services/analysis";
+import { eligibilityForCase } from "../services/briefs";
 import { CreateCaseSchema, createCase } from "../services/cases";
 import { createPolicy, finalizeCompile, loadManualFallback } from "../services/policies";
 import { loadCurrentClaims } from "../services/loaders";
@@ -176,13 +178,14 @@ const turnNo = (label: string) => Number(/\d+/.exec(label)?.[0] ?? Number.MAX_SA
 const byTurn = (a: string, b: string) => turnNo(a) - turnNo(b) || a.localeCompare(b);
 
 /**
- * Scores one call under one policy. A labelled turn is hidden when a claim whose monitors end in REVIEW_REQUIRED,
- * ESCALATION_REQUESTED or NEEDS_CONTEXT quotes it; not extracted when no claim quotes it; otherwise extracted but not
- * flagged. Pure: the caller supplies the claims and the coverage judgements.
+ * Scores one call under one policy. A labelled turn is hidden when a hidden claim quotes it; not extracted when no
+ * claim quotes it; otherwise extracted but not flagged. A claim is hidden when `hidden` says so (the runner sets it
+ * from the case's uncleared policy findings), or, when `hidden` is not given, when its monitors end in
+ * REVIEW_REQUIRED, ESCALATION_REQUESTED or NEEDS_CONTEXT. Pure: the caller supplies the claims and the coverage.
  */
-export function scoreRealCase(labels: { turn: string }[], claims: { turns: string[]; state: string }[], coverage: Record<string, boolean>, meta: { id?: string; policy?: string } = {}): RealCaseScore {
+export function scoreRealCase(labels: { turn: string }[], claims: { turns: string[]; state: string; hidden?: boolean }[], coverage: Record<string, boolean>, meta: { id?: string; policy?: string } = {}): RealCaseScore {
   const labelled = [...new Set(labels.map((l) => l.turn))].sort(byTurn);
-  const hiddenTurns = new Set(claims.filter((c) => HIDING_STATES.includes(c.state)).flatMap((c) => c.turns));
+  const hiddenTurns = new Set(claims.filter((c) => c.hidden ?? HIDING_STATES.includes(c.state)).flatMap((c) => c.turns));
   const quoted = new Set(claims.flatMap((c) => c.turns));
   const score: RealCaseScore = { id: meta.id ?? "", policy: meta.policy ?? "", labelled: labelled.length, hidden: 0, notExtracted: [], extractedNotFlagged: [], otherHidden: 0, hiddenTurns: [...hiddenTurns].sort(byTurn), claims: claims.length, error: null, spendUsd: null, run: 1 };
   for (const turn of labelled) {
@@ -266,18 +269,20 @@ function installPolicies(names: string[]): InstalledPolicy[] {
 }
 
 /**
- * Each claim's turns and its monitors' aggregate end state. A guard conflict at any step opens review, as the app
- * does when it opens the finding (§7.1, `persistMonitorRuns`).
+ * Each claim's turns, whether the app would hide what it quotes, and (for the report) its monitors' aggregate end
+ * state. Hidden is read the way `restrictedOnCase` and `hiddenBy` read it: the case has a policy finding on the
+ * claim that compliance has not cleared. So the app's own rules decide, including `persistMonitorRuns` opening no
+ * finding for a claim that settles quietly, and nothing here re-derives them from monitor states.
  */
 function claimStates(caseId: string, policyVersionId: string) {
   const db = getDb();
+  const findings = eligibilityForCase(db, caseId).findings.filter((f) => f.origin === "policy" && !findingCleared(f));
   return loadCurrentClaims(db, caseId)
     .filter((c) => c.row.status !== "rejected")
     .map((c) => {
       const instances = db.select().from(monitorInstances).where(and(eq(monitorInstances.caseId, caseId), eq(monitorInstances.claimLogicalKey, c.row.logicalKey), eq(monitorInstances.policyVersionId, policyVersionId))).all();
-      const conflict = instances.some((i) => db.select({ id: monitorEvaluations.id }).from(monitorEvaluations).where(and(eq(monitorEvaluations.instanceId, i.id), eq(monitorEvaluations.conflictFlag, true))).limit(1).get());
-      const state = conflict ? "REVIEW_REQUIRED" : aggregateMonitorStates(instances.map((i) => i.state));
-      return { key: c.row.logicalKey, turns: c.turnLabels, state, speaker: c.fields.speaker, summary: c.fields.summary, quotes: c.quotes.map((q) => `${q.turnLabel}: "${q.quote}"`) };
+      const hidden = findings.some((f) => f.claimLogicalKey === c.row.logicalKey);
+      return { key: c.row.logicalKey, turns: c.turnLabels, hidden, state: aggregateMonitorStates(instances.map((i) => i.state)), speaker: c.fields.speaker, summary: c.fields.summary, quotes: c.quotes.map((q) => `${q.turnLabel}: "${q.quote}"`) };
     });
 }
 
@@ -407,7 +412,7 @@ export async function runRealEval(opts: RealEvalOptions): Promise<RealCaseScore[
       log(countsLine(score, opts.countsOnly));
       if (!opts.countsOnly) {
         for (const c of claims) {
-          log(`    ${c.key} ${c.turns.join("+")} · ${c.speaker} · ${c.state} · ${c.summary}`);
+          log(`    ${c.key} ${c.turns.join("+")} · ${c.speaker} · ${c.hidden ? "hidden" : "not hidden"} (monitors ${c.state}) · ${c.summary}`);
           for (const q of c.quotes) log(`        ${q}`);
         }
       }

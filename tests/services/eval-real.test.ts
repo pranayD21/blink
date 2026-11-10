@@ -11,7 +11,29 @@ import { resetDbForTests } from "@/server/db/client";
 import { type RealCaseScore, readCoverage, repeatAgreement, runRealEval, scoreRealCase } from "@/server/eval/real";
 import { words } from "../helpers/prompt-leak";
 
-const stub = vi.hoisted(() => ({ extraction: null as unknown }));
+const stub = vi.hoisted(() => ({ extraction: null as unknown, conflictAt: null as "first" | "last" | null }));
+/**
+ * When `conflictAt` is set, every monitor's steps end NOT_TRIGGERED and carry a guard conflict on only the first or
+ * only the last step: the two cases where the app's finding rule (`settlesQuietly`) gives different answers.
+ */
+vi.mock("@/core/runtime/evaluateClaim", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/core/runtime/evaluateClaim")>();
+  return {
+    ...actual,
+    evaluateClaim: (input: Parameters<typeof actual.evaluateClaim>[0]) => {
+      const result = actual.evaluateClaim(input);
+      if (!stub.conflictAt) return result;
+      return {
+        ...result,
+        monitors: result.monitors.map((m) => {
+          const last = m.steps.length - 1;
+          const steps = m.steps.map((step, i) => ({ ...step, prevState: i === 0 ? m.startState : "NOT_TRIGGERED", nextState: "NOT_TRIGGERED", effects: [], conflictFlag: i === (stub.conflictAt === "first" ? 0 : last) }));
+          return { ...m, finalState: "NOT_TRIGGERED", steps };
+        }),
+      };
+    },
+  };
+});
 vi.mock("@/server/llm/client", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/server/llm/client")>();
   return {
@@ -276,6 +298,35 @@ describe("runRealEval", () => {
     expect(() => readCoverage(join(root, "made-up"), "tcw")).toThrow();
     writeFileSync(join(root, "made-up", "coverage-tcw.json"), JSON.stringify({ T4: { covered: true, clause: "P9" } }));
     expect(readCoverage(join(root, "made-up"), "tcw")).toEqual({ T4: true });
+  });
+
+  it("hides what the app hides: a conflict only at an earlier step settles quietly, one at the last step opens a finding", async () => {
+    // One industry claim quoting two turns, so its monitors take two steps.
+    stub.extraction = {
+      ...EXTRACTION,
+      claims: [
+        wireClaim({
+          logical_key: "C1",
+          summary: "The industry is growing slowly.",
+          subject_kind: "industry",
+          subject_name: "",
+          quotes: [
+            { turn_id: "T2", quote: "Our internal dashboard showed widget orders fell by a third this quarter", role: "primary", supports_fields: [] },
+            { turn_id: "T4", quote: "The industry overall is growing slowly, according to the trade press.", role: "context", supports_fields: [] },
+          ],
+        }),
+      ],
+    };
+    stub.conflictAt = "first";
+    try {
+      const [early] = await runRealEval({ dir: root, policies: ["oaktree"], countsOnly: true, log: () => undefined });
+      expect(early).toMatchObject({ error: null, hidden: 0, hiddenTurns: [], extractedNotFlagged: [{ turn: "T2" }, { turn: "T4" }] });
+      stub.conflictAt = "last";
+      const [late] = await runRealEval({ dir: root, policies: ["oaktree"], countsOnly: true, log: () => undefined });
+      expect(late).toMatchObject({ error: null, hidden: 2, hiddenTurns: ["T2", "T4"] });
+    } finally {
+      stub.conflictAt = null;
+    }
   });
 
   it("refuses an unknown policy name", async () => {
