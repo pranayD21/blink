@@ -11,7 +11,7 @@
  * A call's record is for compliance reviewers. The overview is also for the policy owner, and
  * carries no word said on any call.
  */
-import { desc, eq, inArray } from "drizzle-orm";
+import { desc, eq, inArray, sql } from "drizzle-orm";
 import type { GroundedClaim } from "@/core/extraction/ground";
 import { describeMoment } from "@/core/live/describe";
 import { STAGES, type Stage } from "@/core/live/health";
@@ -82,7 +82,8 @@ export interface CallsOverview {
   unhidden: number;
   typicalCostUsd: number | null;
   stages: StageView[];
-  problems: { at: string; callId: string; title: string; text: string }[];
+  /** For the policy owner, who may not open a call, `callId` is null and `title` is empty. */
+  problems: { at: string; callId: string | null; title: string; text: string }[];
   recent: { callId: string; title: string; startedAt: string; turns: number; warnings: number }[];
 }
 
@@ -170,32 +171,79 @@ function stageViews(outages: readonly { stage: Stage; ms: number }[]): StageView
   });
 }
 
-/** The model calls a call made: its live reads and the after-call read of its transcript. */
-function modelCallsOf(db: DbOrTx, call: CallRow, turns: readonly CallTurnRow[]): { byId: Map<string, LlmCallRow>; ids: string[] } {
-  const ids = turns.map((t) => t.llmCallId).filter((x): x is string => !!x);
-  if (call.transcriptVersionId) {
-    for (const run of db.select().from(analysisRuns).where(eq(analysisRuns.transcriptVersionId, call.transcriptVersionId)).all()) if (run.llmCallId) ids.push(run.llmCallId);
-  }
-  const unique = [...new Set(ids)];
-  const rows = unique.length > 0 ? db.select().from(llmCalls).where(inArray(llmCalls.id, unique)).all() : [];
-  return { byId: new Map(rows.map((r) => [r.id, r])), ids: unique };
-}
-
 const priceOf = (row: LlmCallRow): number | null =>
   costUsd({ input_tokens: row.inputTokens, output_tokens: row.outputTokens, cache_read_input_tokens: row.cacheReadTokens, cache_creation_input_tokens: row.cacheCreationTokens }, row.model);
 
-/** The call's cost, null when any of its model calls has no known price or no record to price. */
-function costOfCall(db: DbOrTx, call: CallRow, turns: readonly CallTurnRow[]): { costUsd: number | null; callsWithoutPrice: number; byId: Map<string, LlmCallRow> } {
-  const { byId, ids } = modelCallsOf(db, call, turns);
+/**
+ * When a turn's read ran, in ms on the server's clock: it ended when the rules began, `rules_ms`
+ * before `decided_at`, and began `read_ms` before that. Null when a time is missing.
+ */
+function readWindow(t: CallTurnRow): { start: number; end: number } | null {
+  const decided = Date.parse(t.decidedAt);
+  if (!Number.isFinite(decided) || t.readMs === null) return null;
+  const end = decided - (t.rulesMs ?? 0);
+  return { start: end - t.readMs, end };
+}
+
+/** A model call logged at most this long outside a failed read's window still belongs to it (ISO times are rounded to the ms). */
+const WINDOW_SLACK_MS = 50;
+
+interface CallCost {
+  /** Null when any model call of the call has no known price, or no record to price. */
+  costUsd: number | null;
+  callsWithoutPrice: number;
+  /** The model call behind each turn's read, by seq, when there is a record of one. */
+  readCalls: Map<number, LlmCallRow>;
+}
+
+/**
+ * The cost of the model calls a call made: its live reads and the after-call read of its transcript.
+ *
+ * A read the reader gave up on carries no `llm_call_id`, yet the model may have answered and been
+ * paid for (a refusal, a truncated or malformed answer): the client logs those with the call's id
+ * in `ref_json`. Such a row is priced, and tied to the failed turn whose read window holds it. A
+ * failed turn with no row (a timeout logs none) is a model call of unknown cost, never a free one.
+ */
+function costOfCall(db: DbOrTx, call: CallRow, turns: readonly CallTurnRow[]): CallCost {
+  const referenced = new Set(turns.map((t) => t.llmCallId).filter((x): x is string => !!x));
+  const named = new Set(referenced);
+  if (call.transcriptVersionId) {
+    for (const run of db.select().from(analysisRuns).where(eq(analysisRuns.transcriptVersionId, call.transcriptVersionId)).all()) if (run.llmCallId) named.add(run.llmCallId);
+  }
+  const namedRows = named.size > 0 ? db.select().from(llmCalls).where(inArray(llmCalls.id, [...named])).all() : [];
+  const byRef = db.select().from(llmCalls).where(sql`json_extract(${llmCalls.refJson}, '$.callId') = ${call.id}`).all();
+  const byId = new Map([...namedRows, ...byRef].map((r) => [r.id, r]));
+
+  let unpriced = [...named].filter((id) => !byId.has(id)).length;
+  const readCalls = new Map<number, LlmCallRow>();
+  for (const t of turns) {
+    const row = t.llmCallId ? byId.get(t.llmCallId) : undefined;
+    if (row) readCalls.set(t.seq, row);
+  }
+  const orphans = byRef.filter((r) => !referenced.has(r.id)).sort((a, b) => (a.createdAt < b.createdAt ? -1 : a.createdAt > b.createdAt ? 1 : 0));
+  const claimed = new Set<string>();
+  for (const t of turns) {
+    if (t.readStatus === "read" || t.llmCallId || readCalls.has(t.seq)) continue;
+    const window = readWindow(t);
+    const match = window
+      ? orphans.find((r) => {
+          const at = Date.parse(r.createdAt);
+          return !claimed.has(r.id) && at >= window.start - WINDOW_SLACK_MS && at <= window.end + WINDOW_SLACK_MS;
+        })
+      : undefined;
+    if (match) {
+      claimed.add(match.id);
+      readCalls.set(t.seq, match);
+    } else unpriced++;
+  }
+
   let total = 0;
-  let unpriced = 0;
-  for (const id of ids) {
-    const row = byId.get(id);
-    const price = row ? priceOf(row) : null;
+  for (const row of byId.values()) {
+    const price = priceOf(row);
     if (price === null) unpriced++;
     else total += price;
   }
-  return { costUsd: unpriced > 0 ? null : total, callsWithoutPrice: unpriced, byId };
+  return { costUsd: unpriced > 0 ? null : total, callsWithoutPrice: unpriced, readCalls };
 }
 
 /**
@@ -239,7 +287,8 @@ interface TraceContext {
   startMs: number;
   flagged: CallClaimRow[];
   covering: (seq: number) => CaseFinding[];
-  llm: Map<string, LlmCallRow>;
+  /** The model call behind each turn's read, by seq. */
+  readCalls: Map<number, LlmCallRow>;
   policyMeta: string;
   names: Map<string, string>;
 }
@@ -252,21 +301,47 @@ function turnAtMs(t: CallTurnRow, startMs: number): number {
 
 const leavesOf = (trace: unknown) => (trace && typeof trace === "object" && "op" in trace ? traceLeaves(trace as GuardTraceNode) : []);
 
-function readStep(ctx: TraceContext, t: CallTurnRow, claims: GroundedClaim[], evaluations: TurnEvaluations | null): StepView {
-  const offsetMs = diff(t.receivedAt, t.speechEndedAt);
-  const llm = t.llmCallId ? ctx.llm.get(t.llmCallId) : undefined;
+/**
+ * Where a turn's steps sit, in ms from the end of the speech. `speech_ended_at` (like
+ * `response_received_at` and `shown_at`) is the Mac app's clock; `received_at` and `decided_at` are
+ * the server's, so an offset that mixes the two carries any skew between the clocks.
+ *
+ * The rules ended at `decided_at` and the read ended where the rules began. Both are anchored there,
+ * not on `received_at`: a turn waits in its call's queue while earlier turns are read, so it is
+ * received well before its read begins. That wait is shown on the Read step.
+ */
+interface TurnTimes {
+  readStart: number | null;
+  rulesStart: number | null;
+  waitMs: number | null;
+}
+
+function turnTimes(t: CallTurnRow): TurnTimes {
+  const rulesEnd = diff(t.decidedAt, t.speechEndedAt);
+  const rulesStart = rulesEnd === null ? null : rulesEnd - (t.rulesMs ?? 0);
+  const readStart = rulesStart === null || t.readMs === null ? null : rulesStart - t.readMs;
+  const received = diff(t.receivedAt, t.speechEndedAt);
+  return { readStart, rulesStart, waitMs: readStart === null || received === null ? null : readStart - received };
+}
+
+/** A wait in the queue shorter than this is not worth a word. */
+const WAIT_SHOWN_MS = 50;
+
+function readStep(ctx: TraceContext, t: CallTurnRow, claims: GroundedClaim[], evaluations: TurnEvaluations | null, times: TurnTimes): StepView {
+  const llm = ctx.readCalls.get(t.seq);
   let meta: string;
   if (llm) {
     const tokensIn = llm.inputTokens + llm.cacheReadTokens + llm.cacheCreationTokens;
     const price = priceOf(llm);
     meta = `${llm.model} · prompt ${llm.promptVersion} · ${tokensIn} tokens in, ${llm.outputTokens} out · ${price === null ? "cost unknown" : dollars(price)}`;
   } else {
-    meta = `${ctx.call.readerModel} · prompt ${ctx.call.readerPromptVersion} · ${t.llmCallId ? "no record of the model call, so tokens and cost unknown" : "no model call recorded"}`;
+    meta = `${ctx.call.readerModel} · prompt ${ctx.call.readerPromptVersion} · tokens and cost unknown`;
   }
+  const waited = times.waitMs !== null && times.waitMs > WAIT_SHOWN_MS ? ` Waiting: ${(times.waitMs / 1000).toFixed(1)} s behind earlier turns before the read began.` : "";
+  const base = { name: "Read" as const, meta, offsetMs: times.readStart, durationMs: t.readMs };
 
-  if (t.readStatus !== "read") {
-    return { name: "Read", detail: `Not read live (${t.readStatus}).${t.error ? ` ${sentence(t.error)}` : ""}`, decidedBy: "model", meta, offsetMs, durationMs: t.readMs };
-  }
+  // A read that never produced an answer decided nothing, so no model is credited with it.
+  if (t.readStatus !== "read") return { ...base, detail: `Not read live (${t.readStatus}).${t.error ? ` ${sentence(t.error)}` : ""}${waited}`, decidedBy: null };
   const parts: string[] = [];
   if (claims.length === 0) parts.push("Nothing a rule looks at.");
   else parts.push(`Found ${plural(claims.length, "claim")}: ${claims.map((c) => c.fields.summary.trim().replace(/\.$/, "")).join("; ")}.`);
@@ -274,12 +349,11 @@ function readStep(ctx: TraceContext, t: CallTurnRow, claims: GroundedClaim[], ev
   if (probe) parts.push(probe.question.asks_for_fact ? `The question asks for a fact${probe.ruleIds.length > 0 ? ` that rule ${probe.ruleIds.join(", ")} restricts` : ""}.` : "The question asks for no fact.");
   const rejected = fromJson<{ reason: string }[]>(t.rejectedJson, []);
   if (rejected.length > 0) parts.push(`${plural(rejected.length, "claim was", "claims were")} rejected: ${rejected.map((r) => r.reason).join("; ")}.`);
-  return { name: "Read", detail: parts.join(" "), decidedBy: "model", meta, offsetMs, durationMs: t.readMs };
+  return { ...base, detail: parts.join(" ") + waited, decidedBy: "model" };
 }
 
-function rulesStep(ctx: TraceContext, t: CallTurnRow, evaluations: TurnEvaluations | null, readOffset: number | null): StepView {
-  const offsetMs = readOffset !== null && t.readMs !== null ? readOffset + t.readMs : null;
-  const base = { name: "Rules checked" as const, decidedBy: "code" as const, meta: ctx.policyMeta, offsetMs, durationMs: t.rulesMs };
+function rulesStep(ctx: TraceContext, t: CallTurnRow, evaluations: TurnEvaluations | null, times: TurnTimes): StepView {
+  const base = { name: "Rules checked" as const, decidedBy: "code" as const, meta: ctx.policyMeta, offsetMs: times.rulesStart, durationMs: t.rulesMs };
   if (t.readStatus !== "read" || !evaluations) return { ...base, detail: "Nothing to check: the turn was not read live." };
 
   const lines: string[] = [];
@@ -337,26 +411,66 @@ function hiddenSteps(ctx: TraceContext, t: CallTurnRow): StepView[] {
     durationMs: null,
   };
 
-  const what = seqs.length === 1 ? "it" : seqs.length === 2 ? "both" : `all ${seqs.length}`;
-  const decision = ctx
-    .covering(t.seq)
-    .map((f) => latestDecision(ctx.db, f.id))
-    .filter((d) => d !== null)
-    .sort((a, b) => (a.createdAt < b.createdAt ? 1 : a.createdAt > b.createdAt ? -1 : a.id < b.id ? 1 : -1))[0];
+  return [hidden, reviewedStep(ctx, seqs, times)];
+}
+
+type Decision = NonNullable<ReturnType<typeof latestDecision>>;
+const pronoun = (n: number) => (n === 1 ? "it" : n === 2 ? "both" : `all ${n}`);
+const newestFirst = (a: Decision, b: Decision) => (a.createdAt < b.createdAt ? 1 : a.createdAt > b.createdAt ? -1 : a.id < b.id ? 1 : -1);
+
+/**
+ * What compliance decided about the hidden passages (`seqs`, labelled `times`): the latest decision
+ * on each finding that covers any of them. One sentence when every finding stands at the same
+ * outcome and together they cover every passage; otherwise one per finding, with its label, and the
+ * passages no finding covers.
+ */
+function reviewedStep(ctx: TraceContext, seqs: readonly number[], times: readonly string[]): StepView {
   const pending = (detail: string): StepView => ({ name: "Reviewed", detail, decidedBy: null, meta: null, offsetMs: null, durationMs: null });
-  let reviewed: StepView;
-  if (!ctx.call.transcriptVersionId) reviewed = pending("Compliance sees it when the call ends.");
-  else if (!decision) reviewed = pending("Waiting for compliance.");
-  else {
-    const name = ctx.names.get(decision.actorId) ?? decision.actorId;
-    const meta = `${whenLabel(decision.createdAt)} · “${decision.rationale}”`;
-    if (decision.stale) reviewed = { ...pending(`${name}'s decision no longer stands${decision.staleReason ? ` (${decision.staleReason})` : ""}. Waiting for a new review.`), meta };
-    else {
-      const words = decision.outcome ? REVIEW_WORDS[decision.outcome] : undefined;
-      reviewed = { name: "Reviewed", detail: `${name} ${words ? words(what) : `decided (${decision.kind.replaceAll("_", " ")}).`}`, decidedBy: "person", meta, offsetMs: null, durationMs: null };
+  if (!ctx.call.transcriptVersionId) return pending("Compliance sees it when the call ends.");
+
+  const verdicts = new Map<string, { finding: CaseFinding; seqs: number[]; decision: Decision | null }>();
+  for (const seq of seqs) {
+    for (const finding of ctx.covering(seq)) {
+      const v = verdicts.get(finding.id) ?? { finding, seqs: [], decision: latestDecision(ctx.db, finding.id) };
+      v.seqs.push(seq);
+      verdicts.set(finding.id, v);
     }
   }
-  return [hidden, reviewed];
+  const all = [...verdicts.values()].sort((a, b) => a.finding.label.localeCompare(b.finding.label, "en", { numeric: true }));
+  const decisions = all.map((v) => v.decision).filter((d): d is Decision => d !== null).sort(newestFirst);
+  if (decisions.length === 0) return pending("Waiting for compliance.");
+
+  const name = (d: Decision) => ctx.names.get(d.actorId) ?? d.actorId;
+  const standing = (d: Decision | null) => (d && !d.stale && d.outcome && REVIEW_WORDS[d.outcome] ? d.outcome : null);
+  const phrase = (d: Decision | null, n: number): string => {
+    if (!d) return "Waiting for compliance.";
+    if (d.stale) return `${name(d)}'s decision no longer stands${d.staleReason ? ` (${d.staleReason})` : ""}. Waiting for a new review.`;
+    const words = d.outcome ? REVIEW_WORDS[d.outcome] : undefined;
+    return `${name(d)} ${words ? words(pronoun(n)) : `decided (${d.kind.replaceAll("_", " ")}).`}`;
+  };
+
+  const covered = new Set(all.flatMap((v) => v.seqs));
+  const uncovered = times.filter((_, i) => !covered.has(seqs[i]));
+  const outcomes = new Set(all.map((v) => standing(v.decision)));
+  let detail: string;
+  if (uncovered.length === 0 && all.length === 1) detail = phrase(all[0].decision, seqs.length);
+  else if (uncovered.length === 0 && outcomes.size === 1 && !outcomes.has(null)) {
+    const who = joinAnd([...new Set(decisions.map(name))]);
+    detail = `${who} ${REVIEW_WORDS[decisions[0].outcome!](pronoun(seqs.length))}`;
+  } else {
+    const lines = all.map((v) => `${v.finding.label}: ${phrase(v.decision, v.seqs.length)}`);
+    if (uncovered.length > 0) lines.push(`${joinAnd(uncovered)}: no finding covers ${uncovered.length === 1 ? "it" : "them"} yet. Waiting for compliance.`);
+    detail = lines.join(" ");
+  }
+  const newest = decisions[0];
+  return {
+    name: "Reviewed",
+    detail,
+    decidedBy: all.some((v) => standing(v.decision) !== null) ? "person" : null,
+    meta: `${whenLabel(newest.createdAt)} · “${newest.rationale}”`,
+    offsetMs: null,
+    durationMs: null,
+  };
 }
 
 function turnMoment(ctx: TraceContext, t: CallTurnRow): MomentView {
@@ -372,7 +486,7 @@ function turnMoment(ctx: TraceContext, t: CallTurnRow): MomentView {
   });
 
   const transcribed: StepView = { name: "Transcribed", detail: `“${t.text}”`, decidedBy: null, meta: null, offsetMs: 0, durationMs: diff(t.transcribedAt, t.speechEndedAt) };
-  const read = readStep(ctx, t, claims, evaluations);
+  const times = turnTimes(t);
   return {
     kind: "turn",
     seq: t.seq,
@@ -388,7 +502,7 @@ function turnMoment(ctx: TraceContext, t: CallTurnRow): MomentView {
     }),
     level: t.pill,
     totalMs: diff(t.shownAt, t.speechEndedAt),
-    steps: [transcribed, read, rulesStep(ctx, t, evaluations, read.offsetMs), shownStep(t), ...hiddenSteps(ctx, t)],
+    steps: [transcribed, readStep(ctx, t, claims, evaluations, times), rulesStep(ctx, t, evaluations, times), shownStep(t), ...hiddenSteps(ctx, t)],
   };
 }
 
@@ -442,7 +556,7 @@ export function callTrace(db: DbOrTx, callId: string, actor: Actor): CallTraceVi
     startMs,
     flagged,
     covering: coverageOf(db, call, turns),
-    llm: cost.byId,
+    readCalls: cost.readCalls,
     policyMeta: policyMetaOf(db, call.policyVersionId, names),
     names,
   };
@@ -476,7 +590,12 @@ const MAX_RECENT = 10;
  * How the live path is doing across every call: the speed from words to the pill (percentiles),
  * stage health over the last hour, calls, turns with a problem, how many hidden passages compliance
  * later unhid, the typical cost of a call, and the newest problems. No word said on any call.
- * `recent` lists calls to open, so it is empty for the policy owner, who may not open one.
+ *
+ * It covers every call there has been, with no date window: only stage health looks at the last
+ * hour. Task 30 labels the figures accordingly.
+ *
+ * `recent` lists calls to open, so it is empty for the policy owner, who may not open one; for the
+ * same reason a problem names no call or case for them.
  */
 export function callsOverview(db: DbOrTx, actor: Actor): CallsOverview {
   requireRole(actor, "reviewer", "senior_reviewer", "policy_owner");
@@ -494,8 +613,10 @@ export function callsOverview(db: DbOrTx, actor: Actor): CallsOverview {
   let hidden = 0;
   let unhidden = 0;
 
+  const owner = actor.role === "policy_owner";
   for (const call of callRows) {
     const title = titles.get(call.caseId) ?? call.caseId;
+    const where = owner ? { callId: null, title: "" } : { callId: call.id, title };
     const turns = turnsOf(db, call.id);
     turnCount += turns.length;
     for (const t of turns) {
@@ -503,19 +624,20 @@ export function callsOverview(db: DbOrTx, actor: Actor): CallsOverview {
       if (total !== null) latencies.push(total);
       if (t.readStatus !== "read") {
         turnsWithProblem++;
-        problems.push({ at: t.speechEndedAt, callId: call.id, title, text: `Turn ${t.seq} was not read live (${t.readStatus}), so nothing could be shown for it.` });
+        problems.push({ at: t.speechEndedAt, ...where, text: `Turn ${t.seq} was not read live (${t.readStatus}), so nothing could be shown for it.` });
       }
     }
     for (const o of outagesOf(db, call.id)) {
       const { start, end } = outageSpan(o, call, now);
       if (end >= now - HOUR_MS && start <= now) lastHour.push({ stage: o.stage, ms: end - start });
-      problems.push({ at: o.startedAt, callId: call.id, title, text: `${OUTAGE_WORDING[o.stage].what} for ${secondsWords(end - start)} (${o.cause.trim().replace(/\.$/, "")}).` });
+      problems.push({ at: o.startedAt, ...where, text: `${OUTAGE_WORDING[o.stage].what} for ${secondsWords(end - start)} (${o.cause.trim().replace(/\.$/, "")}).` });
     }
     const flagged = flaggedOf(db, call.id);
     hidden += flagged.length;
     if (flagged.length > 0) unhidden += unhiddenCount(flagged, coverageOf(db, call, turns));
-    costs.push(costOfCall(db, call, turns).costUsd);
-    if (actor.role !== "policy_owner" && recent.length < MAX_RECENT) {
+    // An abandoned call (no expert ever spoke) is not a call to price.
+    if (call.status !== "abandoned") costs.push(costOfCall(db, call, turns).costUsd);
+    if (!owner && recent.length < MAX_RECENT) {
       recent.push({ callId: call.id, title, startedAt: call.startedAt, turns: turns.length, warnings: turns.filter((t) => t.pill !== "listening").length });
     }
   }

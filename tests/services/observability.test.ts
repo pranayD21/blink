@@ -11,19 +11,25 @@ import { STAGES } from "@/core/live/health";
 import { summarizeLatency } from "@/core/live/stats";
 import { setClockForTests } from "@/server/clock";
 import { getDb, resetDbForTests, toJson, transact } from "@/server/db/client";
-import { callTurns, llmCalls } from "@/server/db/schema";
+import { callTurns, decisions, findingPassages, findings, llmCalls } from "@/server/db/schema";
 import { drainJobs } from "@/server/jobs/runner";
 import { LIVE_MODEL, type LiveReader } from "@/server/live/reader";
 import { LIVE_PROMPT_VERSION } from "@/server/llm/prompts/live";
+import { createCase } from "@/server/services/cases";
 import { ackTurn, endCall, ingestTurn, recordOutage, startCall } from "@/server/services/live";
+import { currentTranscript } from "@/server/services/loaders";
 import { callTrace, callsOverview } from "@/server/services/observability";
-import { seedDatabase } from "@/server/services/seed";
-import { CASE, appError, completeReview, user } from "../helpers/db";
-import { goldReader, halvorsenLiveTurns } from "../helpers/live";
+import { halvorsenCaseInput, seedDatabase } from "@/server/services/seed";
+import { CASE, G1, appError, completeReview, findingOn, user } from "../helpers/db";
+import { NEUTRAL_QUESTION, goldReader, halvorsenLiveTurns } from "../helpers/live";
 
 const CALL_START = Date.parse("2026-11-10T15:00:00.000Z");
 const iso = (ms: number) => new Date(ms).toISOString();
-const at = (ms: number) => setClockForTests(() => new Date(CALL_START + ms));
+/** The pinned clock: `at` moves it to a time in the call, and a reader moves it on by the time it takes. */
+let clock = CALL_START;
+const at = (ms: number) => {
+  clock = CALL_START + ms;
+};
 
 const halvorsen = halvorsenLiveTurns();
 const OUTAGE_AT = 250_000; // 04:10
@@ -33,30 +39,36 @@ const SHOWN_AFTER = (seq: number) => 900 + seq * 7;
 let id = "";
 const db = () => getDb();
 
-/** The gold reader, with each read logged to `llm_calls` the way `readTurn` logs a real one. */
+/** Logs a live read to `llm_calls` as `structuredCall` does: with the call's id in `ref_json`, at the current time. */
+function logRead(llmCallId: string, ref: { caseId: string; callId: string }, tokens = { input: 400, output: 90 }): void {
+  getDb()
+    .insert(llmCalls)
+    .values({
+      id: llmCallId,
+      stage: "live_read",
+      requestHash: llmCallId,
+      model: LIVE_MODEL(),
+      promptVersion: LIVE_PROMPT_VERSION,
+      requestJson: "{}",
+      responseJson: "{}",
+      inputTokens: tokens.input,
+      outputTokens: tokens.output,
+      cacheReadTokens: 0,
+      latencyMs: READ_MS,
+      refJson: toJson(ref),
+      createdAt: iso(clock),
+    })
+    .run();
+}
+
+/** The gold reader, with each read taking READ_MS and logged to `llm_calls` the way `readTurn` logs a real one. */
 function loggedGoldReader(): LiveReader {
   const gold = goldReader();
   return async (input) => {
     const result = await gold(input);
+    clock += READ_MS;
     const llmCallId = `llm_${input.newTurnLabel}`;
-    getDb()
-      .insert(llmCalls)
-      .values({
-        id: llmCallId,
-        stage: "live_read",
-        requestHash: llmCallId,
-        model: LIVE_MODEL(),
-        promptVersion: LIVE_PROMPT_VERSION,
-        requestJson: "{}",
-        responseJson: "{}",
-        inputTokens: 400,
-        outputTokens: 90,
-        cacheReadTokens: 0,
-        latencyMs: READ_MS,
-        refJson: toJson({ caseId: CASE, callId: input.ref.callId }),
-        createdAt: iso(CALL_START),
-      })
-      .run();
+    logRead(llmCallId, input.ref);
     return { ...result, llmCallId, readMs: READ_MS };
   };
 }
@@ -77,6 +89,7 @@ const turnMoment = (seq: number) => trace().moments.find((m) => m.kind === "turn
 beforeAll(async () => {
   resetDbForTests();
   await seedDatabase({ manualPolicy: true, enqueueDocFacts: false, goldDocFacts: true });
+  setClockForTests(() => new Date(clock));
   const priya = user("priya");
   at(0);
   id = transact((tx) => startCall(tx, { caseId: CASE }, priya)).id;
@@ -145,6 +158,25 @@ describe("one call's record", () => {
     expect(opening.level).toBe("listening");
   });
 
+  it("when the findings covering the hidden passages disagree, each finding's decision is stated", () => {
+    // A live finding, cleared, on T11 alone: F1 sent both T5 and T11 to legal, this one unhid T11.
+    const t11 = `${currentTranscript(db(), CASE)!.id}:T11`;
+    const text = halvorsen[10].text;
+    db().insert(findings).values({ id: "fnd_extra", caseId: CASE, claimLogicalKey: null, origin: "live", title: "Flagged during the call", severity: "high", state: "DISPOSITIONED", dedupeKey: "test:extra", seqNo: 99, createdBy: "system", createdAt: iso(clock) }).run();
+    db().insert(findingPassages).values({ id: "fp_extra", findingId: "fnd_extra", turnId: t11, startChar: 0, endChar: text.length }).run();
+    db().insert(decisions).values({ id: "dec_extra", caseId: CASE, findingId: "fnd_extra", actorId: "user_marcus", kind: "disposition", outcome: "no_concern", rationale: "Public by now.", evidenceHash: "x", stale: false, createdAt: iso(clock + 1000) }).run();
+    try {
+      const reviewed = turnMoment(11).steps.find((s) => s.name === "Reviewed")!;
+      expect(reviewed.detail).toBe(`F${findingOn(G1).seqNo}: Jordan Ellis sent both to legal. F99: Marcus Lee unhid it.`);
+      expect(reviewed).toMatchObject({ decidedBy: "person", meta: expect.stringContaining("“Public by now.”") });
+    } finally {
+      db().delete(decisions).where(eq(decisions.id, "dec_extra")).run();
+      db().delete(findingPassages).where(eq(findingPassages.id, "fp_extra")).run();
+      db().delete(findings).where(eq(findings.id, "fnd_extra")).run();
+    }
+    expect(turnMoment(11).steps.find((s) => s.name === "Reviewed")!.detail).toBe("Jordan Ellis sent both to legal.");
+  });
+
   it("an outage row says what was lost", () => expect(outageMoment().conclusion).toMatch(/^Blink could not hear the call for 19 seconds\. .* Speech in this gap is not in the transcript\.$/));
 
   it("an outage row sits at its time, broken, with how long it lasted", () => {
@@ -209,7 +241,108 @@ describe("the all-calls overview", () => {
     }
   });
 
-  it("the policy owner sees no call to open", () => expect(callsOverview(db(), user("dana")).recent).toEqual([]));
+  it("the policy owner sees no call to open, and no problem names a call or a case", () => {
+    const o = callsOverview(db(), user("dana"));
+    expect(o.recent).toEqual([]);
+    expect(o.problems).toEqual([{ at: iso(CALL_START + OUTAGE_AT), callId: null, title: "", text: "Blink could not hear the call for 19 seconds (the transcription socket closed)." }]);
+    expect(JSON.stringify(o)).not.toContain(id);
+    expect(JSON.stringify(o)).not.toContain(trace().call.title);
+  });
+});
+
+describe("calls whose reads queue, time out or are refused", () => {
+  const LATER = 600_000; // these calls start ten minutes after the first
+  let queued = "";
+  let abandoned = "";
+  const priya = () => user("priya");
+  const newCase = (title: string) => transact((tx) => createCase(tx, { ...halvorsenCaseInput(), title }, priya())).caseId;
+  const turn = (seq: number, speaker: "analyst" | "expert", text: string, endMs: number) => ({
+    seq,
+    speaker,
+    text,
+    speechStartMs: endMs - 1_000,
+    speechEndMs: endMs,
+    speechEndedAt: iso(CALL_START + LATER + endMs),
+    transcribedAt: iso(CALL_START + LATER + endMs + 50),
+  });
+
+  /** T1, T2: read, READ_MS each. T3: times out after 2.5 s, logging nothing. T4: refused, the paid answer logged with the call's id only. */
+  const reader: LiveReader = async (input) => {
+    if (input.newTurnLabel === "T3") {
+      clock += 2_500;
+      return { status: "timeout", message: "the live read took longer than 2.5 s", llmCallId: null, readMs: 2_500 };
+    }
+    clock += READ_MS;
+    if (input.newTurnLabel === "T4") {
+      logRead(`llm_refused_${input.ref.callId}`, input.ref, { input: 300, output: 20 });
+      return { status: "refused", message: "the model declined the live_read request", llmCallId: null, readMs: READ_MS };
+    }
+    const llmCallId = `llm_${input.ref.callId}_${input.newTurnLabel}`;
+    logRead(llmCallId, input.ref);
+    return { status: "read", claims: [], rejected: [], issues: [], question: NEUTRAL_QUESTION, llmCallId, readMs: READ_MS };
+  };
+
+  const queuedTrace = () => callTrace(db(), queued, user("marcus"));
+  const step = (seq: number, name: string) => queuedTrace().moments.find((m) => m.seq === seq)!.steps.find((s) => s.name === name)!;
+  const row = (seq: number) => db().select().from(callTurns).where(eq(callTurns.id, `${queued}:${seq}`)).get()!;
+
+  beforeAll(async () => {
+    // A call where only the banker spoke, and that read timed out: abandoned on ending.
+    at(LATER);
+    abandoned = transact((tx) => startCall(tx, { caseId: newCase("Abandoned call") }, priya())).id;
+    at(LATER + 2_100);
+    await ingestTurn(abandoned, turn(1, "analyst", "Can you hear me?", 2_000), priya(), { reader: async () => ({ status: "timeout", message: "too slow", llmCallId: null, readMs: 2_500 }) });
+    transact((tx) => endCall(tx, abandoned, priya()));
+
+    at(LATER);
+    queued = transact((tx) => startCall(tx, { caseId: newCase("Queued call") }, priya())).id;
+    // Two people talk over each other: both turns arrive together, and the second waits for the first.
+    at(LATER + 5_300);
+    await Promise.all([
+      ingestTurn(queued, turn(1, "expert", "Demand is steady.", 5_000), priya(), { reader }),
+      ingestTurn(queued, turn(2, "analyst", "And pricing?", 5_200), priya(), { reader }),
+    ]);
+    at(LATER + 9_000);
+    await ingestTurn(queued, turn(3, "expert", "Pricing holds.", 8_900), priya(), { reader });
+    at(LATER + 13_000);
+    await ingestTurn(queued, turn(4, "expert", "Lead times are shorter.", 12_900), priya(), { reader });
+  });
+
+  it("a turn that waited in the queue starts its read where the turn before finished, and says so", () => {
+    const [read1, rules1, read2, rules2] = [step(1, "Read"), step(1, "Rules checked"), step(2, "Read"), step(2, "Rules checked")];
+    expect(read1).toMatchObject({ offsetMs: 300, durationMs: READ_MS });
+    expect(read1.detail).not.toContain("Waiting");
+    expect(rules1.offsetMs).toBe(300 + READ_MS);
+    // Turn 2 ended 200 ms after turn 1 and arrived 100 ms after it ended; its read began when turn 1's rules ended.
+    expect(read2).toMatchObject({ offsetMs: 700, durationMs: READ_MS });
+    expect(read2.detail).toMatch(/ Waiting: 0\.6 s behind earlier turns before the read began\.$/);
+    const end = (seq: number, s: { offsetMs: number | null; durationMs: number | null }) => Date.parse(row(seq).speechEndedAt) + s.offsetMs! + s.durationMs!;
+    expect(Date.parse(row(2).speechEndedAt) + read2.offsetMs!).toBeGreaterThanOrEqual(end(1, rules1));
+    // The rules end at decided_at.
+    expect(end(2, rules2)).toBe(Date.parse(row(2).decidedAt));
+  });
+
+  it("a timed-out read is a model call of unknown cost, and no model decided it", () => {
+    expect(step(3, "Read")).toMatchObject({ decidedBy: null, meta: "claude-haiku-5-5 · prompt live-v1 · tokens and cost unknown", offsetMs: 100, durationMs: 2_500 });
+    expect(step(3, "Read").detail).toBe("Not read live (timeout). The live read took longer than 2.5 s.");
+    const t = queuedTrace();
+    expect(t.counts).toMatchObject({ turns: 4, problems: 2, costUsd: null, callsWithoutPrice: 1 });
+  });
+
+  it("a refused read is priced from the answer the client logged, though no model decided it", () => {
+    expect(step(4, "Read")).toMatchObject({ decidedBy: null, meta: "claude-haiku-5-5 · prompt live-v1 · 300 tokens in, 20 out · $0.00004" });
+    expect(step(4, "Read").detail).toBe("Not read live (refused). The model declined the live_read request.");
+  });
+
+  it("a call where only the banker spoke is not priced into the typical cost", () => {
+    expect(callTrace(db(), abandoned, user("marcus")).counts).toMatchObject({ costUsd: null, callsWithoutPrice: 1 });
+    const o = callsOverview(db(), user("marcus"));
+    expect(o.calls).toBe(3);
+    // The queued call's timeout makes the typical cost unknown; the abandoned call's would not have.
+    expect(o.typicalCostUsd).toBeNull();
+    db().delete(callTurns).where(eq(callTurns.callId, queued)).run();
+    expect(callsOverview(db(), user("marcus")).typicalCostUsd).not.toBeNull();
+  });
 });
 
 it("a banker is refused both", () => {
