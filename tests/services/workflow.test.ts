@@ -6,13 +6,15 @@ import { eq } from "drizzle-orm";
 import { beforeEach, describe, expect, it } from "vitest";
 import { verifyAuditChain } from "@/server/audit/log";
 import { getDb, transact } from "@/server/db/client";
-import { decisions, monitorInstances } from "@/server/db/schema";
+import { decisions, findingPassages, monitorInstances } from "@/server/db/schema";
+import { newId } from "@/server/ids";
 import { attestCase } from "@/server/services/attestations";
 import { briefWorkspace, editBrief, getBrief, releasedBriefs, requestBriefDraft } from "@/server/services/briefs";
 import { listCases } from "@/server/services/cases";
 import { correctClaim } from "@/server/services/claims";
 import { addClarificationTask, applyFindingAction, createReviewerFinding, getFinding } from "@/server/services/findings";
-import { currentClaimByKey, currentTranscript, loadCurrentClaims } from "@/server/services/loaders";
+import { createFinding } from "@/server/services/findingsCore";
+import { currentClaimByKey, currentTranscript, loadCurrentClaims, turnsOfVersion } from "@/server/services/loaders";
 import { releaseBrief } from "@/server/services/release";
 import { loadWorkspace } from "@/server/services/workspace";
 import { CASE, G1, G2, G3, RATIONALE, answerMarginClarification, appError, approve, attest, completeReview, dispose, draftTemplate, escalate, findingOn, findingsOf, openTasks, release, seedAnalyzed, statusOf, user } from "../helpers/db";
@@ -154,6 +156,52 @@ describe("review completion (§9.3)", () => {
     expect(decision.staleReason).toMatch(/claim changed \(C7 · T15\)/);
     expect(getFinding(getDb(), f2.id).state).toBe("REVIEW_REQUIRED");
     expect(openTasks(f2.id, "review")).toHaveLength(1);
+  });
+});
+
+describe("what is hidden from the banker, as compliance sees it (live guidance, section 5)", () => {
+  const view = (id: string) => loadWorkspace(getDb(), CASE, user("marcus")).findings.find((f) => f.id === id)!;
+
+  it("every undecided finding is hidden until compliance decides", () => {
+    const all = loadWorkspace(getDb(), CASE, user("marcus")).findings;
+    expect(all.length).toBeGreaterThan(0);
+    for (const f of all) expect(f.hidden).toBe("until_decided");
+  });
+
+  it("keeping a finding hidden and clearing one are told apart", () => {
+    const f2 = findingOn(G2);
+    const f3 = findingOn(G3);
+    dispose(f2.id, "restricted_exclude", "marcus");
+    answerMarginClarification();
+    dispose(f3.id, "no_concern", "marcus");
+    expect(view(f2.id).hidden).toBe("kept_hidden");
+    expect(view(f3.id).hidden).toBe("shown_on_release");
+    expect(view(findingOn(G1).id).hidden).toBe("until_decided");
+  });
+
+  it("a decision gone stale hides the finding again until it is re-decided", () => {
+    const f2 = findingOn(G2);
+    dispose(f2.id, "no_concern", "marcus");
+    expect(view(f2.id).hidden).toBe("shown_on_release");
+    const claim = currentClaimByKey(getDb(), CASE, G2)!;
+    transact((tx) => correctClaim(tx, claim.id, { verified: { knowledge_basis: "insider_conversation" }, clear: [], note: "confirmed with the analyst", expectedVersion: claim.versionNo }, user("marcus")));
+    expect(view(f2.id).hidden).toBe("until_decided");
+  });
+
+  it("a live finding is listed with the words it hid, and has no claim", () => {
+    const text = transact((tx) => {
+      const turn = turnsOfVersion(tx, currentTranscript(tx, CASE)!.id).find((t) => t.label === "T7")!;
+      const { finding } = createFinding(tx, { caseId: CASE, claimLogicalKey: null, origin: "live", title: "Flagged during the call", severity: "high", state: "REVIEW_REQUIRED", reasonCodes: ["LIVE_ONLY", "TURN:T7"], dedupeKey: "live-test:T7", createdBy: "system" });
+      tx.insert(findingPassages).values({ id: newId("fp"), findingId: finding.id, turnId: turn.id, startChar: 0, endChar: 12 }).run();
+      return { id: finding.id, words: turn.text.slice(0, 12) };
+    });
+    const live = view(text.id);
+    expect(live.origin).toBe("live");
+    expect(live.hidden).toBe("until_decided");
+    expect(live.passages).toEqual([{ turnLabel: "T7", text: text.words }]);
+    expect(view(findingOn(G2).id).passages).toEqual([]);
+    dispose(text.id, "restricted_exclude", "marcus");
+    expect(view(text.id).hidden).toBe("kept_hidden");
   });
 });
 

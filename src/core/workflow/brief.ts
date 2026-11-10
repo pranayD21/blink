@@ -61,6 +61,20 @@ export function findingCleared(f: EligibilityFinding): boolean {
   return f.state === "DISPOSITIONED" && !!f.decision && !f.decision.stale && !!f.decision.outcome && RELEASABLE_OUTCOMES.has(f.decision.outcome);
 }
 
+const KEPT_HIDDEN_OUTCOMES = new Set(["restricted_exclude", "restricted_escalate_to_legal"]);
+
+export type HiddenStatus = "until_decided" | "kept_hidden" | "shown_on_release";
+
+/**
+ * What compliance has decided about a finding's passages: cleared (shown to the banker on release),
+ * kept hidden (DISPOSITIONED restricted on a decision that still stands), or not decided yet.
+ */
+export function hiddenStatus(f: EligibilityFinding): HiddenStatus {
+  if (findingCleared(f)) return "shown_on_release";
+  if (f.state === "DISPOSITIONED" && f.decision && !f.decision.stale && f.decision.outcome && KEPT_HIDDEN_OUTCOMES.has(f.decision.outcome)) return "kept_hidden";
+  return "until_decided";
+}
+
 /**
  * Whether a claim's quoted passages stay hidden from the banker, and by which finding (its label), or
  * null. Separate from citation eligibility on purpose: a claim that is rejected, for example retired by

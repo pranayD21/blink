@@ -31,10 +31,17 @@ export function humanize(value: string): string {
 }
 
 export const OUTCOME_LABEL: Record<string, string> = {
-  cleared_for_research: "Cleared for research",
-  restricted_exclude: "Restricted — exclude from research",
-  restricted_escalate_to_legal: "Restricted — escalate to legal",
-  no_concern: "No concern",
+  cleared_for_research: "Unhide: cleared for research",
+  restricted_exclude: "Keep hidden",
+  restricted_escalate_to_legal: "Keep hidden and send to legal",
+  no_concern: "Unhide: no concern",
+};
+
+/** What a finding's hidden state means for the banker, in the words compliance reads. */
+export const HIDDEN_STATUS_LABEL: Record<"until_decided" | "kept_hidden" | "shown_on_release", string> = {
+  until_decided: "Hidden from the banker until you decide",
+  kept_hidden: "Hidden from the banker",
+  shown_on_release: "Shown to the banker on release",
 };
 
 export const ROLE_LABEL: Record<string, string> = {

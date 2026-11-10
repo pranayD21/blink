@@ -11,6 +11,7 @@ import type { PublicMatchFact } from "@/core/predicates/registry";
 import type { GuardTraceNode } from "@/core/runtime/monitorReducer";
 import type { ClaimFields } from "@/core/types";
 import type { ReadinessBlocker } from "@/core/workflow/case";
+import { type HiddenStatus, hiddenStatus } from "@/core/workflow/brief";
 import { aggregateMonitorStates, statePath } from "@/core/workflow/finding";
 import { type Actor, isReviewer } from "../auth/actor";
 import { type AuditEventView, listAudit } from "../audit/log";
@@ -22,6 +23,7 @@ import { llmMode } from "../llm/client";
 import { latestBrief } from "./briefs";
 import { eligibilityForCase } from "./briefs";
 import { packetView } from "./cases";
+import { turnPlacer } from "./placement";
 import { computeReviewBlockers, latestAttestation } from "./caseStatus";
 import { escalationRequired, findingLabel } from "./findingsCore";
 import { type ClaimMeta, type LoadedClaim, currentTranscript, getCase, loadCurrentClaims, loadPolicy, loadPublicMatch, turnsOfVersion } from "./loaders";
@@ -87,6 +89,10 @@ export interface FindingView {
   missingContext: { ruleId: string; monitorId: string; predicate: string; state: string; question: string; explanation: string }[];
   turnLabels: string[];
   primaryTurnLabel: string | null;
+  /** What happens to this finding's passages: hidden until compliance decides, kept hidden, or shown to the banker on release. */
+  hidden: HiddenStatus;
+  /** A `live` finding's hidden words, on the current transcript. Empty for every other finding. */
+  passages: { turnLabel: string; text: string }[];
   rules: { ruleId: string; state: string }[];
   /** Mini FSM path of the claim's monitors, e.g. UNASSESSED → NEEDS_CONTEXT → REVIEW_REQUIRED, with the turn each step happened at. */
   path: { state: string; turnLabel: string | null }[];
@@ -237,7 +243,9 @@ export function loadWorkspace(tx: DbOrTx, caseId: string, actor: Actor): Workspa
   // Claims.
   const claims = loadCurrentClaims(tx, caseId);
   const monitorsByClaim = monitorViews(tx, caseId, policy?.version.id ?? null);
-  const eligibility = eligibilityForCase(tx, caseId);
+  const placer = turnPlacer(tx, caseId);
+  const eligibility = eligibilityForCase(tx, caseId, placer);
+  const stateOf = new Map(eligibility.findings.map((f) => [f.id, f]));
   const eligibilityByKey = new Map(eligibility.claims.map((c) => [c.claim.row.logicalKey, c.eligibility]));
   const claimViews = claims.map((claim) => {
     const e = eligibilityByKey.get(claim.row.logicalKey);
@@ -261,6 +269,14 @@ export function loadWorkspace(tx: DbOrTx, caseId: string, actor: Actor): Workspa
     const primary = claim?.quotes.find((q) => q.role === "primary")?.turnLabel ?? turnLabels[0] ?? null;
     const monitors = f.origin === "policy" && claim ? claim.monitors : [];
     const taskIds = new Set(taskRows.filter((t) => t.findingId === f.id).map((t) => t.id));
+    const checked = stateOf.get(f.id);
+    // Compliance reads the words a live finding hid, on the current transcript (an unplaceable one is shown as recorded).
+    const passages = f.origin !== "live" ? [] : (checked?.passages ?? []).flatMap((p) => {
+      const placed = placer.place(p.turnId, p.start, p.end);
+      if (placed) return placed.map((x) => ({ turnLabel: x.turn.label, text: x.turn.text.slice(x.start, x.end) }));
+      const text = placer.sourceText(p.turnId, p.start, p.end);
+      return text === null ? [] : [{ turnLabel: placer.sourceLabel(p.turnId), text }];
+    });
     return {
       id: f.id,
       label: findingLabel(f),
@@ -275,6 +291,8 @@ export function loadWorkspace(tx: DbOrTx, caseId: string, actor: Actor): Workspa
       missingContext: fromJson<FindingView["missingContext"]>(f.missingContextJson, []),
       turnLabels,
       primaryTurnLabel: primary,
+      hidden: checked ? hiddenStatus(checked) : "until_decided",
+      passages,
       rules: monitors.filter((m) => m.state !== "NOT_TRIGGERED" && m.state !== "UNASSESSED").map((m) => ({ ruleId: m.ruleId, state: m.state })),
       path: aggregatePath(monitors),
       escalationRequired: escalationRequired(tx, f.id),

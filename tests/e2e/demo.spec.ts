@@ -128,6 +128,7 @@ test("the demo script runs end to end from recordings", async ({ page, baseURL }
     await expect(page.getByTestId("replayed-badge")).toContainText("Replayed from recorded run");
     await selectFinding(page, "F1");
     await expect(page.getByTestId("finding-F1")).toHaveAttribute("data-state", "REVIEW_REQUIRED");
+    await expect(page.getByTestId("hidden-status")).toHaveText("Hidden from the banker until you decide");
     await expect(page.getByTestId("linked-badge-T5")).toContainText("linked to T11");
     await expect(page.getByTestId("linked-badge-T11")).toContainText("linked to T5");
     await expect(page.getByTestId("quote-T5")).toContainText("orders fell off a cliff");

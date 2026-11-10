@@ -7,7 +7,7 @@ import { Chip, StateChip } from "@/components/app/status-chip";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { api, errorMessage } from "@/lib/api";
-import { OUTCOME_LABEL, formatDateTime, humanize, shortHash } from "@/lib/format";
+import { HIDDEN_STATUS_LABEL, OUTCOME_LABEL, formatDateTime, humanize, shortHash } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import type { ClaimView, FindingView, WorkspacePayload } from "@/server/services/workspace";
 import { ClaimFieldsEditor } from "./claim-fields";
@@ -25,6 +25,21 @@ function Section({ title, children, testId, hint }: { title: string; children: R
       </h3>
       {children}
     </section>
+  );
+}
+
+/** The words a live finding hid, on the current transcript, in place of a claim's linked quotes. */
+function LivePassages({ finding }: { finding: FindingView }) {
+  if (finding.passages.length === 0) return <p className="text-sm text-slate-500">No passage was recorded for this finding.</p>;
+  return (
+    <div className="space-y-1.5">
+      {finding.passages.map((p, i) => (
+        <button key={`${p.turnLabel}:${i}`} type="button" onClick={() => scrollToTurn(p.turnLabel)} className="flex w-full gap-2 rounded-md px-1.5 py-1 text-left text-sm hover:bg-slate-100" data-testid={`quote-${p.turnLabel}`} title="Scroll the transcript to this turn">
+          <span className="w-8 shrink-0 font-mono text-xs font-semibold text-indigo-700">{p.turnLabel}</span>
+          <span className="min-w-0 flex-1 text-slate-800">“{p.text}”</span>
+        </button>
+      ))}
+    </div>
   );
 }
 
@@ -196,6 +211,9 @@ export function EvidencePane({ payload, selection, onSelect, refresh, focus }: {
               {finding.origin === "reviewer" && <Chip tone="slate">raised by a reviewer</Chip>}
             </div>
             <h2 className="mt-1.5 text-base font-semibold text-slate-900">{finding.title}</h2>
+            <p className="mt-0.5 text-xs text-slate-500" data-testid="hidden-status">
+              {HIDDEN_STATUS_LABEL[finding.hidden]}
+            </p>
             <p className="mt-1 text-slate-700">{finding.explanation}</p>
             {finding.origin === "ai_suggested" && <p className="mt-1 text-xs text-slate-500">Raised by the extraction model, not by a policy rule. It can open review work; only a reviewer can close it.</p>}
             {finding.path.length > 1 && (
@@ -217,6 +235,12 @@ export function EvidencePane({ payload, selection, onSelect, refresh, focus }: {
           )
         )}
       </div>
+
+      {finding?.origin === "live" && (
+        <Section title="Hidden passages" testId="live-passages" hint="what was said, as it stands on the current transcript">
+          <LivePassages finding={finding} />
+        </Section>
+      )}
 
       {claim && (
         <Section title="Linked passages" testId="linked-passages" hint="exact quotes, checked against the transcript">
