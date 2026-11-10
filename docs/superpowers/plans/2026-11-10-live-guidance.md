@@ -957,7 +957,7 @@ export function spellNumber(n: number): string | null;                          
 export function findLeaks(sentences: readonly string[], hidden: readonly HiddenPassage[], visible: { numbers: ReadonlySet<number>; names: ReadonlySet<string> }): Leak[];
 ```
 
-- [ ] **Step 1: Write the failing tests.**
+- [x] **Step 1: Write the failing tests.**
 
 ```ts
 // redact
@@ -980,10 +980,10 @@ it("a name that appears only in hidden passages is a leak", () => expect(findLea
 it("a clean summary has no leaks", () => expect(findLeaks(["Distributors are working through inventory."], hidden, none)).toEqual([]));
 ```
 
-- [ ] **Step 2: Run them and see them fail.** Run: `pnpm exec vitest run tests/core/release-redact.test.ts tests/core/release-leak.test.ts`. Expected: FAIL, modules not found.
-- [ ] **Step 3: Implement.** Words are compared lower-cased with punctuation removed. A figure matches as a whole number token, with or without `%` or "percent". A name matches as whole words, case-insensitively.
-- [ ] **Step 4: Run the tests.** Expected: PASS.
-- [ ] **Step 5: Commit.**
+- [x] **Step 2: Run them and see them fail.** Run: `pnpm exec vitest run tests/core/release-redact.test.ts tests/core/release-leak.test.ts`. Expected: FAIL, modules not found.
+- [x] **Step 3: Implement.** Words are compared lower-cased with punctuation removed. A figure matches as a whole number token, with or without `%` or "percent". A name matches as whole words, case-insensitively.
+- [x] **Step 4: Run the tests.** Expected: PASS.
+- [x] **Step 5: Commit.**
 
 ```bash
 git add src/core/release tests/core/release-redact.test.ts tests/core/release-leak.test.ts
