@@ -11,8 +11,14 @@ export function formatSpan(ms: number): string {
   return `${Math.round(v / 1000)} s`;
 }
 
-/** Seconds to one decimal, always: the headline speed figures ("1.1 s"). */
-export const formatSeconds = (ms: number) => `${(Math.max(0, ms) / 1000).toFixed(1)} s`;
+/**
+ * One formatter for a set of speed figures that are read side by side (typical, 19 in 20, slowest),
+ * with the unit chosen once from the slowest: whole milliseconds when it is under a second ("15 ms"),
+ * otherwise seconds to one decimal ("1.1 s"). The figures then never mix units or precision.
+ */
+export function speedFormatter(slowestMs: number): (ms: number) => string {
+  return slowestMs < 1000 ? (ms) => `${Math.round(Math.max(0, ms))} ms` : (ms) => `${(Math.max(0, ms) / 1000).toFixed(1)} s`;
+}
 
 const clamp01 = (n: number) => Math.min(1, Math.max(0, n));
 

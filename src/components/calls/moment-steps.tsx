@@ -48,10 +48,10 @@ export function MomentList({ moments }: { moments: MomentRow[] }) {
         }
         return (
           <div key={key} className={cn("border-t", isOpen && "-mx-4 bg-secondary px-4 pb-3")}>
-            <button type="button" data-testid={key} data-level={m.level} aria-expanded={isOpen} onClick={() => setOpen(isOpen ? null : key)} className={cn(grid, "cursor-pointer rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-ring")}>
+            <button type="button" data-testid={key} data-level={m.level} aria-expanded={isOpen} aria-controls={isOpen ? `${key}-steps` : undefined} onClick={() => setOpen(isOpen ? null : key)} className={cn(grid, "cursor-pointer rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-ring")}>
               {line}
             </button>
-            {isOpen && <MomentSteps moment={m} />}
+            {isOpen && <MomentSteps moment={m} id={`${key}-steps`} />}
           </div>
         );
       })}
@@ -65,13 +65,13 @@ const detailLines = (detail: string) => detail.split(/\s(?=Rule \S+\. )/);
 const by = (s: StepView) => (s.meta === null ? null : s.decidedBy === "model" ? `By a model: ${s.meta}` : s.meta);
 
 /** One moment, opened: each step with what came in and out, who or what decided, and when it ran. */
-export function MomentSteps({ moment }: { moment: MomentRow }) {
+export function MomentSteps({ moment, id }: { moment: MomentRow; id: string }) {
   const domain = Math.max(moment.totalMs ?? 0, ...moment.steps.map((s) => (s.offsetMs ?? 0) + (s.durationMs ?? 0)));
   const shownWhat = moment.level === "amber" || moment.level === "red" ? "warning" : "pill";
   const speaker = (moment.speaker ?? "speaker").toLowerCase();
   return (
-    <div className="mt-1 rounded-lg border bg-card p-4" data-testid="moment-steps">
-      <p className="mb-3 text-[13px] font-semibold text-foreground">{shownWhat === "warning" ? `Why the warning at ${moment.at} appeared` : `What happened at ${moment.at}`}</p>
+    <div id={id} role="region" aria-labelledby={`${id}-title`} className="mt-1 rounded-lg border bg-card p-4" data-testid="moment-steps">
+      <p id={`${id}-title`} className="mb-3 text-[13px] font-semibold text-foreground">{shownWhat === "warning" ? `Why the warning at ${moment.at} appeared` : `What happened at ${moment.at}`}</p>
       {moment.steps.map((s, i) => (
         <div key={s.name} data-testid={`step-${s.name}`} className={cn("grid grid-cols-[104px_minmax(0,1fr)_140px_48px] items-start gap-3 py-2.5 text-[13px]", i > 0 && "border-t")}>
           <span className="font-semibold text-foreground">{s.name}</span>

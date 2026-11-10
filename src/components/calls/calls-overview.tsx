@@ -2,7 +2,8 @@ import Link from "next/link";
 import { StatusDot } from "@/components/app/status-dot";
 import type { Stage } from "@/core/live/health";
 import { type CallsOverview, type StageView, dollars } from "@/server/services/observability";
-import { formatSeconds, formatSpan } from "./time-bar";
+import { formatDateTime } from "@/lib/format";
+import { speedFormatter } from "./time-bar";
 
 const STAGE_LABEL: Record<Stage, string> = { hearing: "Hearing", transcribing: "Transcribing", reading: "Reading", rules: "Rules", screen: "Screen" };
 
@@ -44,9 +45,6 @@ export function Tile({ label, value, of, note, testId }: { label: string; value:
   );
 }
 
-const DAY = new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", timeZone: "UTC" });
-const TIME = new Intl.DateTimeFormat("en-US", { hour: "2-digit", minute: "2-digit", hourCycle: "h23", timeZone: "UTC" });
-const when = (iso: string) => `${DAY.format(new Date(iso))}, ${TIME.format(new Date(iso))}`;
 const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
 
 const Label = ({ children }: { children: React.ReactNode }) => <p className="mt-5 mb-1.5 text-[11px] text-muted-foreground">{children}</p>;
@@ -59,19 +57,20 @@ const Label = ({ children }: { children: React.ReactNode }) => <p className="mt-
  */
 export function CallsOverviewView({ overview: o, canOpen }: { overview: CallsOverview; canOpen: boolean }) {
   const { p50, p95, max, n } = o.latency;
+  const speed = speedFormatter(max ?? 0);
   const cost = o.calls === 0 ? "—" : o.typicalCostUsd === null ? "unknown" : dollars(o.typicalCostUsd);
   return (
     <section className="rounded-xl border bg-card p-4">
       <div className="mb-4 flex items-end gap-5">
         <div data-testid="hero-latency" className="text-[52px] leading-none font-semibold tracking-tight text-foreground">
-          {p50 === null ? "—" : formatSeconds(p50)}
+          {p50 === null ? "—" : speed(p50)}
         </div>
         <div data-testid="hero-caption" className="pb-0.5">
           <b className="block text-[13px] font-semibold text-foreground">Typical time from words to warning</b>
           <span className="block text-xs text-muted-foreground">
             {p50 === null || p95 === null || max === null
               ? "No turn has been timed yet, so there is no 19 in 20 or slowest time."
-              : `19 in 20 warnings arrive within ${formatSpan(p95)}. Slowest: ${formatSpan(max)}. Measured on ${plural(n, "turn")}, every call so far.`}
+              : `19 in 20 warnings arrive within ${speed(p95)}. Slowest: ${speed(max)}. Measured on ${plural(n, "turn")}, every call so far.`}
           </span>
         </div>
       </div>
@@ -91,8 +90,8 @@ export function CallsOverviewView({ overview: o, canOpen }: { overview: CallsOve
         <p className="border-t py-2.5 text-[13px] text-muted-foreground">No problem on any call so far.</p>
       ) : (
         o.problems.map((p, i) => (
-          <div key={i} data-testid={`problem-${i}`} className="grid grid-cols-[88px_minmax(0,1fr)_auto] gap-3 border-t py-2.5 text-[13px]">
-            <span className="pt-px font-mono text-[11px] text-muted-foreground">{when(p.at)}</span>
+          <div key={i} data-testid={`problem-${i}`} className="grid grid-cols-[148px_minmax(0,1fr)_auto] gap-3 border-t py-2.5 text-[13px]">
+            <span className="pt-px font-mono text-[11px] text-muted-foreground">{formatDateTime(p.at)}</span>
             <span className="text-foreground">
               {p.title && <span className="text-muted-foreground">{p.title} · </span>}
               {p.text}
@@ -117,8 +116,8 @@ export function CallsOverviewView({ overview: o, canOpen }: { overview: CallsOve
           ) : (
             o.recent.map((c) => (
               <div key={c.callId} className="border-t py-1">
-                <Link href={`/calls/${c.callId}`} data-testid={`call-link-${c.callId}`} className="-mx-2 grid grid-cols-[88px_minmax(0,1fr)_auto] gap-3 rounded-md px-2 py-1.5 text-[13px] hover:bg-muted">
-                  <span className="pt-px font-mono text-[11px] text-muted-foreground">{when(c.startedAt)}</span>
+                <Link href={`/calls/${c.callId}`} data-testid={`call-link-${c.callId}`} className="-mx-2 grid grid-cols-[148px_minmax(0,1fr)_auto] gap-3 rounded-md px-2 py-1.5 text-[13px] hover:bg-muted">
+                  <span className="pt-px font-mono text-[11px] text-muted-foreground">{formatDateTime(c.startedAt)}</span>
                   <span className="font-medium text-foreground">{c.title}</span>
                   <span className="text-xs text-muted-foreground tabular-nums">
                     {plural(c.turns, "turn")} · {plural(c.warnings, "warning")}

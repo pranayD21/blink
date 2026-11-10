@@ -41,8 +41,14 @@ test("one call reads top to bottom, and the red moment opens into its steps", as
 });
 test("the overview leads with the typical time from words to warning", async ({ page }) => {
   await actAs(page, "user_dana", "Dana Okafor"); await page.goto("/calls");
-  await expect(page.getByTestId("hero-latency")).toHaveText(/^(\d+\.\d s|—)$/); await expect(page.getByTestId("hero-caption")).toContainText("19 in 20");
+  await expect(page.getByTestId("hero-latency")).toHaveText(/^(\d+(\.\d)? s|\d+ ms|—)$/); await expect(page.getByTestId("hero-caption")).toContainText("19 in 20");
   await expect(page.getByTestId("stage-row").locator("[data-ok]")).toHaveCount(5);
+  // The headline and the caption's 19-in-20 and slowest share one unit.
+  const unit = (await page.getByTestId("hero-latency").textContent())?.match(/ (ms|s)$/)?.[1];
+  if (unit) {
+    const caption = (await page.getByTestId("hero-caption").textContent()) ?? "";
+    expect([...caption.matchAll(/\d+(?:\.\d)? (ms|s)\b/g)].map((m) => m[1])).toEqual([unit, unit]);
+  }
 });
 test("a banker cannot open either screen", async ({ page }) => { await actAs(page, "user_priya", "Priya Raman"); await page.goto("/calls"); await expect(page.getByTestId("role-gate")).toBeVisible(); });
 test("neither a banker nor the policy owner can open one call", async ({ page }) => {
@@ -59,4 +65,31 @@ test("the case under review links to its call record", async ({ page }) => {
   await actAs(page, "user_marcus", "Marcus Lee"); await page.goto("/cases/case_halvorsen");
   await page.getByTestId("link-call-record").click();
   await expect(page.getByTestId("call-counts")).toContainText("Turns heard");
+});
+test("the policy owner's overview names no call and links to none", async ({ page }) => {
+  // A problem to show: the banker opens a new case, starts a call on it, loses transcription for 4 s, and ends it.
+  const post = (url: string, data: object) => page.request.post(url, { data, headers: { "Idempotency-Key": crypto.randomUUID() } });
+  expect((await switchTo(page, "user_priya")).ok()).toBe(true);
+  const kase = { title: "Outage drill", issuer: "Drill Corp", ticker: "DRL", issuer_fiscal: { fiscal_year_end_month: 12, last_reported: { fy: 2026, q: 3, reported_on: "2026-10-20" } }, call_date: "2026-11-10", research_questions: ["How is demand?"], expert: { name: "Sam Drill" } };
+  const created = await post("/api/cases", kase);
+  expect(created.ok()).toBe(true);
+  const { caseId } = (await created.json()) as { caseId: string };
+  const started = await post("/api/calls", { caseId });
+  expect(started.ok()).toBe(true);
+  const { call } = (await started.json()) as { call: { id: string } };
+  const at = Date.now();
+  expect((await post(`/api/calls/${call.id}/outages`, { stage: "transcribing", startedAt: new Date(at).toISOString(), endedAt: new Date(at + 4000).toISOString(), cause: "The transcription socket closed.", shownToBanker: true })).ok()).toBe(true);
+  expect((await post(`/api/calls/${call.id}/end`, {})).ok()).toBe(true);
+
+  await page.goto("/");
+  await actAs(page, "user_marcus", "Marcus Lee"); await page.goto("/calls");
+  await expect(page.getByTestId("problem-0")).toContainText("Outage drill");
+  await expect(page.getByTestId("problem-0").getByRole("link", { name: /Open call/ })).toHaveCount(1);
+
+  await actAs(page, "user_dana", "Dana Okafor"); await page.goto("/calls");
+  await expect(page.getByTestId("problem-0")).toContainText("Blink could not hear the call for 4 seconds");
+  await expect(page.locator("main")).not.toContainText("Outage drill");
+  await expect(page.locator("main")).not.toContainText("Halvorsen");
+  await expect(page.getByRole("link", { name: /Open call/ })).toHaveCount(0);
+  await expect(page.locator('main a[href^="/calls/"]')).toHaveCount(0);
 });
