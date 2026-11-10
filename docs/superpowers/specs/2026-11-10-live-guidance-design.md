@@ -1,6 +1,6 @@
 # Blink: live call guidance, automatic hiding, and observability
 
-Design document. Written 2026-11-10. Status: **awaiting owner approval**. Nothing described here is built yet.
+Design document. Written 2026-11-10. Status: **approved by the owner on 2026-11-10**. Nothing described here is built yet. The build plan is [2026-11-10-live-guidance.md](../plans/2026-11-10-live-guidance.md).
 
 Read with [BLINK_BUILD_SPEC.md](../../../BLINK_BUILD_SPEC.md) (what exists and why) and [HANDOFF.md](../../../HANDOFF.md) (state of `main` at `5426d4e`). Where this document and the spec disagree, this document wins; [section 13](#13-changes-to-the-spec) lists the differences. Reference mockups: [2026-11-10-live-guidance-mockups.html](2026-11-10-live-guidance-mockups.html).
 
@@ -290,12 +290,11 @@ Table and column names; endpoint shapes; how the Mac app and the server talk (on
 
 ## 15. Open items for the owner
 
-Answered on 2026-11-10: what the banker can read after a call ([section 5](#5-after-the-call)), and the services ([section 10](#10-services)).
+Answered on 2026-11-10: what the banker can read after a call ([section 5](#5-after-the-call)), and the services ([section 10](#10-services)). The owner approved this document the same day.
 
 Still open:
 
-1. **Approve this document**, so that a build plan can be written from it.
-2. Say when a few minutes at the Mac are possible for the day-one spike.
-3. Confirm that "the full transcript" means the whole call with the passages compliance kept hidden still blanked out.
-4. Decide whether to ask In Practise for permission. A request can be drafted for the owner to send.
-5. Confirm or change the pass bars in [section 11](#11-honest-testing).
+1. Say when a few minutes at the Mac are possible for the day-one spike.
+2. Confirm that "the full transcript" means the whole call with the passages compliance kept hidden still blanked out.
+3. Decide whether to ask In Practise for permission. A request can be drafted for the owner to send.
+4. Confirm or change the pass bars in [section 11](#11-honest-testing).
