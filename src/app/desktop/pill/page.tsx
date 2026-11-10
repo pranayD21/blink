@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Pill } from "@/components/live/pill";
 import type { PillView } from "@/core/live/client";
 
@@ -16,6 +16,7 @@ function asView(data: unknown): PillView | null {
 /** The pill window of the banker's app: renders the latest PillView it is sent, on a transparent background. */
 export default function PillPage() {
   const [view, setView] = useState<PillView>({ level: "idle", text: "" });
+  const root = useRef<HTMLElement>(null);
 
   useEffect(() => {
     const channel = new BroadcastChannel("blink-pill");
@@ -23,11 +24,13 @@ export default function PillPage() {
       const next = asView(event.data);
       if (next) setView(next);
     };
+    // A marker for tests: set only once the listener is attached, so nothing sent earlier is lost unseen.
+    root.current?.setAttribute("data-ready", "true");
     return () => channel.close();
   }, []);
 
   return (
-    <main className="flex flex-1 items-center justify-center p-2">
+    <main ref={root} className="flex flex-1 items-center justify-center p-2">
       {/* The window shows only the pill, so the page and body paint nothing. */}
       <style>{"html, body { background: transparent !important; }"}</style>
       <Pill view={view} />

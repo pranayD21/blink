@@ -1,3 +1,4 @@
+import { cn } from "@/lib/utils";
 import { StatusDot, type DotTone } from "@/components/app/status-dot";
 import type { PillView } from "@/core/live/client";
 
@@ -17,9 +18,12 @@ export function Pill({ view }: { view: PillView }) {
       data-testid="pill"
       data-level={view.level}
       role="status"
-      className="rounded-full border border-border bg-popover px-4 py-2 text-sm text-popover-foreground"
+      className={cn(
+        "rounded-full border border-border bg-popover py-[7px] pr-3.5 pl-3 text-[12.5px] whitespace-nowrap text-popover-foreground",
+        view.level === "listening" ? "font-normal text-muted-foreground" : "font-medium shadow-[0_6px_18px_rgba(0,0,0,0.16)]",
+      )}
     >
-      <StatusDot tone={TONE[view.level]} className="whitespace-normal">
+      <StatusDot tone={TONE[view.level]} className="gap-2">
         {view.text}
       </StatusDot>
     </div>
