@@ -796,7 +796,7 @@ export function liveTurnSource(callId: string): TurnSource;
 export function runCall(opts: { caseId: string; source: TurnSource; onView: (v: PillView) => void }): Promise<{ end(): Promise<void> }>;
 ```
 
-- [ ] **Step 1: Write the failing test** for the assembler.
+- [x] **Step 1: Write the failing test** for the assembler.
 
 ```ts
 it("emits a turn on EndOfTurn with the channel's speaker and clocks", () => { /* end event on "expert" at 2750 ms audio → one FinishedTurn { speaker: "expert", speechEndMs: 2750 } */ });
@@ -805,14 +805,14 @@ it("drops a microphone turn that echoes the far side within four seconds", () =>
 it("keeps a microphone turn that says something else", () => { /* → both, in arrival order */ });
 ```
 
-- [ ] **Step 2: Run it and see it fail.** Run: `pnpm exec vitest run tests/core/live-turns.test.ts`. Expected: FAIL, module not found.
-- [ ] **Step 3: Implement the assembler, then the browser modules.**
+- [x] **Step 2: Run it and see it fail.** Run: `pnpm exec vitest run tests/core/live-turns.test.ts`. Expected: FAIL, module not found.
+- [x] **Step 3: Implement the assembler, then the browser modules.**
   - Audio: an `AudioContext` at 16,000 Hz per channel; the worklet posts 1,280-sample frames (80 ms) as 16-bit PCM.
   - Flux: `wss://api.deepgram.com/v2/listen?model=flux-general-en&encoding=linear16&sample_rate=16000&eot_threshold=0.8&eot_timeout_ms=7000`, one socket per channel, authenticated with the short-lived token the way Deepgram documents for browsers (confirm with context7 before writing). On close, mint a new token and reconnect with backoff of 250 ms doubling to 4 s; report `transcribing` down and up.
   - Session: `POST /api/calls`, then for each finished turn `POST .../turns` with the next `seq`, `speechEndedAt` computed as the channel's audio start wall time plus `speechEndMs`; on the reply dispatch `decision` to `reduceClient` and post the acknowledgement with the two client times; a turn request that fails or takes over 3 s marks `reading` down and is retried with the same `seq` until it succeeds; a 401 stops the call and shows broken. A 250 ms timer dispatches `tick`. Every stage that goes down and comes back posts one outage. `end()` posts `.../end` and dispatches `ended`.
   - A track whose `readyState` is `ended`, or a level of exactly zero for three seconds on the system-audio channel while the microphone hears speech, marks `hearing` down.
-- [ ] **Step 4: Run the tests.** Run: `pnpm test && pnpm typecheck`. Expected: PASS.
-- [ ] **Step 5: Commit.**
+- [x] **Step 4: Run the tests.** Run: `pnpm test && pnpm typecheck`. Expected: PASS.
+- [x] **Step 5: Commit.**
 
 ```bash
 git add src/lib/live public/pcm-worklet.js src/core/live/turns.ts tests/core/live-turns.test.ts

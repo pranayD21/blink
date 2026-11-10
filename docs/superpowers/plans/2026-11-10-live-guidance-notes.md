@@ -138,3 +138,14 @@ The SDK's per-request `timeout` stops counting once the response headers arrive,
 - `ingestTurn` checks the call is still live again inside its write transaction. A turn whose read was in flight when the call ended is refused with 409 `CALL_NOT_LIVE`, so it is never stored after the transcript was cut. `turnsSettled(callId)` resolves once every posted turn has settled, and the end route (Task 14) can await it before calling `endCall`.
 - `ackTurn` keeps the first acknowledgement. `recordOutage` refuses a call that is no longer live, and refuses times that do not parse or an end before the start. An outage still open at the end lasts until `ended_at`.
 - `findingsCore.ts` needed no change: `origin` already comes from the schema enum, which Task 9 extended with `live`.
+
+## Task 16: audio, Flux and the call session
+
+- Browser auth to Flux, checked against the live service on 2026-11-10 (one grant token, two handshakes, no audio sent): `new WebSocket(url, ["bearer", <grant token>])` opens and Flux answers `Connected`; `["token", <grant token>]` is refused with 401. Deepgram documents `token, <key>` for API keys and the Bearer scheme for grant tokens.
+- Deviations from the plan's signatures, all additive so the brief's calls still typecheck:
+  - `runCall`'s `source` may also be a factory `(callId) => TurnSource`, because `liveTurnSource(callId)` needs the call id and the call is created inside `runCall`. `runCall` also returns `callId`.
+  - `openFlux` takes a fifth, optional `{ mint, onLevel }`: `mint` gives each reconnect a fresh token (a 30 s token cannot be reused), and `onLevel` feeds the hearing watch from the same audio pipeline. `onMessage` gets a third argument, the wall time of the socket's first audio, so Flux's per-socket audio clock can be put on the call clock after a reconnect; `onState` and `onStage` take an optional cause, which becomes the outage's `cause`.
+  - A `TurnSource`'s speech times count from the moment `start()` was called; the session uses that moment as the origin for `speechEndedAt`. Task 17's scripted source must follow the same rule.
+  - Turn requests: a 401 stops the call and shows broken, as the brief says; so does any other refusal no retry can fix (other 4xx). Network failures, timeouts, 408, 429 and 5xx are retried with the same seq.
+- Controller ruling from Task 8's review, applied in `reduceClient`: a red warning always runs its 6 s, even over a broken stage, and broken shows again afterwards if a stage is still down. Applied consistently, it also means a red already showing is no longer cut short when a stage passes 3 s down; the existing test that expected that now uses amber, and a new test covers the red case.
+- A Flux `EndOfTurn` without its audio window is reported as a momentary `transcribing` outage (down, then up at once) with the cause "speech-to-text ended a turn without its audio times; that turn was lost", so it reaches the outage record instead of vanishing.

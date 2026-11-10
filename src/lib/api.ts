@@ -19,6 +19,8 @@ interface Options {
   body?: unknown;
   /** Multipart upload; `body` is ignored. */
   form?: FormData;
+  /** Aborting it fails the request as a network error. */
+  signal?: AbortSignal;
 }
 
 export async function api<T = unknown>(path: string, options: Options = {}): Promise<T> {
@@ -28,7 +30,7 @@ export async function api<T = unknown>(path: string, options: Options = {}): Pro
   if (!options.form && method !== "GET") headers["Content-Type"] = "application/json";
   let res: Response;
   try {
-    res = await fetch(path, { method, headers, body: options.form ?? (method === "GET" ? undefined : JSON.stringify(options.body ?? {})), cache: "no-store" });
+    res = await fetch(path, { method, headers, body: options.form ?? (method === "GET" ? undefined : JSON.stringify(options.body ?? {})), cache: "no-store", signal: options.signal });
   } catch {
     throw new ApiError(0, "NETWORK", "Could not reach the Blink server. Is it still running?");
   }

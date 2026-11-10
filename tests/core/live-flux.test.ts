@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseFluxMessage } from "@/core/live/flux";
+import { isEndWithoutWindow, parseFluxMessage } from "@/core/live/flux";
 
 const msg = (o: Record<string, unknown>) => JSON.stringify({ type: "TurnInfo", turn_index: 3, transcript: "hello there", ...o });
 
@@ -21,5 +21,19 @@ describe("parseFluxMessage", () => {
     expect(parseFluxMessage("null")).toEqual({ kind: "other" });
     expect(parseFluxMessage(msg({ event: "EndOfTurn" }))).toEqual({ kind: "other" });
     expect(parseFluxMessage(msg({ event: "Nope" }))).toEqual({ kind: "other" });
+  });
+});
+
+describe("isEndWithoutWindow", () => {
+  it("is true for an end of turn that lacks its audio window, which parseFluxMessage cannot use", () => {
+    expect(isEndWithoutWindow(msg({ event: "EndOfTurn" }))).toBe(true);
+    expect(isEndWithoutWindow(msg({ event: "EndOfTurn", audio_window_start: 1 }))).toBe(true);
+  });
+  it("is false for a complete end, an eager end, other events and junk", () => {
+    expect(isEndWithoutWindow(msg({ event: "EndOfTurn", audio_window_start: 1, audio_window_end: 2 }))).toBe(false);
+    expect(isEndWithoutWindow(msg({ event: "EagerEndOfTurn" }))).toBe(false);
+    expect(isEndWithoutWindow(msg({ event: "Update" }))).toBe(false);
+    expect(isEndWithoutWindow('{"type":"Connected"}')).toBe(false);
+    expect(isEndWithoutWindow("not json")).toBe(false);
   });
 });

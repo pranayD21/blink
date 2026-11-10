@@ -45,3 +45,19 @@ export function parseFluxMessage(raw: string): FluxEvent {
       return OTHER;
   }
 }
+
+/**
+ * True for an `EndOfTurn` that `parseFluxMessage` reads as `other` because its audio window is
+ * missing: a finished turn that would otherwise vanish without a trace.
+ */
+export function isEndWithoutWindow(raw: string): boolean {
+  let msg: unknown;
+  try {
+    msg = JSON.parse(raw);
+  } catch {
+    return false;
+  }
+  if (typeof msg !== "object" || msg === null) return false;
+  const m = msg as Record<string, unknown>;
+  return m.type === "TurnInfo" && m.event === "EndOfTurn" && parseFluxMessage(raw).kind === "other";
+}

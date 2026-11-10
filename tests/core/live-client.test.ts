@@ -35,15 +35,54 @@ describe("reduceClient", () => {
     expect(s.shown.level).toBe("amber");
   });
   it("broken replaces everything once a stage is down more than 3000 ms, and clears on stage_up", () => {
-    let s = run(started, { type: "decision", level: "red", atMs: 0 }, { type: "stage_down", stage: "hearing", atMs: 1000 });
-    expect(s.shown.level).toBe("red");
+    let s = run(started, { type: "decision", level: "amber", atMs: 0 }, { type: "stage_down", stage: "hearing", atMs: 1000 });
+    expect(s.shown.level).toBe("amber");
     s = reduceClient(s, { type: "tick", nowMs: 4000 });
-    expect(s.shown.level).toBe("red");
+    expect(s.shown.level).toBe("amber");
     s = reduceClient(s, { type: "tick", nowMs: 4001 });
     expect(s.shown).toEqual({ level: "broken", text: PILL_TEXT.broken });
     s = reduceClient(s, { type: "stage_up", stage: "hearing" });
     expect(s.shown.level).toBe("listening");
     expect(s.downSinceMs).toEqual({});
+  });
+  it("a red already showing runs its full 6000 ms before broken takes over", () => {
+    let s = run(started, { type: "decision", level: "red", atMs: 0 }, { type: "stage_down", stage: "hearing", atMs: 1000 });
+    s = reduceClient(s, { type: "tick", nowMs: 4001 });
+    expect(s.shown.level).toBe("red");
+    s = reduceClient(s, { type: "tick", nowMs: 6000 });
+    expect(s.shown).toEqual({ level: "broken", text: PILL_TEXT.broken });
+  });
+  it("a red decision while broken shows red for 6000 ms, then broken again while the stage is still down", () => {
+    let s = run(started, { type: "stage_down", stage: "transcribing", atMs: 0 }, { type: "tick", nowMs: 3500 });
+    expect(s.shown.level).toBe("broken");
+    s = reduceClient(s, { type: "decision", level: "red", atMs: 4000 });
+    expect(s.shown).toEqual({ level: "red", text: PILL_TEXT.red });
+    expect(s.warningUntilMs).toBe(10000);
+    s = reduceClient(s, { type: "tick", nowMs: 9999 });
+    expect(s.shown.level).toBe("red");
+    s = reduceClient(s, { type: "tick", nowMs: 10000 });
+    expect(s.shown).toEqual({ level: "broken", text: PILL_TEXT.broken });
+  });
+  it("a red decision while broken returns to listening, not broken, if the stage came back meanwhile", () => {
+    let s = run(started, { type: "stage_down", stage: "transcribing", atMs: 0 }, { type: "tick", nowMs: 3500 }, { type: "decision", level: "red", atMs: 4000 });
+    s = reduceClient(s, { type: "stage_up", stage: "transcribing" });
+    expect(s.shown.level).toBe("red");
+    s = reduceClient(s, { type: "tick", nowMs: 10000 });
+    expect(s.shown).toEqual({ level: "listening", text: PILL_TEXT.listening });
+  });
+  it("an amber decision while broken stays broken", () => {
+    const s = run(started, { type: "stage_down", stage: "reading", atMs: 0 }, { type: "tick", nowMs: 3500 }, { type: "decision", level: "amber", atMs: 4000 });
+    expect(s.shown).toEqual({ level: "broken", text: PILL_TEXT.broken });
+    expect(s.warningUntilMs).toBeNull();
+  });
+  it("stage_up with another stage still down more than 3000 ms stays broken", () => {
+    let s = run(started, { type: "stage_down", stage: "hearing", atMs: 0 }, { type: "stage_down", stage: "reading", atMs: 500 }, { type: "tick", nowMs: 4000 });
+    expect(s.shown.level).toBe("broken");
+    s = reduceClient(s, { type: "stage_up", stage: "hearing" });
+    expect(s.shown.level).toBe("broken");
+    s = reduceClient(s, { type: "tick", nowMs: 4250 });
+    expect(s.shown).toEqual({ level: "broken", text: PILL_TEXT.broken });
+    expect(s.downSinceMs).toEqual({ reading: 500 });
   });
   it("a stage that comes back inside 3 seconds never shows broken", () => {
     const s = run(started, { type: "stage_down", stage: "screen", atMs: 0 }, { type: "tick", nowMs: 2000 }, { type: "stage_up", stage: "screen" }, { type: "tick", nowMs: 9000 });

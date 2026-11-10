@@ -28,6 +28,7 @@ const BROKEN: PillView = { level: "broken", text: PILL_TEXT.broken };
 export const INITIAL_CLIENT: ClientState = { shown: IDLE, warningUntilMs: null, endedUntilMs: null, downSinceMs: {} };
 
 const live = (s: ClientState) => s.shown.level !== "idle" && s.shown.level !== "ended";
+const redShowing = (s: ClientState, nowMs: number) => s.shown.level === "red" && s.warningUntilMs !== null && nowMs < s.warningUntilMs;
 
 /** Applies the clock: ends a finished warning or ended view, and sets or clears the broken view. */
 function settle(state: ClientState, nowMs: number): ClientState {
@@ -38,6 +39,8 @@ function settle(state: ClientState, nowMs: number): ClientState {
   if (!live(state)) return state;
 
   if (brokenStage(nowMs, state.downSinceMs) !== null) {
+    // Red is never held back: a red warning runs its full time even over a broken stage.
+    if (redShowing(state, nowMs)) return state;
     return state.shown.level === "broken" ? state : { ...state, shown: BROKEN, warningUntilMs: null };
   }
   if (state.shown.level === "broken") return { ...state, shown: LISTENING, warningUntilMs: null };
@@ -70,10 +73,9 @@ export function reduceClient(state: ClientState, event: ClientEvent): ClientStat
 
     case "decision": {
       const settled = settle(state, event.atMs);
-      if (!live(settled) || settled.shown.level === "broken") return settled;
-      if (event.level === "listening") return settled;
-      const showingRed = settled.shown.level === "red" && settled.warningUntilMs !== null && event.atMs < settled.warningUntilMs;
-      if (event.level === "amber" && showingRed) return settled;
+      if (!live(settled) || event.level === "listening") return settled;
+      // While broken only red gets through; it shows for its full time, then broken returns if a stage is still down.
+      if (event.level === "amber" && (settled.shown.level === "broken" || redShowing(settled, event.atMs))) return settled;
       return {
         ...settled,
         shown: { level: event.level, text: event.level === "red" ? PILL_TEXT.red : PILL_TEXT.amber },
