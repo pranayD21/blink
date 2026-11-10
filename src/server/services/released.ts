@@ -7,21 +7,24 @@ import type { RedactedTurn } from "@/core/release/redact";
 import type { Actor } from "../auth/actor";
 import { type DbOrTx, fromJson } from "../db/client";
 import { notFound } from "../errors";
-import { type ReleaseStanding, readableReleases } from "./briefs";
+import { type ReleaseStanding, readableRelease } from "./briefs";
 
 export interface ReleasedTranscript {
   release: { id: string; caseTitle: string; releasedAt: string; standing: ReleaseStanding };
+  /** False for a release made before transcripts were frozen: there is nothing to show, and the count means nothing. */
+  available: boolean;
   turns: RedactedTurn[];
   hiddenPassages: number;
 }
 
 /** GET /api/analyst/releases/:id — a release the actor may not read is a 404, the same as one that does not exist. */
 export function releasedTranscript(tx: DbOrTx, releaseId: string, actor: Actor): ReleasedTranscript {
-  const found = readableReleases(tx, actor).find((r) => r.release.id === releaseId);
+  const found = readableRelease(tx, releaseId, actor);
   if (!found) throw notFound("release");
   const { release, caseRow, standing } = found;
   return {
     release: { id: release.id, caseTitle: caseRow.title, releasedAt: release.releasedAt, standing },
+    available: release.redactedTranscriptJson !== null,
     turns: fromJson<RedactedTurn[]>(release.redactedTranscriptJson, []),
     hiddenPassages: release.hiddenPassages ?? 0,
   };

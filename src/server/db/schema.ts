@@ -602,6 +602,9 @@ export const releases = sqliteTable(
     redactedTranscriptJson: text("redacted_transcript_json"),
     redactedTranscriptHash: text("redacted_transcript_hash"),
     hiddenPassages: integer("hidden_passages"),
+    // The summary's citations (claim key, summary, quotes with turn label) as they stood at release, so a
+    // later correction cannot change what the banker is shown. Null on releases made before this existed.
+    citationsJson: text("citations_json"),
   },
   (t) => [index("releases_case_idx").on(t.caseId)],
 );

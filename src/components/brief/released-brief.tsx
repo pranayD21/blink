@@ -52,7 +52,7 @@ export function ReleasedBrief({ brief }: { brief: Released }) {
                     <span>
                       {s.text}
                       {s.claim_ids.map((id) => (
-                        <button key={id} type="button" onClick={() => setSelected((cur) => (cur === id ? null : id))} data-testid={`citation-${id}`} className={cn("ml-1 inline-flex h-[18px] items-center rounded bg-indigo-50 px-1 font-mono text-[11px] font-medium text-indigo-700 ring-1 ring-indigo-200 ring-inset hover:bg-indigo-100", selected === id && "bg-indigo-600 text-white ring-indigo-600 hover:bg-indigo-600")}>
+                        <button key={id} type="button" onClick={() => setSelected((cur) => (cur === id ? null : id))} data-testid={`citation-${id}`} className={cn("ml-1 inline-flex h-[18px] items-center rounded bg-indigo-50 px-1 font-mono text-[11px] font-medium text-primary ring-1 ring-indigo-200 ring-inset hover:bg-indigo-100", selected === id && "bg-indigo-600 text-white ring-indigo-600 hover:bg-indigo-600")}>
                           {id}
                         </button>
                       ))}
@@ -63,7 +63,7 @@ export function ReleasedBrief({ brief }: { brief: Released }) {
             </section>
           ))}
           <p className="border-t pt-3 text-sm">
-            <Link href={`/analyst/${brief.releaseId}`} data-testid="read-transcript" className="font-medium text-indigo-700 underline-offset-4 hover:underline">
+            <Link href={`/analyst/${brief.releaseId}`} data-testid="read-transcript" className="font-medium text-primary underline-offset-4 hover:underline">
               Read the transcript
             </Link>
           </p>
@@ -74,7 +74,7 @@ export function ReleasedBrief({ brief }: { brief: Released }) {
         <aside className="rounded-lg bg-slate-50 p-3 text-sm">
           {citation ? (
             <>
-              <div className="font-mono text-xs font-semibold text-indigo-700">{citation.key}</div>
+              <div className="font-mono text-xs font-semibold text-primary">{citation.key}</div>
               <p className="mt-1 text-slate-800">{citation.summary}</p>
               <div className="mt-2 space-y-1.5">
                 {citation.quotes.map((q, i) => (

@@ -10,6 +10,13 @@ function HiddenBar({ length }: { length: number }) {
 /** The released transcript as a banker reads it: one line per turn, with whatever compliance kept hidden blanked. */
 export function ReleasedTranscriptView({ view }: { view: ReleasedTranscript }) {
   const { release, turns, hiddenPassages } = view;
+  if (!view.available) {
+    return (
+      <p className="rounded-lg border border-dashed bg-muted/60 px-4 py-6 text-center text-sm text-muted-foreground" data-testid="transcript-unavailable">
+        The transcript for this release is not available.
+      </p>
+    );
+  }
   return (
     <div className="space-y-4" data-testid="released-transcript" data-standing={release.standing}>
       {release.standing === "superseded" && (

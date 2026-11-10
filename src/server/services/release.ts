@@ -11,14 +11,14 @@ import { z } from "zod";
 import { type BriefSection, sha256Hex } from "@/core/deps/hash";
 import { findLeaks } from "@/core/release/leak";
 import { redactTurns } from "@/core/release/redact";
-import { type ReleaseFailure, checkRelease, transitionBrief } from "@/core/workflow/brief";
+import { type ReleaseFailure, checkRelease, citedClaimKeys, transitionBrief } from "@/core/workflow/brief";
 import { type Actor, requireReviewer } from "../auth/actor";
 import { appendAudit } from "../audit/log";
 import { nowIso } from "../clock";
 import { type DbOrTx, fromJson, toJson } from "../db/client";
 import { approvals, briefs, releases } from "../db/schema";
 import { newId } from "../ids";
-import { AUDIENCES, getBrief, ineligibleCitations } from "./briefs";
+import { AUDIENCES, citationsFor, getBrief, ineligibleCitations } from "./briefs";
 import { applyCaseEvent, computeReviewBlockers, syncCaseStatus } from "./caseStatus";
 import { currentTranscript, getCase, turnsOfVersion } from "./loaders";
 import { restrictedOnCase } from "./redaction";
@@ -88,6 +88,8 @@ export function releaseBrief(tx: DbOrTx, briefId: string, input: ReleaseInput, a
       redactedTranscriptJson: redactedJson,
       redactedTranscriptHash: redactedHash,
       hiddenPassages: redacted.hiddenPassages,
+      // The quotes behind each cited claim, as they read now; a later correction must not change them.
+      citationsJson: toJson(citationsFor(tx, caseId, citedClaimKeys(fromJson<BriefSection[]>(brief.sentencesJson, [])))),
     })
     .run();
   const next = transitionBrief(brief.status, "RELEASE");

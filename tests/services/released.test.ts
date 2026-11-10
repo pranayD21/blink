@@ -8,9 +8,10 @@ import type { Actor } from "@/server/auth/actor";
 import { getDb } from "@/server/db/client";
 import { releases, turns, users } from "@/server/db/schema";
 import { releasedBriefs } from "@/server/services/briefs";
-import { loadCurrentClaims } from "@/server/services/loaders";
+import { currentTranscript, loadCurrentClaims, turnsOfVersion } from "@/server/services/loaders";
+import { restrictedOnCase } from "@/server/services/redaction";
 import { releasedTranscript } from "@/server/services/released";
-import { CASE, G1, G2, appError, approve, completeReview, draftTemplate, release, reviewAndApprove, seedAnalyzed, uploadV2, user } from "../helpers/db";
+import { CASE, G1, G2, STEEL, appError, approve, completeReview, draftTemplate, release, reviewAndApprove, seedAnalyzed, uploadV2, user } from "../helpers/db";
 
 beforeEach(seedAnalyzed);
 
@@ -22,6 +23,18 @@ const restrictedQuotes = (): string[] =>
     .filter((c) => c.row.logicalKey === G1 || c.row.logicalKey === G2)
     .flatMap((c) => c.quotes.map((q) => q.quote));
 
+/** The text of every span compliance hid on the current transcript, as `restrictedOnCase` reports them. */
+const hiddenTexts = (): string[] => {
+  const turns = turnsOfVersion(getDb(), currentTranscript(getDb(), CASE)!.id);
+  return restrictedOnCase(getDb(), CASE).spans.map((s) => turns.find((t) => t.label === s.turnLabel)!.text.slice(s.start, s.end));
+};
+const escaped = (text: string) => JSON.stringify(text).slice(1, -1);
+const expectNoHidden = (body: string) => {
+  const hidden = hiddenTexts();
+  expect(hidden.length).toBeGreaterThanOrEqual(2);
+  for (const text of [...hidden, ...restrictedQuotes()]) expect(body).not.toContain(escaped(text));
+};
+
 /** A second banker who did not create the case. */
 function otherBanker(): Actor {
   getDb().insert(users).values({ id: "user_sam", name: "Sam Ortiz", role: "analyst" }).run();
@@ -32,10 +45,9 @@ describe("the banker reads the released transcript", () => {
   it("the banker's transcript holds no restricted text, in any field", () => {
     const brief = reviewAndApprove();
     release(brief.id);
-    const quotes = restrictedQuotes();
-    expect(quotes.length).toBeGreaterThanOrEqual(2);
+    expect(restrictedQuotes().length).toBeGreaterThanOrEqual(2);
     const body = JSON.stringify(releasedTranscript(getDb(), releaseRow().id, user("priya")));
-    for (const quote of quotes) expect(body).not.toContain(JSON.stringify(quote).slice(1, -1));
+    expectNoHidden(body);
     expect(body).toContain("Distributors broadly are soft");
   });
 
@@ -78,7 +90,7 @@ describe("the banker reads the released transcript", () => {
     const sam = otherBanker();
     expect(releasedBriefs(getDb(), sam)).toHaveLength(1);
     const body = JSON.stringify(releasedTranscript(getDb(), releaseRow().id, sam));
-    for (const quote of restrictedQuotes()) expect(body).not.toContain(JSON.stringify(quote).slice(1, -1));
+    expectNoHidden(body);
     expect(body).toContain("Distributors broadly are soft");
   });
 
@@ -88,7 +100,7 @@ describe("the banker reads the released transcript", () => {
     expect(releasedBriefs(getDb(), user("marcus"))).toHaveLength(1);
     expect(releasedBriefs(getDb(), user("jordan"))).toHaveLength(1);
     const body = JSON.stringify(releasedTranscript(getDb(), releaseRow().id, user("marcus")));
-    for (const quote of restrictedQuotes()) expect(body).not.toContain(JSON.stringify(quote).slice(1, -1));
+    expectNoHidden(body);
   });
 
   it("the turns come only from the snapshot: a changed turns table does not show", () => {
@@ -109,5 +121,61 @@ describe("the banker reads the released transcript", () => {
     const after = releasedTranscript(getDb(), id, user("priya"));
     expect(after.release.standing).toBe("under_re_review");
     expect(after.turns).toEqual(before);
+  });
+
+  it("the banker's citations are frozen at release: a corrected transcript changes none of them", async () => {
+    const brief = reviewAndApprove();
+    release(brief.id);
+    const before = releasedBriefs(getDb(), user("priya"))[0].citations;
+    const steel = before.find((c) => c.key === STEEL)!;
+    expect(steel.quotes.map((q) => q.quote).join(" ")).toMatch(/twelve/);
+    expect(before.find((c) => c.key === "C8")!.quotes.length).toBeGreaterThan(0);
+
+    await uploadV2();
+    const after = releasedBriefs(getDb(), user("priya"));
+    expect(after[0].standing).toBe("under_re_review");
+    expect(after[0].citations).toEqual(before);
+    const body = JSON.stringify(after);
+    expect(body).not.toMatch(/twenty-one/);
+    expectNoHidden(body.replaceAll("twenty-one", ""));
+  });
+
+  it("a stored quote that touches a hidden run is not shown, even if the stored citations were tampered with", () => {
+    const brief = reviewAndApprove();
+    release(brief.id);
+    const row = releaseRow();
+    const hiddenQuote = restrictedQuotes()[0];
+    const stored = JSON.parse(row.citationsJson!) as { key: string; summary: string; quotes: { turnLabel: string; quote: string; role: string }[] }[];
+    stored[0].quotes.push({ turnLabel: "T5", quote: hiddenQuote, role: "support" }, { turnLabel: "T15", quote: "Cardinal", role: "support" });
+    getDb().update(releases).set({ citationsJson: JSON.stringify(stored) }).where(eq(releases.id, row.id)).run();
+    const body = JSON.stringify(releasedBriefs(getDb(), user("priya")));
+    expect(body).not.toContain(escaped(hiddenQuote));
+    expect(body).not.toContain("Cardinal");
+  });
+
+  it("a release with no stored snapshot says the transcript is not available and shows no citations", () => {
+    const brief = reviewAndApprove();
+    release(brief.id);
+    const row = releaseRow();
+    getDb().update(releases).set({ redactedTranscriptJson: null, hiddenPassages: null, citationsJson: null }).where(eq(releases.id, row.id)).run();
+    expect(releasedTranscript(getDb(), row.id, user("priya"))).toMatchObject({ available: false, turns: [], hiddenPassages: 0 });
+    expect(releasedBriefs(getDb(), user("priya"))[0].citations).toEqual([]);
+  });
+
+  it("a banker is not told a release was superseded by one they cannot open", () => {
+    completeReview();
+    const v1 = draftTemplate();
+    approve(v1.id, "investment_team");
+    release(v1.id, "investment_team");
+    const v2 = draftTemplate();
+    approve(v2.id, "analyst");
+    release(v2.id, "analyst");
+
+    const sam = otherBanker();
+    expect(releasedBriefs(getDb(), sam).map((b) => [b.versionNo, b.standing, b.staleReason])).toEqual([[1, "current", null]]);
+    expect(releasedBriefs(getDb(), user("priya")).map((b) => [b.versionNo, b.standing])).toEqual([
+      [2, "current"],
+      [1, "superseded"],
+    ]);
   });
 });

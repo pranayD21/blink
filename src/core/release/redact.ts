@@ -88,3 +88,10 @@ export function redactTurns(
   });
   return { turns: out, hiddenPassages: merged.length };
 }
+
+/** True only when the whole quote sits inside one visible run of the turn: a quote that touches or crosses a blanked run is not. */
+export function quoteIsVisible(turns: readonly RedactedTurn[], turnLabel: string, quote: string): boolean {
+  if (quote.length === 0) return false;
+  const turn = turns.find((t) => t.label === turnLabel);
+  return !!turn && turn.segments.some((segment) => "text" in segment && segment.text.includes(quote));
+}

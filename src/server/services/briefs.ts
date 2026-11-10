@@ -5,6 +5,7 @@
 import { and, desc, eq, inArray } from "drizzle-orm";
 import { z } from "zod";
 import { type BriefSection, briefHash } from "@/core/deps/hash";
+import { type RedactedTurn, quoteIsVisible } from "@/core/release/redact";
 import { type Eligibility, type EligibilityFinding, citedClaimKeys, claimEligibility, enforceBriefCitations, renderBriefMarkdown, transitionBrief } from "@/core/workflow/brief";
 import { type Actor, isReviewer, requireReviewer } from "../auth/actor";
 import { appendAudit } from "../audit/log";
@@ -290,7 +291,7 @@ export interface CitationView {
   quotes: { turnLabel: string; quote: string; role: string }[];
 }
 
-function citationsFor(tx: DbOrTx, caseId: string, keys: string[]): CitationView[] {
+export function citationsFor(tx: DbOrTx, caseId: string, keys: string[]): CitationView[] {
   const claims = loadCurrentClaims(tx, caseId);
   return keys.map((key) => {
     const claim = claims.find((c) => c.row.logicalKey === key);
@@ -357,47 +358,82 @@ export function briefWorkspace(tx: DbOrTx, caseId: string, actor: Actor) {
 }
 
 export type ReleaseStanding = "current" | "superseded" | "under_re_review";
+type ReleaseRow = typeof releases.$inferSelect;
 
 /** Compliance reads every release. A banker reads the releases of cases they created, and any release to the investment team. */
 export function canReadRelease(actor: Actor, release: { audience: string }, caseRow: { createdBy: string }): boolean {
   return isReviewer(actor) || caseRow.createdBy === actor.id || release.audience === "investment_team";
 }
 
-/** Every release the actor may read, newest first, with where each stands. */
-export function readableReleases(tx: DbOrTx, actor: Actor) {
-  const releaseRows = tx.select().from(releases).orderBy(desc(releases.releasedAt)).all();
-  const caseRows = new Map(tx.select().from(cases).all().map((c) => [c.id, c]));
-  const newestByCase = new Map<string, string>();
-  for (const r of releaseRows) if (!newestByCase.has(r.caseId)) newestByCase.set(r.caseId, r.id);
+/** What `releaseBrief` writes on an older brief when a newer release replaces it. */
+const SUPERSEDED_BY_RELEASE = /^superseded by brief v\d/;
 
-  return releaseRows
-    .filter((release) => canReadRelease(actor, release, caseRows.get(release.caseId)!))
-    .map((release) => {
-      const brief = getBrief(tx, release.briefId);
-      // Exposure has already occurred; the view says so rather than quietly withdrawing the brief (§9.3).
-      const standing: ReleaseStanding = newestByCase.get(release.caseId) !== release.id ? "superseded" : brief.status === "released" ? "current" : "under_re_review";
-      return { release, brief, caseRow: caseRows.get(release.caseId)!, standing };
-    });
+/**
+ * Where a release stands for one reader: superseded when a newer release this reader can open exists, under
+ * re-review when its evidence changed after release, else current. A release the reader cannot open never
+ * counts, so nobody is told they were superseded by something they cannot see.
+ */
+function standingOf(brief: BriefRow, newerReadable: boolean): { standing: ReleaseStanding; staleReason: string | null } {
+  if (newerReadable) return { standing: "superseded", staleReason: null };
+  if (brief.status === "released" || (brief.status === "stale" && SUPERSEDED_BY_RELEASE.test(brief.staleReason ?? ""))) return { standing: "current", staleReason: null };
+  return { standing: "under_re_review", staleReason: brief.staleReason };
 }
 
-/** GET /api/analyst/briefs — released briefs only, with the quotes behind each citation. */
-export function releasedBriefs(tx: DbOrTx, actor: Actor) {
-  return readableReleases(tx, actor).map(({ release, brief, caseRow, standing }) => {
-    const sections = fromJson<BriefSection[]>(brief.sentencesJson, []);
-    return {
-      releaseId: release.id,
-      releasedAt: release.releasedAt,
-      audience: release.audience,
-      briefHash: release.briefHash,
-      case: { id: caseRow.id, title: caseRow.title, issuer: caseRow.issuer, ticker: caseRow.ticker },
-      versionNo: brief.versionNo,
-      standing,
-      staleReason: standing === "under_re_review" ? brief.staleReason : null,
-      sections,
-      withheldCount: brief.withheldCount,
-      citations: citationsFor(tx, release.caseId, citedClaimKeys(sections)),
-    };
+const newestFirst = [desc(releases.releasedAt), desc(releases.id)] as const;
+
+function readableOfCase(tx: DbOrTx, caseRow: typeof cases.$inferSelect, actor: Actor): ReleaseRow[] {
+  return tx.select().from(releases).where(eq(releases.caseId, caseRow.id)).orderBy(...newestFirst).all().filter((r) => canReadRelease(actor, r, caseRow));
+}
+
+/** One release as the actor may see it, or null when they may not read it. Looks the release up by id, not by listing. */
+export function readableRelease(tx: DbOrTx, releaseId: string, actor: Actor) {
+  const release = tx.select().from(releases).where(eq(releases.id, releaseId)).get();
+  if (!release) return null;
+  const caseRow = getCase(tx, release.caseId);
+  if (!canReadRelease(actor, release, caseRow)) return null;
+  const brief = getBrief(tx, release.briefId);
+  const newest = readableOfCase(tx, caseRow, actor)[0];
+  return { release, brief, caseRow, ...standingOf(brief, newest?.id !== release.id) };
+}
+
+/** Every release the actor may read, newest first, with where each stands for them. */
+export function readableReleases(tx: DbOrTx, actor: Actor) {
+  const caseRows = new Map(tx.select().from(cases).all().map((c) => [c.id, c]));
+  const readable = tx.select().from(releases).orderBy(...newestFirst).all().filter((r) => canReadRelease(actor, r, caseRows.get(r.caseId)!));
+  const newestByCase = new Map<string, string>();
+  for (const r of readable) if (!newestByCase.has(r.caseId)) newestByCase.set(r.caseId, r.id);
+  return readable.map((release) => {
+    const brief = getBrief(tx, release.briefId);
+    return { release, brief, caseRow: caseRows.get(release.caseId)!, ...standingOf(brief, newestByCase.get(release.caseId) !== release.id) };
   });
+}
+
+/**
+ * The citations as frozen at release, minus any quote that is not wholly visible in that release's own
+ * transcript snapshot (a backstop: nothing that touches a hidden run is shown). A release with no stored
+ * citations shows none.
+ */
+function frozenCitations(release: ReleaseRow): CitationView[] {
+  const stored = fromJson<CitationView[]>(release.citationsJson, []);
+  const turns = fromJson<RedactedTurn[]>(release.redactedTranscriptJson, []);
+  return stored.map((c) => ({ ...c, quotes: c.quotes.filter((q) => quoteIsVisible(turns, q.turnLabel, q.quote)) }));
+}
+
+/** GET /api/analyst/briefs — released briefs only, with the quotes behind each citation as they were at release. */
+export function releasedBriefs(tx: DbOrTx, actor: Actor) {
+  return readableReleases(tx, actor).map(({ release, brief, caseRow, standing, staleReason }) => ({
+    releaseId: release.id,
+    releasedAt: release.releasedAt,
+    audience: release.audience,
+    briefHash: release.briefHash,
+    case: { id: caseRow.id, title: caseRow.title, issuer: caseRow.issuer, ticker: caseRow.ticker },
+    versionNo: brief.versionNo,
+    standing,
+    staleReason,
+    sections: fromJson<BriefSection[]>(brief.sentencesJson, []),
+    withheldCount: brief.withheldCount,
+    citations: frozenCitations(release),
+  }));
 }
 
 /** The newest brief-draft job for a case, so the page can show progress or the reason a draft failed. */
