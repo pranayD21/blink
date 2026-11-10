@@ -53,7 +53,15 @@ async function draftApproveRelease(page: Page, version: number) {
   await expect(page.getByTestId("case-status")).toHaveText("RELEASED");
 }
 
-test("the demo script runs end to end from recordings", async ({ page }) => {
+test("the demo script runs end to end from recordings", async ({ page, baseURL }) => {
+  // The demo must not depend on the network: the browser may only ever talk to the app itself.
+  const appHost = new URL(baseURL!).host;
+  const outside: string[] = [];
+  page.on("request", (request) => {
+    const url = new URL(request.url());
+    if ((url.protocol === "http:" || url.protocol === "https:") && url.host !== appHost) outside.push(request.url());
+  });
+
   // ── 1. The queue ──────────────────────────────────────────────────────────
   await test.step("1. queue with one case and the synthetic-data pill", async () => {
     await page.goto("/");
@@ -242,4 +250,6 @@ test("the demo script runs end to end from recordings", async ({ page }) => {
     await expect(page.getByTestId("eval-table")).toContainText("Halvorsen");
     await expect(page.getByTestId("missed-none")).toBeVisible();
   });
+
+  expect(outside, "requests the browser made to hosts other than the app").toEqual([]);
 });

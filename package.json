@@ -2,6 +2,9 @@
   "name": "blink",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "dev": "concurrently -n web,worker \"next dev\" \"tsx watch scripts/worker.ts\"",
     "build": "next build",
@@ -19,6 +22,7 @@
     "eval": "tsx scripts/eval.ts",
     "record": "BLINK_LLM_MODE=record tsx scripts/record-demo.ts",
     "demo:check": "BLINK_LLM_MODE=replay tsx scripts/record-demo.ts",
+    "demo:offline": "sh scripts/offline-demo.sh",
     "audit:verify": "tsx scripts/verify-audit.ts"
   },
   "dependencies": {
