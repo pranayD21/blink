@@ -96,20 +96,20 @@
 }
 
 .dark {
-  --background: #141310;
-  --foreground: #ece6da;
-  --card: #1c1b17;
-  --card-foreground: #ece6da;
-  --popover: #1c1b17;
-  --popover-foreground: #ece6da;
-  --primary: #ece6da;
-  --primary-foreground: #141310;
-  --secondary: #26241f;
-  --secondary-foreground: #ece6da;
-  --muted: #26241f;
-  --muted-foreground: #a39c90;
-  --accent: #26241f;
-  --accent-foreground: #ece6da;
+  --background: #070706;
+  --foreground: #f6f1e8;
+  --card: #12110f;
+  --card-foreground: #f6f1e8;
+  --popover: #161512;
+  --popover-foreground: #f6f1e8;
+  --primary: #f6f1e8;
+  --primary-foreground: #070706;
+  --secondary: #1c1b17;
+  --secondary-foreground: #f6f1e8;
+  --muted: #1c1b17;
+  --muted-foreground: #b7b0a4;
+  --accent: #1c1b17;
+  --accent-foreground: #f6f1e8;
   --warning: #f5a524;
   --warning-foreground: #0b0b0c;
   --destructive: #ef4444;
@@ -158,24 +158,28 @@
   animation: blink-flash 1.4s ease-out 1;
 }
 
-/* A slow wash behind the sign-in page and the live trace. Two inks, no extra colours. */
+/* Light moving through the page. Silver and warm white, the same bands on every screen. */
 .aurora-field {
   position: absolute;
-  inset: -12%;
+  inset: -20%;
   z-index: 0;
   pointer-events: none;
-  background-image: repeating-linear-gradient(
-    104deg,
-    transparent 0%,
-    color-mix(in srgb, var(--foreground) 7%, transparent) 14%,
-    transparent 28%,
-    color-mix(in srgb, var(--warning) 14%, transparent) 42%,
-    transparent 56%
-  );
-  background-size: 220% 220%;
-  animation: aurora-shift 72s linear infinite;
-  filter: blur(36px);
-  opacity: 0.85;
+  background-image:
+    repeating-linear-gradient(
+      100deg,
+      transparent 0%,
+      rgba(255, 255, 255, 0.22) 7%,
+      transparent 14%,
+      transparent 22%,
+      rgba(255, 236, 214, 0.16) 30%,
+      transparent 40%
+    ),
+    radial-gradient(ellipse 55% 45% at 12% 8%, rgba(255, 255, 255, 0.2), transparent 60%),
+    radial-gradient(ellipse 40% 50% at 88% 18%, rgba(255, 244, 220, 0.14), transparent 62%);
+  background-size: 280% 280%, 100% 100%, 100% 100%;
+  animation: aurora-shift 36s ease-in-out infinite alternate;
+  filter: blur(18px);
+  opacity: 1;
 }
 
 @keyframes aurora-shift {
@@ -188,12 +192,17 @@
 }
 
 .glass-button {
-  border: 1px solid color-mix(in srgb, var(--foreground) 16%, transparent);
-  background-color: color-mix(in srgb, var(--foreground) 6%, transparent);
-  backdrop-filter: blur(12px);
+  position: relative;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  border-radius: 999px;
+  background-color: rgba(255, 255, 255, 0.08);
+  color: var(--foreground);
+  backdrop-filter: blur(16px);
   box-shadow:
-    inset 1px 1px 0 color-mix(in srgb, var(--foreground) 18%, transparent),
-    inset -1px -1px 0 color-mix(in srgb, var(--background) 45%, transparent);
+    0 2px 10px rgba(0, 0, 0, 0.28),
+    inset 2px 2px 1px -2px rgba(255, 255, 255, 0.75),
+    inset -2px -2px 1px -2px rgba(255, 255, 255, 0.45),
+    inset 0 0 8px 2px rgba(255, 255, 255, 0.08);
 }
 
 .glass-button::before {
@@ -232,8 +241,12 @@
 
 .glass-surface,
 .bg-card {
-  background-color: color-mix(in srgb, var(--card) 74%, transparent);
-  backdrop-filter: blur(16px);
+  background-color: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  backdrop-filter: blur(18px);
+  box-shadow:
+    inset 1px 1px 0 rgba(255, 255, 255, 0.2),
+    inset -1px -1px 0 rgba(255, 255, 255, 0.06);
 }
 
 .auth-field {

@@ -40,10 +40,10 @@ export default async function QueuePage() {
   return (
     <PageShell
       title="Case queue"
-      description="Expert calls waiting for compliance review. Blink extracts what the expert said, checks it against the approved policy, and records what each decision was based on."
+      description="Calls waiting for review."
       actions={
         actor.role === "analyst" ? (
-          <Button asChild size="sm">
+          <Button asChild className="h-11 px-6">
             <Link href="/cases/new">
               <Plus /> New case
             </Link>
@@ -57,11 +57,11 @@ export default async function QueuePage() {
         </div>
       )}
       {ready && !policy && (
-        <div className="mb-4 flex items-center justify-between gap-4 rounded-lg border border-warning/40 bg-warning/10 px-4 py-3 text-sm text-foreground" data-testid="no-policy-banner">
-          <span>No policy is active yet. Calls can be uploaded, but nothing is evaluated until the policy owner approves a compiled policy.</span>
-          <Link href="/policies" className="shrink-0 font-medium underline underline-offset-2">
-            Go to Policy
-          </Link>
+        <div className="glass-surface mb-6 flex items-center justify-between gap-4 px-5 py-4 text-sm text-foreground" data-testid="no-policy-banner">
+          <span>No policy is active yet. Nothing is evaluated until one is approved.</span>
+          <Button asChild className="h-10 px-5">
+            <Link href="/policies">Go to Policy</Link>
+          </Button>
         </div>
       )}
 
@@ -71,7 +71,12 @@ export default async function QueuePage() {
         {reviewer && <Figure label="findings awaiting escalation" value={summary.awaitingEscalation === null ? "0" : String(summary.awaitingEscalation)} />}
       </div>
 
-      <div className="glass-surface overflow-hidden rounded-lg">
+      {cases.length === 0 ? (
+        <div className="glass-surface flex min-h-72 flex-col items-center justify-center px-8 py-16 text-center">
+          <p className="font-serif text-4xl text-foreground">No cases yet.</p>
+        </div>
+      ) : (
+      <div className="glass-surface overflow-hidden">
         <Table>
           <TableHeader>
             <TableRow className="hover:bg-transparent">
@@ -84,13 +89,6 @@ export default async function QueuePage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {cases.length === 0 && (
-              <TableRow>
-                <TableCell colSpan={6} className="py-8 text-center text-muted-foreground">
-                  No cases yet.
-                </TableCell>
-              </TableRow>
-            )}
             {cases.map((c) => {
               const open = c.findingCounts ? OPEN_STATES.filter((s) => (c.findingCounts![s] ?? 0) > 0) : [];
               return (
@@ -130,6 +128,7 @@ export default async function QueuePage() {
           </TableBody>
         </Table>
       </div>
+      )}
     </PageShell>
   );
 }
