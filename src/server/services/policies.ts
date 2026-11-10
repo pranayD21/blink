@@ -220,7 +220,7 @@ export function finalizeCompile(tx: DbOrTx, versionId: string, artifacts: Compil
 const MANUAL_FILE = "fixtures/policy/manual-monitors-v1.json";
 
 /** POST /api/policies/:id/use-manual — loads the labeled hand-written fallback (§8.9) through the same gate. */
-export function useManualFallback(tx: DbOrTx, versionId: string, actor: Actor): FinalizeResult {
+export function loadManualFallback(tx: DbOrTx, versionId: string, actor: Actor): FinalizeResult {
   requireRole(actor, "policy_owner");
   const version = getPolicyVersion(tx, versionId);
   assertMutable(version);

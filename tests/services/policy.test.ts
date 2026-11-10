@@ -14,7 +14,7 @@ import { compilePolicyVersion, llmCompileSteps } from "@/server/jobs/handlers/co
 import { LlmRefusal } from "@/server/llm/client";
 import { getFinding } from "@/server/services/findings";
 import { getCase } from "@/server/services/loaders";
-import { type CompileSteps, MAX_ASSEMBLY_ATTEMPTS, approvePolicy, createPolicy, policyDetail, requestCompile, useManualFallback } from "@/server/services/policies";
+import { type CompileSteps, MAX_ASSEMBLY_ATTEMPTS, approvePolicy, createPolicy, policyDetail, requestCompile, loadManualFallback } from "@/server/services/policies";
 import { fixturePolicyInput } from "@/server/services/seed";
 import { CASE, G2, appError, dispose, findingOn, openTasks, seedAnalyzed, seedEmpty, statusOf, user } from "../helpers/db";
 import { loadManualPolicy } from "../helpers/fixtures";
@@ -124,7 +124,7 @@ describe("compile → validate → approve", () => {
     await compilePolicyVersion(id, scriptedSteps());
     transact((tx) => approvePolicy(tx, id, versionRow(id).bundleHash!, user("dana")));
     expect(appError(() => transact((tx) => requestCompile(tx, id, user("dana")))).status).toBe(422);
-    const fallback = appError(() => transact((tx) => useManualFallback(tx, id, user("dana"))));
+    const fallback = appError(() => transact((tx) => loadManualFallback(tx, id, user("dana"))));
     expect(fallback.status).toBe(422);
     expect(fallback.code).toBe("POLICY_IMMUTABLE");
   });

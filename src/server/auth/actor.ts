@@ -9,7 +9,7 @@ import type { DbOrTx } from "../db/client";
 import { users } from "../db/schema";
 import { forbidden, unauthorized } from "../errors";
 
-export const SESSION_COOKIE = "blink_user";
+export { DEFAULT_USER_ID, SESSION_COOKIE } from "@/lib/session";
 
 export interface Actor {
   id: string;
@@ -26,7 +26,6 @@ export const DEMO_USERS: readonly Actor[] = [
   { id: "user_jordan", name: "Jordan Ellis", role: "senior_reviewer" },
   { id: "user_dana", name: "Dana Okafor", role: "policy_owner" },
 ];
-export const DEFAULT_USER_ID = "user_marcus";
 
 export const ROLE_LABEL: Record<Role, string> = {
   analyst: "Analyst",

@@ -17,7 +17,7 @@ import { enqueueJob } from "../jobs/queue";
 import { drainJobs } from "../jobs/runner";
 import { type CreateCaseInput, CreateCaseSchema, createCase, ensureDefaultDocumentSet } from "./cases";
 import { getDocument, parseDocumentFile, saveDocumentFacts, upsertDocument } from "./documents";
-import { approvePolicy, createPolicy, useManualFallback } from "./policies";
+import { approvePolicy, createPolicy, loadManualFallback } from "./policies";
 import { uploadTranscript } from "./transcripts";
 
 export const HALVORSEN_CASE_ID = "case_halvorsen";
@@ -86,7 +86,7 @@ export function activateManualPolicy(): string {
   return transact((tx) => {
     const owner = loadActor(tx, "user_dana");
     const { policyVersionId } = createPolicy(tx, fixturePolicyInput("blink-demo-policy-v1.md"), owner);
-    const result = useManualFallback(tx, policyVersionId, owner);
+    const result = loadManualFallback(tx, policyVersionId, owner);
     if (result.status !== "VALIDATED") throw new Error("the manual fallback policy did not validate");
     approvePolicy(tx, policyVersionId, result.bundleHash, owner);
     return policyVersionId;
