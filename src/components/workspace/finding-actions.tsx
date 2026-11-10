@@ -16,7 +16,7 @@ type Task = FindingView["tasks"][number];
 const selectClass = "h-7 w-full rounded-md border border-slate-300 bg-white px-1.5 text-xs";
 
 /** Open questions on a finding, with the form that records an answer and maps it onto claim fields (§10.6). */
-export function ContextTasks({ finding, claim, refresh }: { finding: FindingView; claim: ClaimView | null; refresh: () => void }) {
+export function ContextTasks({ finding, claim, issuer, refresh }: { finding: FindingView; claim: ClaimView | null; issuer: string; refresh: () => void }) {
   const open = finding.tasks.filter((t) => (t.kind === "context" || t.kind === "clarification") && t.status === "open");
   const answered = finding.tasks.filter((t) => (t.kind === "context" || t.kind === "clarification") && t.status === "done" && t.answer);
   const [adding, setAdding] = useState(false);
@@ -53,7 +53,7 @@ export function ContextTasks({ finding, claim, refresh }: { finding: FindingView
         </ul>
       )}
       {open.map((task) => (
-        <AnswerForm key={task.id} task={task} claim={claim} aiQuestions={aiQuestions} refresh={refresh} />
+        <AnswerForm key={task.id} task={task} claim={claim} issuer={issuer} aiQuestions={aiQuestions} refresh={refresh} />
       ))}
       {answered.map((task) => (
         <div key={task.id} className="rounded-lg border bg-slate-50 px-3 py-2 text-xs">
@@ -83,19 +83,23 @@ export function ContextTasks({ finding, claim, refresh }: { finding: FindingView
   );
 }
 
-function AnswerForm({ task, claim, aiQuestions, refresh }: { task: Task; claim: ClaimView | null; aiQuestions: string[]; refresh: () => void }) {
+function AnswerForm({ task, claim, issuer, aiQuestions, refresh }: { task: Task; claim: ClaimView | null; issuer: string; aiQuestions: string[]; refresh: () => void }) {
   const [answer, setAnswer] = useState("");
   const [basis, setBasis] = useState("");
   const [timing, setTiming] = useState("");
+  const [company, setCompany] = useState("");
+  const [period, setPeriod] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   async function submit() {
     setBusy(true);
     setError(null);
-    const fieldMapping: Record<string, string> = {};
+    const fieldMapping: Record<string, unknown> = {};
     if (basis) fieldMapping.knowledge_basis = basis;
     if (timing) fieldMapping.access_timing = timing;
+    if (company && claim) fieldMapping.subject_entity = { kind: company, name: company === "issuer" ? issuer : company === "industry" ? null : claim.fields.subject_entity.name };
+    if (period && claim) fieldMapping.period = { ...claim.fields.period, relative: period };
     try {
       await api(`/api/tasks/${task.id}/answer`, { body: { answer, fieldMapping, expectedVersion: task.version } });
       toast.success("Clarification recorded. The monitors were re-run on the new context.");
@@ -145,6 +149,25 @@ function AnswerForm({ task, claim, aiQuestions, refresh }: { task: Task; claim: 
                   {humanize(k)}
                 </option>
               ))}
+            </select>
+          </label>
+          <label className="text-xs text-slate-600">
+            …the company as
+            <select value={company} onChange={(e) => setCompany(e.target.value)} className={cn(selectClass, "mt-0.5")} data-testid="map-subject_entity">
+              <option value="">no change ({claim.fields.subject_entity.name ?? humanize(claim.fields.subject_entity.kind)})</option>
+              <option value="issuer">The covered issuer ({issuer})</option>
+              <option value="competitor">A competitor</option>
+              <option value="customer">A customer</option>
+              <option value="industry">The industry as a whole</option>
+            </select>
+          </label>
+          <label className="text-xs text-slate-600">
+            …and the period as
+            <select value={period} onChange={(e) => setPeriod(e.target.value)} className={cn(selectClass, "mt-0.5")} data-testid="map-period">
+              <option value="">no change ({humanize(claim.fields.period.relative)})</option>
+              <option value="current">Current or ongoing period</option>
+              <option value="prior">A period that has ended</option>
+              <option value="future">A future period</option>
             </select>
           </label>
         </div>

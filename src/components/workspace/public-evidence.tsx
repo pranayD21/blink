@@ -21,9 +21,9 @@ const DIMENSION_LABEL: Record<string, string> = { entity: "Company", metric: "Me
 
 const OUTCOME: Record<string, { label: string; tone: "emerald" | "amber" | "red" | "slate" }> = {
   exact_match: { label: "exact match", tone: "emerald" },
-  partial_match: { label: "partial match", tone: "amber" },
+  partial_match: { label: "proposed match — verify", tone: "amber" },
   mismatch_only: { label: "mismatch", tone: "red" },
-  no_candidates: { label: "no candidate found", tone: "slate" },
+  no_candidates: { label: "no match", tone: "slate" },
 };
 
 function Candidate({ c }: { c: CandidateComparison }) {
@@ -115,8 +115,8 @@ export function PublicEvidence({ claim, refresh }: { claim: ClaimView; refresh: 
           {showAll && others.map((c) => <Candidate key={`${c.documentId}-${c.factId}`} c={c} />)}
         </>
       )}
-      <p className="text-xs text-slate-500">
-        {comparison.searchedDocuments} curated documents were searched. “Not found” means not found in this set. It never means the information is proven nonpublic.
+      <p className="text-xs text-slate-500" data-testid="searched-note">
+        {comparison.outcome === "no_candidates" ? `No match in the ${comparison.searchedDocuments} searched documents (not proof of nonpublic status).` : `${comparison.searchedDocuments} curated documents were searched.`} “Not found” means not found in this set. It never means the information is proven nonpublic.
       </p>
 
       {claim.reviewerMatch ? (

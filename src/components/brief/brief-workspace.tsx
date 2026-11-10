@@ -342,7 +342,7 @@ export function BriefWorkspace({ payload, draftJob, llmMode }: { payload: Payloa
             <Dialog open={approveOpen} onOpenChange={setApproveOpen}>
               <DialogTrigger asChild>
                 <Button className="w-full" variant={approvedLive || released ? "outline" : "default"} disabled={!brief || editing || approvedLive || released || Boolean(jobId)} data-testid="open-approve">
-                  <ShieldCheck /> {approvedLive ? "Approved" : released ? "Released" : "Approve this hash…"}
+                  <ShieldCheck /> {approvedLive || released ? "Approved" : "Approve this hash…"}
                 </Button>
               </DialogTrigger>
               <DialogContent>

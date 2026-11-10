@@ -34,7 +34,14 @@ function LinkedPassages({ claim }: { claim: ClaimView }) {
       {claim.quotes.map((q) => (
         <button key={q.id} type="button" onClick={() => scrollToTurn(q.turnLabel)} className="group flex w-full gap-2 rounded-md px-1.5 py-1 text-left text-sm hover:bg-slate-100" data-testid={`quote-${q.turnLabel}`} title="Scroll the transcript to this turn">
           <span className="w-8 shrink-0 font-mono text-xs font-semibold text-indigo-700">{q.turnLabel}</span>
-          <span className="min-w-0 flex-1 text-slate-800">“{q.quote}”</span>
+          <span className="min-w-0 flex-1 text-slate-800">
+            “{q.quote}”
+            {q.normalized && (
+              <span className="ml-1 text-xs text-slate-400" title="Matched after normalizing whitespace, quote marks, or dashes. The offsets point at the original text.">
+                ≈
+              </span>
+            )}
+          </span>
           <span className="shrink-0 text-xs text-slate-400">({QUOTE_ROLE_LABEL[q.role] ?? q.role})</span>
         </button>
       ))}
@@ -78,8 +85,8 @@ function Decisions({ finding, payload }: { finding: FindingView; payload: Worksp
           {d.stale && d.staleReason && <p className="mt-1 text-xs font-medium text-red-700">Stale: {d.staleReason}. The finding was reopened.</p>}
           {d.evidence.length > 0 && (
             <details className="mt-1.5 text-xs text-slate-500">
-              <summary className="cursor-pointer">
-                Based on {d.evidence.length} pinned source{d.evidence.length === 1 ? "" : "s"} · evidence hash <span className="font-mono">{shortHash(d.evidenceHash)}</span>
+              <summary className="cursor-pointer" data-testid="decision-evidence">
+                Decided on evidence <span className="font-mono">#{shortHash(d.evidenceHash, 8)}</span> · {d.evidence.length} pinned source{d.evidence.length === 1 ? "" : "s"}
               </summary>
               <ul className="mt-1 space-y-0.5 pl-3">
                 {d.evidence.map((e, i) => (
@@ -231,7 +238,7 @@ export function EvidencePane({ payload, selection, onSelect, refresh, focus }: {
 
       {finding && (finding.state !== "DISPOSITIONED" || finding.tasks.some((t) => t.answer)) && finding.origin !== "ai_suggested" && (
         <Section title="Missing context">
-          <ContextTasks finding={finding} claim={claim} refresh={refresh} />
+          <ContextTasks finding={finding} claim={claim} issuer={payload.case.issuer} refresh={refresh} />
         </Section>
       )}
 
