@@ -10,6 +10,7 @@ import { StatusDot } from "./status-dot";
 
 const NAV: Record<string, { href: string; label: string }[]> = {
   analyst: [
+    { href: "/call", label: "Call" },
     { href: "/", label: "Cases" },
     { href: "/analyst", label: "Released briefs" },
   ],

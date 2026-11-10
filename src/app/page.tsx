@@ -1,4 +1,3 @@
-import { Plus } from "lucide-react";
 import Link from "next/link";
 import { PageShell } from "@/components/app/page-shell";
 import { StateChip } from "@/components/app/status-chip";
@@ -39,14 +38,11 @@ export default async function QueuePage() {
 
   return (
     <PageShell
-      title="Case queue"
-      description="Calls waiting for review."
+      title="Cases"
       actions={
         actor.role === "analyst" ? (
-          <Button asChild className="h-11 px-6">
-            <Link href="/cases/new">
-              <Plus /> New case
-            </Link>
+          <Button asChild className="h-14 px-10 text-base">
+            <Link href="/call">Start call</Link>
           </Button>
         ) : null
       }
@@ -65,11 +61,13 @@ export default async function QueuePage() {
         </div>
       )}
 
-      <div className="mb-4 flex flex-wrap items-baseline gap-x-8 gap-y-1 border-y py-2.5 text-sm" data-testid="queue-figures">
-        <Figure label="in review" value={String(summary.inReview)} />
-        {reviewer && <Figure label="average review time" value={summary.avgReviewMinutes === null ? "none" : `${summary.avgReviewMinutes} min`} />}
-        {reviewer && <Figure label="findings awaiting escalation" value={summary.awaitingEscalation === null ? "0" : String(summary.awaitingEscalation)} />}
-      </div>
+      {reviewer && (
+        <div className="mb-6 flex flex-wrap items-baseline gap-x-8 gap-y-1 text-base" data-testid="queue-figures">
+          <Figure label="in review" value={String(summary.inReview)} />
+          <Figure label="average review time" value={summary.avgReviewMinutes === null ? "none" : `${summary.avgReviewMinutes} min`} />
+          <Figure label="findings awaiting escalation" value={summary.awaitingEscalation === null ? "0" : String(summary.awaitingEscalation)} />
+        </div>
+      )}
 
       {cases.length === 0 ? (
         <div className="glass-surface flex min-h-72 flex-col items-center justify-center px-8 py-16 text-center">

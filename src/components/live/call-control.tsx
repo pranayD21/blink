@@ -42,7 +42,19 @@ const PHASE_LINE: Record<Exclude<Phase, "ended">, string> = {
  * `blink-pill` channel; this window shows only the cases, the buttons, and whether each stage
  * of the live path is working. Nothing anyone said is ever shown here.
  */
-export function CallControl({ banker, cases, source }: { banker: string; cases: ControlCase[]; source: ControlSource }) {
+const QUICK_CASE = () => ({
+  title: "Live call",
+  issuer: "The company on this call",
+  ticker: "LIVE",
+  aliases: [] as string[],
+  issuer_fiscal: { fiscal_year_end_month: 12, last_reported: { fy: 2026, q: 3 as const, reported_on: "2026-10-01" }, next_report_expected: null },
+  call_date: new Date().toISOString().slice(0, 10),
+  research_questions: ["What did the expert say on this call?"],
+  analyst_notes: "",
+  expert: { name: "Expert", current_employer: "", current_title: "", employment: [], network: "", network_attestation: {} },
+});
+
+export function CallControl({ banker, cases, source, hero = false }: { banker: string; cases: ControlCase[]; source: ControlSource; hero?: boolean }) {
   const router = useRouter();
   const [phase, setPhase] = useState<Phase>("idle");
   const [activeCase, setActiveCase] = useState<string | null>(null);
@@ -139,8 +151,52 @@ export function CallControl({ banker, cases, source }: { banker: string; cases: 
     }
   };
 
+  const startFirst = async () => {
+    try {
+      const id = cases[0]?.id ?? (await api<{ caseId: string }>("/api/cases", { body: QUICK_CASE() })).caseId;
+      await start(id);
+    } catch (err) {
+      setError(`The call could not start: ${errorMessage(err)}`);
+      setPhase("idle");
+    }
+  };
+
   const busy = phase === "starting" || phase === "live" || phase === "stopping";
   const tone = (stage: Stage): DotTone => (!busy ? "none" : down.has(stage) ? "warn" : "good");
+
+  if (hero) {
+    return (
+      <main className="flex min-h-[70vh] flex-1 flex-col items-center justify-center gap-12 px-6 py-16">
+        <AgentTrace hero beats={beats} />
+        <div className="flex flex-wrap justify-center gap-8 text-base text-muted-foreground" data-testid="stages">
+          {STAGES.map((stage) => (
+            <span key={stage} data-testid={`stage-${stage}`} data-up={busy ? String(!down.has(stage)) : undefined} className={busy && !down.has(stage) ? "text-foreground" : undefined}>
+              {STAGE_LABEL[stage]}
+            </span>
+          ))}
+        </div>
+        {phase === "live" || phase === "stopping" ? (
+          <Button data-testid="stop-call" disabled={phase !== "live"} onClick={() => void stop()}>
+            {phase === "stopping" ? "Ending" : "Stop"}
+          </Button>
+        ) : (
+          <Button className="h-14 px-10 text-base" data-testid="start-call" disabled={phase === "starting"} onClick={() => void startFirst()}>
+            {phase === "starting" ? "Starting" : "Start call"}
+          </Button>
+        )}
+        {phase === "ended" && (
+          <p className="text-xl text-foreground" data-testid="call-ended">
+            {endedText ?? "Call ended."}
+          </p>
+        )}
+        {error && (
+          <p className="text-base text-destructive" role="alert" data-testid="call-error">
+            {error}
+          </p>
+        )}
+      </main>
+    );
+  }
 
   return (
     <main className="flex min-h-0 flex-1 flex-col gap-4 p-5 text-sm">
@@ -172,7 +228,7 @@ export function CallControl({ banker, cases, source }: { banker: string; cases: 
                   Stop
                 </Button>
               ) : (
-                <Button className="h-8 px-3 text-xs" data-testid={`start-call-${c.id}`} disabled={busy} onClick={() => void start(c.id)}>
+                <Button data-testid={`start-call-${c.id}`} disabled={busy} onClick={() => void start(c.id)}>
                   Start
                 </Button>
               )}
