@@ -9,7 +9,7 @@
  */
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { desc, eq } from "drizzle-orm";
+import { desc, eq, inArray } from "drizzle-orm";
 import { z } from "zod";
 import { hashOf, sha256Hex } from "@/core/deps/hash";
 import { decompilePolicy } from "@/core/policy/decompile";
@@ -21,7 +21,7 @@ import { type Actor, requireRole } from "../auth/actor";
 import { appendAudit } from "../audit/log";
 import { nowIso } from "../clock";
 import { type DbOrTx, fromJson, toJson } from "../db/client";
-import { cases, compileAttempts, policySources, policyVersions } from "../db/schema";
+import { cases, compileAttempts, llmCalls, policySources, policyVersions } from "../db/schema";
 import { AppError, conflict, forbidden, notFound, unprocessable } from "../errors";
 import { newId } from "../ids";
 import { enqueueJob } from "../jobs/queue";
@@ -409,6 +409,9 @@ export function policyDetail(db: DbOrTx, versionId: string) {
   const v = getPolicyVersion(db, versionId);
   const source = getPolicySource(db, v.policySourceId);
   const attempts = db.select().from(compileAttempts).where(eq(compileAttempts.policyVersionId, versionId)).all();
+  const callIds = attempts.map((a) => a.llmCallId).filter((id): id is string => Boolean(id));
+  const calls = callIds.length > 0 ? db.select().from(llmCalls).where(inArray(llmCalls.id, callIds)).all() : [];
+  const replayedCalls = calls.filter((c) => c.replayed);
   return {
     id: v.id,
     label: v.label,
@@ -429,6 +432,8 @@ export function policyDetail(db: DbOrTx, versionId: string) {
     validation: fromJson<ValidationBundle | null>(v.validationJson, null),
     scenarios: fromJson<ScenarioBundle | null>(v.scenarioReportJson, null),
     previewMd: v.previewMd ?? "",
+    /** Model calls behind this compile, and whether they were served from recordings (§13.3). */
+    llm: { calls: calls.length, replayed: replayedCalls.length, recordedAt: replayedCalls.map((c) => c.recordedAt).filter(Boolean).sort().at(-1) ?? null },
     attempts: attempts
       .sort((a, b) => (a.createdAt < b.createdAt ? -1 : a.createdAt > b.createdAt ? 1 : a.id < b.id ? -1 : 1))
       .map((a) => ({ id: a.id, stage: a.stage, attemptNo: a.attemptNo, inputHash: a.inputHash, issues: fromJson<ValidationIssue[]>(a.issuesJson, []), llmCallId: a.llmCallId, createdAt: a.createdAt })),

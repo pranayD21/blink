@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { DEMO_USERS } from "@/server/auth/actor";
 import { pageActor } from "@/server/auth/session";
+import { llmMode } from "@/server/llm/client";
 import { NavLinks } from "./nav-links";
 import { RoleSwitcher } from "./role-switcher";
 
@@ -31,6 +32,7 @@ const NAV: Record<string, { href: string; label: string }[]> = {
 
 export async function AppHeader() {
   const actor = await pageActor();
+  const mode = llmMode();
   return (
     <header className="sticky top-0 z-40 flex h-12 shrink-0 items-center gap-4 border-b bg-white px-4">
       <Link href="/" className="flex items-center gap-2 font-semibold tracking-tight text-slate-900">
@@ -39,6 +41,15 @@ export async function AppHeader() {
       </Link>
       <NavLinks links={NAV[actor.role] ?? NAV.reviewer} />
       <div className="ml-auto flex items-center gap-3">
+        {mode !== "live" && (
+          <span
+            data-testid="llm-mode"
+            title={mode === "replay" ? "Model responses are served from committed recordings. No network call is made." : "Model responses are recorded as they are made; a request that already has a recording is served from it."}
+            className="inline-flex h-6 items-center rounded-full bg-sky-50 px-2.5 text-[11px] font-semibold tracking-wide text-sky-800 uppercase ring-1 ring-sky-200 ring-inset"
+          >
+            {mode === "replay" ? "Replay mode" : "Record mode"}
+          </span>
+        )}
         {/* Permanent: every screen of this demo shows that the data is synthetic. */}
         <span data-testid="synthetic-pill" className="inline-flex h-6 items-center rounded-full bg-amber-50 px-2.5 text-[11px] font-semibold tracking-wide text-amber-800 uppercase ring-1 ring-amber-200 ring-inset">
           Synthetic data

@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowLeft, CheckCircle2, FilePenLine, Plus, Send, ShieldCheck, Sparkles, Trash2, XCircle } from "lucide-react";
+import { ArrowLeft, CheckCircle2, FilePenLine, PlayCircle, Plus, Send, ShieldCheck, Sparkles, Trash2, XCircle } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -13,7 +13,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { ApiError, api, errorMessage } from "@/lib/api";
-import { formatDateTime, plural, shortHash } from "@/lib/format";
+import { formatDate, formatDateTime, plural, shortHash } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import type { briefWorkspace } from "@/server/services/briefs";
 
@@ -240,6 +240,11 @@ export function BriefWorkspace({ payload, draftJob, llmMode }: { payload: Payloa
                   <Chip tone={brief.draftSource === "ai" ? "indigo" : "slate"}>
                     {brief.draftSource === "ai" && <Sparkles className="size-3" />} {SOURCE_LABEL[brief.draftSource] ?? brief.draftSource}
                   </Chip>
+                  {brief.replayed && (
+                    <Chip tone="sky" title="This draft replayed a recorded model response; no network call was made." data-testid="replayed-badge">
+                      <PlayCircle className="size-3" /> Replayed from recorded run · {formatDate(brief.recordedAt)}
+                    </Chip>
+                  )}
                   <span className="font-mono text-xs font-normal text-slate-500" title={brief.contentHash}>
                     hash {shortHash(brief.contentHash, 12)}
                   </span>

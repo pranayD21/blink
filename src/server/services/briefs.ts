@@ -10,7 +10,7 @@ import { type Actor, isReviewer, requireReviewer } from "../auth/actor";
 import { appendAudit } from "../audit/log";
 import { nowIso } from "../clock";
 import { type DbOrTx, fromJson, toJson } from "../db/client";
-import { approvals, briefs, cases, dependencies, findings, jobs, releases } from "../db/schema";
+import { approvals, briefs, cases, dependencies, findings, jobs, llmCalls, releases } from "../db/schema";
 import { conflict, forbidden, notFound, unprocessable, versionConflict } from "../errors";
 import { newId } from "../ids";
 import { enqueueJob } from "../jobs/queue";
@@ -267,6 +267,7 @@ export function briefWorkspace(tx: DbOrTx, caseId: string, actor: Actor) {
   const releaseRows = tx.select().from(releases).where(eq(releases.caseId, caseId)).orderBy(desc(releases.releasedAt)).all();
   const sections = latest ? fromJson<BriefSection[]>(latest.sentencesJson, []) : [];
   const latestApproval = latest ? (approvalRows.find((a) => a.briefId === latest.id) ?? null) : null;
+  const draftCall = latest?.llmCallId ? tx.select().from(llmCalls).where(eq(llmCalls.id, latest.llmCallId)).get() : null;
 
   return {
     case: { id: caseRow.id, title: caseRow.title, issuer: caseRow.issuer, status: caseRow.status, version: caseRow.version },
@@ -285,6 +286,8 @@ export function briefWorkspace(tx: DbOrTx, caseId: string, actor: Actor) {
           withheldCount: latest.withheldCount,
           staleReason: latest.staleReason,
           llmCallId: latest.llmCallId,
+          replayed: draftCall?.replayed ?? false,
+          recordedAt: draftCall?.recordedAt ?? null,
           createdAt: latest.createdAt,
           citations: citationsFor(tx, caseId, citedClaimKeys(sections)),
           outdated: latest.status === "draft" || latest.status === "stale" ? outdatedCitations(tx, latest) : [],

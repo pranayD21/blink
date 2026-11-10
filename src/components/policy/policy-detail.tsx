@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertTriangle, CheckCircle2, ShieldCheck, Sparkles, UserRound, Wrench, XCircle } from "lucide-react";
+import { AlertTriangle, CheckCircle2, PlayCircle, ShieldCheck, Sparkles, UserRound, Wrench, XCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -13,7 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { ScenarioReport } from "@/core/policy/scenarios";
 import { api, errorMessage } from "@/lib/api";
-import { formatCount, formatDateTime, humanize, plural, shortHash } from "@/lib/format";
+import { formatCount, formatDate, formatDateTime, humanize, plural, shortHash } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import type { policyDetail } from "@/server/services/policies";
 import { MonitorGraph } from "./monitor-graph";
@@ -123,6 +123,11 @@ export function PolicyDetail({ detail, guardEnglish, canEdit, llmMode }: { detai
           <Chip tone={detail.compileSource === "manual" ? "amber" : "indigo"} data-testid="compile-source">
             {detail.compileSource === "manual" ? <Wrench className="size-3" /> : <Sparkles className="size-3" />}
             {detail.compileSource === "manual" ? "manual fallback (hand-written monitors)" : "AI-compiled"}
+          </Chip>
+        )}
+        {detail.llm.replayed > 0 && (
+          <Chip tone="sky" title="This compile replayed recorded model responses; no network call was made." data-testid="replayed-badge">
+            <PlayCircle className="size-3" /> Replayed from recorded run · {formatDate(detail.llm.recordedAt)}
           </Chip>
         )}
         {detail.bundleHash && <span className="font-mono text-xs text-slate-500">bundle {shortHash(detail.bundleHash, 12)}</span>}
