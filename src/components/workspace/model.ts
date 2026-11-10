@@ -56,14 +56,14 @@ export const userName = (payload: WorkspacePayload, id: string) => (id === "syst
 export const QUOTE_ROLE_LABEL: Record<string, string> = { primary: "statement", context: "context", source_attribution: "source", correction: "correction" };
 
 export const EVIDENCE_MARK: Record<string, { mark: string; label: string; className: string }> = {
-  supported: { mark: "✓", label: "supported", className: "text-emerald-700" },
-  refuted: { mark: "✗", label: "refuted", className: "text-slate-500" },
-  unknown: { mark: "?", label: "unknown", className: "text-amber-700" },
-  conflict: { mark: "!", label: "conflict", className: "text-red-700" },
+  supported: { mark: "✓", label: "supported", className: "text-success" },
+  refuted: { mark: "✗", label: "refuted", className: "text-muted-foreground" },
+  unknown: { mark: "?", label: "unknown", className: "text-warning" },
+  conflict: { mark: "!", label: "conflict", className: "text-destructive" },
 };
 
 export const TRI_LABEL: Record<string, { label: string; className: string }> = {
-  true: { label: "true", className: "text-emerald-700" },
-  false: { label: "false", className: "text-slate-500" },
-  indeterminate: { label: "indeterminate", className: "text-amber-700" },
+  true: { label: "true", className: "text-success" },
+  false: { label: "false", className: "text-muted-foreground" },
+  indeterminate: { label: "indeterminate", className: "text-warning" },
 };

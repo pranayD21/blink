@@ -1,49 +1,40 @@
 "use client";
 
-import { ChevronRight, Sparkles, UserRound } from "lucide-react";
+import { Sparkles } from "lucide-react";
 import { useState } from "react";
-import { Chip, StateChip } from "@/components/app/status-chip";
+import { StateChip } from "@/components/app/status-chip";
+import { StateLabel } from "@/components/app/status-dot";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { plural } from "@/lib/format";
+import { humanize, plural } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import type { ClaimView, FindingView, WorkspacePayload } from "@/server/services/workspace";
 import { type Selection, isOpen } from "./model";
 
-const SEVERITY_TONE: Record<string, string> = { high: "text-red-700", medium: "text-amber-700", low: "text-slate-500" };
+/** The turns a finding rests on, as one short run: "T5", or "T5, T11". */
+const turnsText = (f: FindingView) => f.turnLabels.join(", ");
 
+/** One line per finding: label, state, title, turns. Severity, rules and who raised it wait in the tooltip. */
 function FindingRow({ finding, selected, onSelect }: { finding: FindingView; selected: boolean; onSelect: () => void }) {
   const escalation = finding.escalationRequired || finding.state === "ESCALATED";
+  const detail = [
+    `${humanize(finding.severity)} severity`,
+    finding.rules.length > 0 ? `rules ${finding.rules.map((r) => `${r.ruleId}${r.state === "NEEDS_CONTEXT" ? " (needs context)" : ""}`).join(", ")}` : null,
+    escalation && isOpen(finding) ? "escalation" : null,
+    finding.origin === "reviewer" ? "raised by a reviewer" : null,
+  ].filter(Boolean);
   return (
     <button
       type="button"
       onClick={onSelect}
       data-testid={`finding-${finding.label}`}
       data-state={finding.state}
-      className={cn("flex w-full items-start gap-2 border-l-2 border-transparent px-3 py-2.5 text-left hover:bg-slate-50", selected && "border-indigo-600 bg-indigo-50/60 hover:bg-indigo-50/60")}
+      title={`${finding.title} · ${detail.join(" · ")}`}
+      className={cn("flex w-full items-center gap-2 border-l-2 border-transparent px-3 py-2 text-left text-sm hover:bg-muted", selected && "border-foreground bg-muted")}
     >
-      <ChevronRight className={cn("mt-0.5 size-3.5 shrink-0 text-slate-300", selected && "rotate-90 text-indigo-600")} />
-      <div className="min-w-0 flex-1">
-        <div className="flex flex-wrap items-center gap-1.5">
-          <span className="font-mono text-xs font-semibold text-slate-900">{finding.label}</span>
-          <StateChip state={finding.state} />
-          {escalation && isOpen(finding) && <Chip tone="violet">escalation</Chip>}
-        </div>
-        <div className="mt-1 truncate text-sm text-slate-800">{finding.title}</div>
-        <div className="mt-0.5 flex flex-wrap items-center gap-x-2 text-xs text-slate-500">
-          <span className={cn("font-medium capitalize", SEVERITY_TONE[finding.severity])}>{finding.severity}</span>
-          {finding.rules.length > 0 && (
-            <span className="font-mono" title="Rules that are triggered; a “?” marks a rule still waiting for context">
-              {finding.rules.map((r) => `${r.ruleId}${r.state === "NEEDS_CONTEXT" ? "?" : ""}`).join(",")}
-            </span>
-          )}
-          {finding.turnLabels.length > 0 && <span>{finding.turnLabels.length > 1 ? `${finding.turnLabels.length} turns (${finding.turnLabels.join(", ")})` : finding.turnLabels[0]}</span>}
-          {finding.origin === "reviewer" && (
-            <span className="inline-flex items-center gap-1">
-              <UserRound className="size-3" /> reviewer
-            </span>
-          )}
-        </div>
-      </div>
+      <span className="w-7 shrink-0 font-mono text-xs font-medium text-foreground">{finding.label}</span>
+      <StateLabel state={finding.state} className="shrink-0 text-xs text-muted-foreground" />
+      <span className="min-w-0 flex-1 truncate text-foreground">{finding.title}</span>
+      {finding.turnLabels.length > 0 && <span className="shrink-0 font-mono text-xs text-muted-foreground">{turnsText(finding)}</span>}
     </button>
   );
 }
@@ -61,13 +52,13 @@ export function FindingsPane({ payload, selection, onSelect, view, onViewChange 
     <div className="flex h-full min-h-0 flex-col">
       <div className="flex shrink-0 items-center gap-1 border-b px-2 py-1.5">
         {(["findings", "claims"] as const).map((v) => (
-          <button key={v} type="button" onClick={() => onViewChange(v)} data-testid={`tab-${v}`} className={cn("rounded-md px-2 py-1 text-xs font-medium text-slate-500 hover:bg-slate-100", view === v && "bg-slate-100 text-slate-900")}>
+          <button key={v} type="button" onClick={() => onViewChange(v)} data-testid={`tab-${v}`} className={cn("rounded-md px-2 py-1 text-xs font-medium text-muted-foreground hover:bg-muted", view === v && "bg-muted text-foreground")}>
             {v === "findings" ? `Findings (${payload.findings.length})` : `All claims (${payload.claims.filter((c) => c.status !== "rejected").length})`}
           </button>
         ))}
         {view === "findings" && (
           <Select value={filter} onValueChange={setFilter}>
-            <SelectTrigger size="sm" className="ml-auto h-6 gap-1 border-none px-1.5 text-xs text-slate-500 shadow-none" aria-label="Filter findings">
+            <SelectTrigger size="sm" className="ml-auto h-6 gap-1 border-none px-1.5 text-xs text-muted-foreground shadow-none" aria-label="Filter findings">
               <SelectValue />
             </SelectTrigger>
             <SelectContent align="end">
@@ -75,7 +66,7 @@ export function FindingsPane({ payload, selection, onSelect, view, onViewChange 
               <SelectItem value="open">Open only</SelectItem>
               {states.map((s) => (
                 <SelectItem key={s} value={s}>
-                  {s}
+                  {humanize(s)}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -87,21 +78,21 @@ export function FindingsPane({ payload, selection, onSelect, view, onViewChange 
         {view === "findings" ? (
           <>
             {payload.findings.length === 0 && (
-              <p className="p-4 text-sm text-slate-500">{payload.policy ? "No findings. The whole-call attestation is still required: extraction can miss a statement, and a person has to read the call." : "Nothing was evaluated: no policy is active."}</p>
+              <p className="p-4 text-sm text-muted-foreground">{payload.policy ? "No findings. The whole-call attestation is still required: extraction can miss a statement, and a person has to read the call." : "Nothing was evaluated: no policy is active."}</p>
             )}
-            <div className="divide-y divide-slate-100">
+            <div className="divide-y">
               {main.map((f) => (
                 <FindingRow key={f.id} finding={f} selected={f.id === selectedId} onSelect={() => onSelect({ kind: "finding", id: f.id })} />
               ))}
             </div>
             {ai.length > 0 && (
               <div className="border-t">
-                <div className="flex items-center gap-1.5 bg-slate-50 px-3 py-1.5 text-xs font-medium text-slate-600" data-testid="ai-suggested-header">
-                  <Sparkles className="size-3.5 text-indigo-500" />
+                <div className="flex items-center gap-1.5 bg-muted px-3 py-1.5 text-xs font-medium text-muted-foreground" data-testid="ai-suggested-header">
+                  <Sparkles className="size-3.5" />
                   AI-suggested ({ai.length})
-                  <span className="font-normal text-slate-400">outside the compiled policy; a reviewer decides</span>
+                  <span className="font-normal">outside the compiled policy; a reviewer decides</span>
                 </div>
-                <div className="divide-y divide-slate-100">
+                <div className="divide-y">
                   {ai.map((f) => (
                     <FindingRow key={f.id} finding={f} selected={f.id === selectedId} onSelect={() => onSelect({ kind: "finding", id: f.id })} />
                   ))}
@@ -119,27 +110,27 @@ export function FindingsPane({ payload, selection, onSelect, view, onViewChange 
 
 function ClaimList({ claims, findings, selectedKey, onSelect }: { claims: ClaimView[]; findings: FindingView[]; selectedKey: string | null; onSelect: (key: string) => void }) {
   return (
-    <div className="divide-y divide-slate-100">
+    <div className="divide-y">
       {claims
         .filter((c) => c.status !== "rejected")
         .map((c) => {
           const mine = findings.filter((f) => f.claimLogicalKey === c.logicalKey);
           return (
-            <button key={c.id} type="button" onClick={() => onSelect(c.logicalKey)} data-testid={`claim-${c.logicalKey}`} className={cn("block w-full border-l-2 border-transparent px-3 py-2 text-left hover:bg-slate-50", selectedKey === c.logicalKey && "border-indigo-600 bg-indigo-50/60")}>
+            <button key={c.id} type="button" onClick={() => onSelect(c.logicalKey)} data-testid={`claim-${c.logicalKey}`} className={cn("block w-full border-l-2 border-transparent px-3 py-2 text-left hover:bg-muted", selectedKey === c.logicalKey && "border-foreground bg-muted")}>
               <div className="flex flex-wrap items-center gap-1.5 text-xs">
-                <span className="font-mono font-semibold text-slate-900">{c.logicalKey}</span>
-                <span className="font-mono text-slate-400">{c.turnLabels.join("+")}</span>
-                {c.comparison && <Chip tone={c.comparison.outcome === "exact_match" ? "emerald" : "slate"}>public: {c.comparison.outcome.replaceAll("_", " ")}</Chip>}
+                <span className="font-mono font-medium text-foreground">{c.logicalKey}</span>
+                <span className="font-mono text-muted-foreground">{c.turnLabels.join("+")}</span>
+                {c.comparison && <span className="text-muted-foreground">public: {c.comparison.outcome.replaceAll("_", " ")}</span>}
                 {mine.map((f) => (
-                  <StateChip key={f.id} state={f.state} title={f.label} />
+                  <StateChip key={f.id} state={f.state} title={f.label} className="text-muted-foreground" />
                 ))}
-                {c.status === "reviewer_corrected" && <Chip tone="indigo">corrected</Chip>}
+                {c.status === "reviewer_corrected" && <span className="text-muted-foreground">corrected</span>}
               </div>
-              <div className="mt-1 line-clamp-2 text-sm text-slate-700">{c.fields.summary}</div>
+              <div className="mt-1 line-clamp-2 text-sm text-foreground">{c.fields.summary}</div>
             </button>
           );
         })}
-      <p className="px-3 py-2 text-xs text-slate-400">{plural(claims.filter((c) => c.status !== "rejected").length, "claim")} extracted. Every quote was checked character for character against the transcript.</p>
+      <p className="px-3 py-2 text-xs text-muted-foreground">{plural(claims.filter((c) => c.status !== "rejected").length, "claim")} extracted. Every quote was checked character for character against the transcript.</p>
     </div>
   );
 }

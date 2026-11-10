@@ -15,9 +15,9 @@ function TraceNode({ node, assessments, depth }: { node: GuardTraceNode; assessm
         <span className={cn("w-3 shrink-0 text-center font-semibold", mark.className)}>{mark.mark}</span>
         <div className="min-w-0">
           <div>
-            <span className="text-slate-800">{predicatePhrase(node.name, node.params)}</span> <span className={cn("font-medium", mark.className)}>{mark.label}</span>
+            <span className="text-foreground">{predicatePhrase(node.name, node.params)}</span> <span className={cn("font-medium", mark.className)}>{mark.label}</span>
           </div>
-          {assessments[node.key]?.explanation && <div className="text-xs text-slate-500">{assessments[node.key].explanation}</div>}
+          {assessments[node.key]?.explanation && <div className="text-xs text-muted-foreground">{assessments[node.key].explanation}</div>}
         </div>
       </div>
     );
@@ -26,7 +26,7 @@ function TraceNode({ node, assessments, depth }: { node: GuardTraceNode; assessm
   return (
     <div>
       <div className="py-0.5 font-mono text-xs" style={{ paddingLeft: depth * 14 }}>
-        <span className="font-semibold text-slate-700">{node.op.toUpperCase()}</span> <span className={tri.className}>{tri.label}</span>
+        <span className="font-medium text-foreground">{node.op}</span> <span className={tri.className}>{tri.label}</span>
       </div>
       {node.children.map((child, i) => (
         <TraceNode key={i} node={child} assessments={assessments} depth={depth + 1} />
@@ -37,7 +37,7 @@ function TraceNode({ node, assessments, depth }: { node: GuardTraceNode; assessm
 
 /** "Why": every rule's guard as it evaluated for this claim, leaf by leaf (§15.2). */
 export function RuleTraces({ claim, payload }: { claim: ClaimView; payload: WorkspacePayload }) {
-  if (claim.monitors.length === 0) return <p className="text-sm text-slate-500">This claim has not been evaluated against a policy.</p>;
+  if (claim.monitors.length === 0) return <p className="text-sm text-muted-foreground">This claim has not been evaluated against a policy.</p>;
   const ruleInfo = new Map((payload.policy?.rules ?? []).map((r) => [r.ruleId, r]));
   // Triggered rules first, then those waiting for context, then the rest.
   const rank = (m: ClaimMonitorView) => (m.state === "REVIEW_REQUIRED" || m.state === "ESCALATION_REQUESTED" ? 0 : m.state === "NEEDS_CONTEXT" ? 1 : 2);
@@ -49,21 +49,21 @@ export function RuleTraces({ claim, payload }: { claim: ClaimView; payload: Work
         const rule = ruleInfo.get(m.ruleId);
         const quiet = rank(m) === 2;
         return (
-          <details key={m.monitorId} open={!quiet} className="group rounded-lg border bg-white" data-testid={`trace-${m.ruleId}`} data-state={m.state}>
+          <details key={m.monitorId} open={!quiet} className="group rounded-lg border bg-card" data-testid={`trace-${m.ruleId}`} data-state={m.state}>
             <summary className="flex cursor-pointer list-none items-center gap-2 px-3 py-2 text-sm">
-              <span className="font-mono font-semibold text-slate-900">Rule {m.ruleId}</span>
+              <span className="font-mono font-medium whitespace-nowrap text-foreground">Rule {m.ruleId}</span>
               {rule && rule.sourceClauses.length > 0 && (
-                <span className="font-mono text-xs text-slate-500">
+                <span className="font-mono text-xs text-muted-foreground">
                   ← clause {rule.sourceClauses.map((c) => `${c.id}${c.paragraph ? ` (${c.paragraph})` : ""}`).join(", ")}
                 </span>
               )}
               <StateChip state={m.state} className="ml-auto" />
             </summary>
             <div className="border-t px-3 py-2 text-sm">
-              {rule && <p className="mb-1.5 text-xs text-slate-600">{rule.intent}</p>}
-              {m.trace ? <TraceNode node={m.trace} assessments={m.assessments} depth={0} /> : <p className="text-xs text-slate-500">No evaluation recorded.</p>}
+              {rule && <p className="mb-1.5 text-xs text-muted-foreground">{rule.intent}</p>}
+              {m.trace ? <TraceNode node={m.trace} assessments={m.assessments} depth={0} /> : <p className="text-xs text-muted-foreground">No evaluation recorded.</p>}
               {rule && rule.sourceClauses[0]?.verbatim && (
-                <blockquote className="mt-2 border-l-2 border-slate-200 pl-2 text-xs text-slate-500 italic">
+                <blockquote className="mt-2 border-l-2 border-border pl-2 text-xs text-muted-foreground italic">
                   {rule.sourceClauses[0].paragraph}: “{rule.sourceClauses[0].verbatim}”
                 </blockquote>
               )}

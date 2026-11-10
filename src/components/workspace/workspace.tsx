@@ -77,7 +77,7 @@ export function Workspace({ payload, samples, allowGold }: { payload: WorkspaceP
     <div className="flex h-[calc(100vh-3rem)] min-h-0 flex-col" data-testid="workspace">
       <CaseHeader payload={payload} samples={samples} allowGold={allowGold} refresh={refresh} />
       {payload.transcript ? (
-        <div className="grid min-h-0 flex-1 grid-cols-[40fr_25fr_35fr] divide-x bg-white">
+        <div className="grid min-h-0 flex-1 grid-cols-[minmax(0,36fr)_minmax(0,30fr)_minmax(0,34fr)] divide-x bg-background">
           <div className="min-h-0 overflow-y-auto">
             <TranscriptPane payload={payload} selectedClaimKey={selectedClaimKey} onSelect={(s) => select(s, { scroll: false })} />
           </div>
@@ -89,22 +89,22 @@ export function Workspace({ payload, samples, allowGold }: { payload: WorkspaceP
           </div>
         </div>
       ) : (
-        <div className="grid flex-1 place-items-center bg-white p-8 text-center text-sm text-slate-600">
+        <div className="grid flex-1 place-items-center bg-background p-8 text-center text-sm text-muted-foreground">
           <div className="max-w-md">
-            <p className="font-medium text-slate-900">No transcript yet.</p>
+            <p className="font-medium text-foreground">No transcript yet.</p>
             <p className="mt-1">The analyst uploads the call transcript, or you can upload it with the button above. Analysis then runs in the background and its stages appear here.</p>
           </div>
         </div>
       )}
-      <div className="flex shrink-0 items-center gap-3 border-t bg-slate-50 px-4 py-1 text-[11px] text-slate-500">
+      <div className="flex shrink-0 items-center gap-3 border-t bg-muted px-4 py-1 text-[11px] text-muted-foreground">
         <span>
-          <kbd className="rounded border bg-white px-1 font-mono">j</kbd> <kbd className="rounded border bg-white px-1 font-mono">k</kbd> move between findings
+          <kbd className="rounded border bg-background px-1 font-mono">j</kbd> <kbd className="rounded border bg-background px-1 font-mono">k</kbd> move between findings
         </span>
         <span>
-          <kbd className="rounded border bg-white px-1 font-mono">e</kbd> escalate
+          <kbd className="rounded border bg-background px-1 font-mono">e</kbd> escalate
         </span>
         <span>
-          <kbd className="rounded border bg-white px-1 font-mono">d</kbd> dispose
+          <kbd className="rounded border bg-background px-1 font-mono">d</kbd> dispose
         </span>
         <span className="ml-auto">Highlights are colored by finding state. Dotted underlines are statements with no finding.</span>
       </div>

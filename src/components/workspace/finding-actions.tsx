@@ -13,7 +13,7 @@ import type { ClaimView, FindingView, WorkspacePayload } from "@/server/services
 
 type Task = FindingView["tasks"][number];
 
-const selectClass = "h-7 w-full rounded-md border border-slate-300 bg-white px-1.5 text-xs";
+const selectClass = "h-7 w-full rounded-md border border-input bg-background px-1.5 text-xs";
 
 /** Open questions on a finding, with the form that records an answer and maps it onto claim fields (§10.6). */
 export function ContextTasks({ finding, claim, issuer, refresh }: { finding: FindingView; claim: ClaimView | null; issuer: string; refresh: () => void }) {
@@ -46,8 +46,8 @@ export function ContextTasks({ finding, claim, issuer, refresh }: { finding: Fin
         <ul className="space-y-1 text-sm">
           {finding.missingContext.map((m, i) => (
             <li key={i} className="flex gap-2">
-              <span className="font-mono text-xs text-amber-700">{m.ruleId}</span>
-              <span className="text-slate-700">{m.explanation || m.question}</span>
+              <span className="font-mono text-xs text-muted-foreground">{m.ruleId}</span>
+              <span className="text-foreground">{m.explanation || m.question}</span>
             </li>
           ))}
         </ul>
@@ -56,9 +56,9 @@ export function ContextTasks({ finding, claim, issuer, refresh }: { finding: Fin
         <AnswerForm key={task.id} task={task} claim={claim} issuer={issuer} aiQuestions={aiQuestions} refresh={refresh} />
       ))}
       {answered.map((task) => (
-        <div key={task.id} className="rounded-lg border bg-slate-50 px-3 py-2 text-xs">
-          <div className="text-slate-500">{task.question}</div>
-          <div className="mt-1 text-slate-800">Answer: {task.answer}</div>
+        <div key={task.id} className="rounded-lg border bg-muted px-3 py-2 text-xs">
+          <div className="text-muted-foreground">{task.question}</div>
+          <div className="mt-1 text-foreground">Answer: {task.answer}</div>
         </div>
       ))}
       {finding.state !== "DISPOSITIONED" &&
@@ -112,24 +112,24 @@ function AnswerForm({ task, claim, issuer, aiQuestions, refresh }: { task: Task;
   }
 
   return (
-    <div className="rounded-lg border border-amber-200 bg-amber-50/60 p-3" data-testid="context-task">
-      <div className="text-sm font-medium text-amber-900">{task.question}</div>
+    <div className="rounded-lg border border-warning/40 bg-warning/10 p-3" data-testid="context-task">
+      <div className="text-sm font-medium text-foreground">{task.question}</div>
       {aiQuestions.length > 0 && (
         <div className="mt-1.5 space-y-0.5">
           {aiQuestions.map((q) => (
-            <div key={q} className="flex items-start gap-1.5 text-xs text-slate-600">
-              <Sparkles className="mt-0.5 size-3 shrink-0 text-indigo-500" />
+            <div key={q} className="flex items-start gap-1.5 text-xs text-muted-foreground">
+              <Sparkles className="mt-0.5 size-3 shrink-0" />
               <span>
-                <span className="font-medium text-indigo-700">AI-suggested question:</span> {q}
+                <span className="font-medium text-foreground">AI-suggested question:</span> {q}
               </span>
             </div>
           ))}
         </div>
       )}
-      <Textarea value={answer} onChange={(e) => setAnswer(e.target.value)} placeholder="Record the answer you received from the analyst or the expert" className="mt-2 h-16 bg-white text-sm" data-testid="clarification-answer" />
+      <Textarea value={answer} onChange={(e) => setAnswer(e.target.value)} placeholder="Record the answer you received from the analyst or the expert" className="mt-2 h-16 bg-background text-sm" data-testid="clarification-answer" />
       {claim && (
         <div className="mt-2 grid grid-cols-2 gap-2">
-          <label className="text-xs text-slate-600">
+          <label className="text-xs text-muted-foreground">
             The answer establishes the source as
             <select value={basis} onChange={(e) => setBasis(e.target.value)} className={cn(selectClass, "mt-0.5")} data-testid="map-knowledge_basis">
               <option value="">no change ({humanize(claim.fields.knowledge_basis)})</option>
@@ -140,7 +140,7 @@ function AnswerForm({ task, claim, issuer, aiQuestions, refresh }: { task: Task;
               ))}
             </select>
           </label>
-          <label className="text-xs text-slate-600">
+          <label className="text-xs text-muted-foreground">
             …and the access timing as
             <select value={timing} onChange={(e) => setTiming(e.target.value)} className={cn(selectClass, "mt-0.5")} data-testid="map-access_timing">
               <option value="">no change ({humanize(claim.fields.access_timing)})</option>
@@ -151,7 +151,7 @@ function AnswerForm({ task, claim, issuer, aiQuestions, refresh }: { task: Task;
               ))}
             </select>
           </label>
-          <label className="text-xs text-slate-600">
+          <label className="text-xs text-muted-foreground">
             …the company as
             <select value={company} onChange={(e) => setCompany(e.target.value)} className={cn(selectClass, "mt-0.5")} data-testid="map-subject_entity">
               <option value="">no change ({claim.fields.subject_entity.name ?? humanize(claim.fields.subject_entity.kind)})</option>
@@ -161,7 +161,7 @@ function AnswerForm({ task, claim, issuer, aiQuestions, refresh }: { task: Task;
               <option value="industry">The industry as a whole</option>
             </select>
           </label>
-          <label className="text-xs text-slate-600">
+          <label className="text-xs text-muted-foreground">
             …and the period as
             <select value={period} onChange={(e) => setPeriod(e.target.value)} className={cn(selectClass, "mt-0.5")} data-testid="map-period">
               <option value="">no change ({humanize(claim.fields.period.relative)})</option>
@@ -172,8 +172,8 @@ function AnswerForm({ task, claim, issuer, aiQuestions, refresh }: { task: Task;
           </label>
         </div>
       )}
-      <p className="mt-2 text-xs text-slate-500">The mapped values become reviewer-verified fields. The policy monitors then re-run; their result decides where this finding goes.</p>
-      {error && <p className="mt-1 text-xs text-red-700">{error}</p>}
+      <p className="mt-2 text-xs text-muted-foreground">The mapped values become reviewer-verified fields. The policy monitors then re-run; their result decides where this finding goes.</p>
+      {error && <p className="mt-1 text-xs text-destructive">{error}</p>}
       <div className="mt-2 flex justify-end">
         <Button size="sm" disabled={busy || answer.trim().length < 3} onClick={submit} data-testid="submit-clarification">
           {busy ? "Recording…" : "Record answer and re-run monitors"}
@@ -222,13 +222,13 @@ export function FindingActions({ finding, payload, refresh, focus }: { finding: 
   return (
     <div className="space-y-2" data-testid="finding-actions">
       {needsSenior && (
-        <div className={cn("flex items-start gap-2 rounded-lg border px-3 py-2 text-xs", senior ? "border-violet-200 bg-violet-50 text-violet-900" : "border-violet-200 bg-violet-50 text-violet-900")} data-testid="escalation-notice">
+        <div className="flex items-start gap-2 rounded-lg border bg-muted px-3 py-2 text-xs text-foreground" data-testid="escalation-notice">
           <ShieldCheck className="mt-0.5 size-3.5 shrink-0" />
           <span>{finding.tasks.find((t) => t.kind === "escalation" && t.status === "open")?.question ?? "This finding is escalated."} {senior ? "You can decide it." : "A senior compliance officer must decide it."}</span>
         </div>
       )}
-      {finding.state === "NEEDS_CONTEXT" && <p className="text-xs text-slate-600">This finding is waiting for context. Answer the question above, or promote it to review if the context cannot be obtained.</p>}
-      {ackOnly && <p className="text-xs text-slate-600">No rule is triggered on the current evidence. That is not a clearance: acknowledge it as no concern, or promote it to review.</p>}
+      {finding.state === "NEEDS_CONTEXT" && <p className="text-xs text-muted-foreground">This finding is waiting for context. Answer the question above, or promote it to review if the context cannot be obtained.</p>}
+      {ackOnly && <p className="text-xs text-muted-foreground">No rule is triggered on the current evidence. That is not a clearance: acknowledge it as no concern, or promote it to review.</p>}
 
       <div className="flex gap-1">
         {canDispose && (
@@ -270,7 +270,7 @@ export function FindingActions({ finding, payload, refresh, focus }: { finding: 
             id="finding-rationale"
           />
           {error && (
-            <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-800" role="alert" data-testid="action-error">
+            <p className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-foreground" role="alert" data-testid="action-error">
               {error}
             </p>
           )}

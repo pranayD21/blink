@@ -1,16 +1,16 @@
 "use client";
 
-import { AlertTriangle, AudioLines, CheckCircle2, ClipboardCheck, FileText, History, PlayCircle, RotateCcw, Timer } from "lucide-react";
+import { AlertTriangle, AudioLines, ClipboardCheck, FileText, History, PlayCircle, RotateCcw, Timer } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { toast } from "sonner";
 import { JobProgress } from "@/components/app/job-progress";
-import { Chip, StateChip } from "@/components/app/status-chip";
+import { StateChip } from "@/components/app/status-chip";
+import { StatusDot } from "@/components/app/status-dot";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { api, errorMessage } from "@/lib/api";
 import { formatDate, formatDateTime } from "@/lib/format";
-import { cn } from "@/lib/utils";
 import type { WorkspacePayload } from "@/server/services/workspace";
 import { userName } from "./model";
 import { type TranscriptSample, UploadTranscriptDialog } from "./upload-transcript";
@@ -54,13 +54,13 @@ function AttestDialog({ payload, refresh }: { payload: WorkspacePayload; refresh
             You are stating that you reviewed the entire call in transcript v{transcript.versionNo} ({transcript.turns.length} turns), not only the flagged passages. Extraction can miss a statement; this attestation is the control for that, and it is required even when there are no findings.
           </DialogDescription>
         </DialogHeader>
-        <p className="text-sm text-slate-600">The attestation depends on every turn of this transcript version. If any turn changes, it goes stale and must be made again.</p>
+        <p className="text-sm text-muted-foreground">The attestation depends on every turn of this transcript version. If any turn changes, it goes stale and must be made again.</p>
         {payload.attestation && (
-          <p className={cn("rounded-md px-3 py-2 text-sm", current ? "bg-emerald-50 text-emerald-800" : "bg-red-50 text-red-800")}>
+          <StatusDot tone={current ? "good" : "stop"} className="items-start text-sm whitespace-normal [&>span:first-child]:mt-1.5">
             {current ? `Attested by ${userName(payload, payload.attestation.actorId)} on ${formatDateTime(payload.attestation.createdAt)}.` : `The earlier attestation is stale${payload.attestation.staleReason ? `: ${payload.attestation.staleReason}` : ": it covers an earlier transcript version"}.`}
-          </p>
+          </StatusDot>
         )}
-        {error && <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-800">{error}</p>}
+        {error && <p className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-foreground">{error}</p>}
         <DialogFooter>
           <Button variant="ghost" onClick={() => setOpen(false)}>
             Cancel
@@ -98,27 +98,28 @@ export function CaseHeader({ payload, samples, allowGold, refresh }: { payload: 
   }
 
   return (
-    <div className="shrink-0 border-b bg-white">
+    <div className="shrink-0 border-b bg-background">
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2 px-4 py-2.5">
-        <h1 className="text-base font-semibold tracking-tight text-slate-900">{payload.case.title}</h1>
+        <h1 className="text-base font-semibold tracking-tight text-foreground">{payload.case.title}</h1>
         <StateChip state={payload.case.status} data-testid="case-status" />
         {policy ? (
-          <Link href={`/policies/${policy.id}`} className="inline-flex items-center gap-1.5 text-xs text-slate-600 hover:underline" data-testid="policy-badge">
-            policy {policy.label} <StateChip state={policy.status} /> <Chip tone={policy.compileSource === "manual" ? "amber" : "indigo"}>{policy.compileSource === "manual" ? "manual fallback" : "AI-compiled"}</Chip>
+          <Link href={`/policies/${policy.id}`} className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:underline" data-testid="policy-badge">
+            policy {policy.label} <StateChip state={policy.status} />
+            {policy.compileSource === "manual" ? <StatusDot tone="warn">manual fallback</StatusDot> : <span>AI-compiled</span>}
           </Link>
         ) : (
-          <Chip tone="red">no active policy</Chip>
+          <StatusDot tone="stop" className="text-xs">no active policy</StatusDot>
         )}
         {run && (
-          <span className="text-xs text-slate-500" data-testid="run-badge">
+          <span className="text-xs text-muted-foreground" data-testid="run-badge">
             run #{run.runNo} · transcript v{payload.transcript?.versionNo}
           </span>
         )}
-        {run?.source === "gold" && <Chip tone="amber">hand-labeled claims (dev)</Chip>}
+        {run?.source === "gold" && <StatusDot tone="warn" className="text-xs">hand-labeled claims (dev)</StatusDot>}
         {run?.replayed && (
-          <Chip tone="sky" title="This run replayed a recorded model response; no network call was made." data-testid="replayed-badge">
+          <span className="inline-flex items-center gap-1 text-xs text-muted-foreground" title="This run replayed a recorded model response; no network call was made." data-testid="replayed-badge">
             <PlayCircle className="size-3" /> Replayed from recorded run · {formatDate(run.recordedAt)}
-          </Chip>
+          </span>
         )}
         <div className="ml-auto flex items-center gap-2">
           <UploadTranscriptDialog caseId={payload.case.id} samples={samples} allowGold={allowGold} currentVersion={payload.transcript?.versionNo ?? null} onUploaded={(id) => (setLiveJob(id), refresh())} />
@@ -168,7 +169,7 @@ export function CaseHeader({ payload, samples, allowGold, refresh }: { payload: 
       )}
 
       {blocking.map((issue) => (
-        <div key={issue.id} className="flex items-start gap-2 border-t border-red-200 bg-red-50 px-4 py-2 text-sm text-red-900" data-testid="issue-blocking">
+        <div key={issue.id} className="flex items-start gap-2 border-t border-destructive/40 bg-destructive/10 px-4 py-2 text-sm text-foreground" data-testid="issue-blocking">
           <AlertTriangle className="mt-0.5 size-4 shrink-0" />
           <span>
             <span className="font-mono text-xs font-semibold">{issue.code}</span> {issue.message}
@@ -176,7 +177,7 @@ export function CaseHeader({ payload, samples, allowGold, refresh }: { payload: 
         </div>
       ))}
       {warnings.length > 0 && (
-        <details className="border-t border-amber-200 bg-amber-50 px-4 py-2 text-sm text-amber-900" data-testid="issue-warning">
+        <details className="border-t border-warning/40 bg-warning/10 px-4 py-2 text-sm text-foreground" data-testid="issue-warning">
           <summary className="cursor-pointer">
             {warnings.length} processing warning{warnings.length === 1 ? "" : "s"}
           </summary>
@@ -191,21 +192,21 @@ export function CaseHeader({ payload, samples, allowGold, refresh }: { payload: 
       )}
 
       {payload.transcript && !jobId && payload.case.status !== "ANALYSIS_FAILED" && (
-        <div className={cn("flex flex-wrap items-center gap-x-2 gap-y-1 border-t px-4 py-1.5 text-xs", payload.blockers.length === 0 ? "bg-emerald-50 text-emerald-800" : "bg-slate-50 text-slate-600")} data-testid="readiness">
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 border-t bg-muted px-4 py-1.5 text-xs text-muted-foreground" data-testid="readiness">
           {payload.blockers.length === 0 ? (
             <>
-              <CheckCircle2 className="size-3.5" /> Review complete: every finding is decided and the whole call is attested.
+              <StatusDot tone="good">Review complete: every finding is decided and the whole call is attested.</StatusDot>
             </>
           ) : (
             <>
-              <span className="font-medium text-slate-700">Before a brief can be approved:</span>
+              <StatusDot tone="warn" className="font-medium text-foreground">Before a brief can be approved:</StatusDot>
               {openFindings.length > 0 && (
-                <span className="rounded bg-white px-1.5 py-0.5 ring-1 ring-slate-200" data-testid="blocker" title={openFindings.map((b) => b.message).join("\n")}>
+                <span className="rounded bg-background px-1.5 py-0.5 ring-1 ring-border" data-testid="blocker" title={openFindings.map((b) => b.message).join("\n")}>
                   {openFindings.length === 1 ? openFindings[0].message : `${openFindings.length} findings to decide`}
                 </span>
               )}
               {otherBlockers.map((b, i) => (
-                <span key={i} className="rounded bg-white px-1.5 py-0.5 ring-1 ring-slate-200" data-testid="blocker">
+                <span key={i} className="rounded bg-background px-1.5 py-0.5 ring-1 ring-border" data-testid="blocker">
                   {b.message}
                 </span>
               ))}

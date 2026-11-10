@@ -3,6 +3,7 @@
 import { Pencil } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { StatusDot } from "@/components/app/status-dot";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ACCESS_TIMINGS, ENTITY_KINDS, EVENT_KINDS, KNOWLEDGE_BASES, SCOPES } from "@/core/types";
@@ -96,7 +97,7 @@ export function ClaimFieldsEditor({ claim, refresh }: { claim: ClaimView; refres
     <div data-testid="claim-fields">
       <table className="w-full text-xs">
         <thead>
-          <tr className="text-left text-slate-500">
+          <tr className="text-left text-muted-foreground">
             <th className="w-[26%] py-1 font-medium">Field</th>
             <th className="w-[37%] py-1 font-medium">Expert asserted</th>
             <th className="py-1 font-medium">Reviewer verified</th>
@@ -107,12 +108,12 @@ export function ClaimFieldsEditor({ claim, refresh }: { claim: ClaimView; refres
             const isVerified = row.field in verified;
             const current = draft[row.field] ?? (row.read ? row.read(claim.fields) : "");
             return (
-              <tr key={row.field} className="border-t border-slate-100 align-top" data-testid={`field-${row.field}`}>
-                <td className="py-1 pr-2 text-slate-600">{row.label}</td>
-                <td className={cn("py-1 pr-2 text-slate-800", isVerified && "text-slate-400 line-through decoration-slate-300")}>{row.show(claim.asserted)}</td>
+              <tr key={row.field} className="border-t align-top" data-testid={`field-${row.field}`}>
+                <td className="py-1 pr-2 text-muted-foreground">{row.label}</td>
+                <td className={cn("py-1 pr-2 text-foreground", isVerified && "text-muted-foreground line-through decoration-muted-foreground/50")}>{row.show(claim.asserted)}</td>
                 <td className="py-1">
                   {editing && row.options ? (
-                    <select value={current} onChange={(e) => setDraft((d) => ({ ...d, [row.field]: e.target.value }))} className="h-6 w-full rounded border border-slate-300 bg-white px-1 text-xs" data-testid={`edit-${row.field}`}>
+                    <select value={current} onChange={(e) => setDraft((d) => ({ ...d, [row.field]: e.target.value }))} className="h-6 w-full rounded border border-input bg-background px-1 text-xs" data-testid={`edit-${row.field}`}>
                       {row.options.map((o) => (
                         <option key={o} value={o}>
                           {humanize(o)}
@@ -121,11 +122,11 @@ export function ClaimFieldsEditor({ claim, refresh }: { claim: ClaimView; refres
                       {isVerified && <option value="__asserted__">↩ back to what the expert said</option>}
                     </select>
                   ) : isVerified ? (
-                    <span className="font-medium text-indigo-700" data-testid={`verified-${row.field}`}>
+                    <span className="font-medium text-foreground" data-testid={`verified-${row.field}`}>
                       {row.show(claim.fields)}
                     </span>
                   ) : (
-                    <span className="text-slate-300">—</span>
+                    <span className="text-muted-foreground/50">—</span>
                   )}
                 </td>
               </tr>
@@ -133,11 +134,11 @@ export function ClaimFieldsEditor({ claim, refresh }: { claim: ClaimView; refres
           })}
         </tbody>
       </table>
-      {claim.meta.ungroundedFields.length > 0 && <p className="mt-1 text-xs text-amber-700">Reset to “unknown” because no expert quote supports them: {claim.meta.ungroundedFields.join(", ")}.</p>}
+      {claim.meta.ungroundedFields.length > 0 && <StatusDot tone="warn" className="mt-1 items-start text-xs whitespace-normal [&>span:first-child]:mt-1">Reset to “unknown” because no expert quote supports them: {claim.meta.ungroundedFields.join(", ")}.</StatusDot>}
       {editing ? (
         <div className="mt-2 space-y-2">
           <Input value={note} onChange={(e) => setNote(e.target.value)} placeholder="Why are you correcting this? (kept in the audit log)" className="h-7 text-xs" />
-          {error && <p className="text-xs text-red-700">{error}</p>}
+          {error && <p className="text-xs text-destructive">{error}</p>}
           <div className="flex justify-end gap-2">
             <Button size="xs" variant="ghost" onClick={() => (setEditing(false), setDraft({}), setError(null))}>
               Cancel
@@ -148,7 +149,7 @@ export function ClaimFieldsEditor({ claim, refresh }: { claim: ClaimView; refres
           </div>
         </div>
       ) : (
-        <div className="mt-2 flex items-center justify-between text-xs text-slate-500">
+        <div className="mt-2 flex items-center justify-between text-xs text-muted-foreground">
           <span>
             {claim.logicalKey} · version {claim.versionNo}
             {claim.status === "reviewer_corrected" ? " · reviewer-corrected" : ""}

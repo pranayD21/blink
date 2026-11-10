@@ -1,9 +1,10 @@
 "use client";
 
-import { ArrowRight, Flag, Sparkles } from "lucide-react";
+import { Flag, Sparkles } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
-import { Chip, StateChip } from "@/components/app/status-chip";
+import { StateChip } from "@/components/app/status-chip";
+import { StatusDot } from "@/components/app/status-dot";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { api, errorMessage } from "@/lib/api";
@@ -19,9 +20,9 @@ import { RuleTraces } from "./trace";
 function Section({ title, children, testId, hint }: { title: string; children: React.ReactNode; testId?: string; hint?: string }) {
   return (
     <section className="border-t px-4 py-3" data-testid={testId}>
-      <h3 className="mb-2 flex items-baseline gap-2 text-[11px] font-semibold tracking-wide text-slate-500 uppercase">
-        {title}
-        {hint && <span className="font-normal tracking-normal text-slate-400 normal-case">{hint}</span>}
+      <h3 className="mb-2 flex flex-wrap items-baseline gap-x-2 text-xs font-medium text-foreground">
+        <span className="whitespace-nowrap">{title}</span>
+        {hint && <span className="font-normal text-muted-foreground">{hint}</span>}
       </h3>
       {children}
     </section>
@@ -30,13 +31,13 @@ function Section({ title, children, testId, hint }: { title: string; children: R
 
 /** The words a live finding hid, on the current transcript, in place of a claim's linked quotes. */
 function LivePassages({ finding }: { finding: FindingView }) {
-  if (finding.passages.length === 0) return <p className="text-sm text-slate-500">No passage was recorded for this finding.</p>;
+  if (finding.passages.length === 0) return <p className="text-sm text-muted-foreground">No passage was recorded for this finding.</p>;
   return (
     <div className="space-y-1.5">
       {finding.passages.map((p, i) => (
-        <button key={`${p.turnLabel}:${i}`} type="button" onClick={() => scrollToTurn(p.turnLabel)} className="flex w-full gap-2 rounded-md px-1.5 py-1 text-left text-sm hover:bg-slate-100" data-testid={`quote-${p.turnLabel}`} title="Scroll the transcript to this turn">
-          <span className="w-8 shrink-0 font-mono text-xs font-semibold text-indigo-700">{p.turnLabel}</span>
-          <span className="min-w-0 flex-1 text-slate-800">“{p.text}”</span>
+        <button key={`${p.turnLabel}:${i}`} type="button" onClick={() => scrollToTurn(p.turnLabel)} className="flex w-full gap-2 rounded-md px-1.5 py-1 text-left text-sm hover:bg-muted" data-testid={`quote-${p.turnLabel}`} title="Scroll the transcript to this turn">
+          <span className="w-8 shrink-0 font-mono text-xs font-medium text-foreground">{p.turnLabel}</span>
+          <span className="min-w-0 flex-1 text-foreground">“{p.text}”</span>
         </button>
       ))}
     </div>
@@ -47,35 +48,35 @@ function LinkedPassages({ claim }: { claim: ClaimView }) {
   return (
     <div className="space-y-1.5">
       {claim.quotes.map((q) => (
-        <button key={q.id} type="button" onClick={() => scrollToTurn(q.turnLabel)} className="group flex w-full gap-2 rounded-md px-1.5 py-1 text-left text-sm hover:bg-slate-100" data-testid={`quote-${q.turnLabel}`} title="Scroll the transcript to this turn">
-          <span className="w-8 shrink-0 font-mono text-xs font-semibold text-indigo-700">{q.turnLabel}</span>
-          <span className="min-w-0 flex-1 text-slate-800">
+        <button key={q.id} type="button" onClick={() => scrollToTurn(q.turnLabel)} className="group flex w-full gap-2 rounded-md px-1.5 py-1 text-left text-sm hover:bg-muted" data-testid={`quote-${q.turnLabel}`} title="Scroll the transcript to this turn">
+          <span className="w-8 shrink-0 font-mono text-xs font-medium text-foreground">{q.turnLabel}</span>
+          <span className="min-w-0 flex-1 text-foreground">
             “{q.quote}”
             {q.normalized && (
-              <span className="ml-1 text-xs text-slate-400" title="Matched after normalizing whitespace, quote marks, or dashes. The offsets point at the original text.">
+              <span className="ml-1 text-xs text-muted-foreground" title="Matched after normalizing whitespace, quote marks, or dashes. The offsets point at the original text.">
                 ≈
               </span>
             )}
           </span>
-          <span className="shrink-0 text-xs text-slate-400">({QUOTE_ROLE_LABEL[q.role] ?? q.role})</span>
+          <span className="shrink-0 text-xs text-muted-foreground">({QUOTE_ROLE_LABEL[q.role] ?? q.role})</span>
         </button>
       ))}
-      {claim.correctedBy.length > 0 && <p className="text-xs text-slate-500">The expert later corrected this statement: see {claim.correctedBy.join(", ")}.</p>}
-      {claim.fields.is_correction_of && <p className="text-xs text-slate-500">This statement corrects {claim.fields.is_correction_of}.</p>}
+      {claim.correctedBy.length > 0 && <p className="text-xs text-muted-foreground">The expert later corrected this statement: see {claim.correctedBy.join(", ")}.</p>}
+      {claim.fields.is_correction_of && <p className="text-xs text-muted-foreground">This statement corrects {claim.fields.is_correction_of}.</p>}
     </div>
   );
 }
 
-/** The mini FSM path: where the claim's monitors stood after each turn (§15.2). */
-function PathChips({ path }: { path: FindingView["path"] }) {
+/** Where the claim's monitors stood after each turn, read as one line: "Unassessed → Needs context at T5 → Review required at T11" (§15.2). */
+function StatePath({ path }: { path: FindingView["path"] }) {
   if (path.length === 0) return null;
   return (
-    <div className="flex flex-wrap items-center gap-1" data-testid="fsm-path">
+    <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-xs" data-testid="fsm-path">
       {path.map((step, i) => (
-        <span key={i} className="inline-flex items-center gap-1">
-          {i > 0 && <ArrowRight className="size-3 text-slate-300" />}
+        <span key={i} className="inline-flex items-center gap-1.5">
+          {i > 0 && <span aria-hidden="true" className="text-muted-foreground">→</span>}
           <StateChip state={step.state} />
-          {step.turnLabel && <span className="font-mono text-[11px] text-slate-500">at {step.turnLabel}</span>}
+          {step.turnLabel && <span className="text-muted-foreground">at {step.turnLabel}</span>}
         </span>
       ))}
     </div>
@@ -87,26 +88,26 @@ function Decisions({ finding, payload }: { finding: FindingView; payload: Worksp
   return (
     <div className="space-y-2">
       {finding.decisions.map((d) => (
-        <div key={d.id} className={cn("rounded-lg border px-3 py-2 text-sm", d.stale ? "border-red-200 bg-red-50" : "bg-slate-50")} data-testid="decision" data-stale={d.stale}>
+        <div key={d.id} className={cn("rounded-lg border px-3 py-2 text-sm", d.stale ? "border-destructive/40 bg-destructive/10" : "bg-muted")} data-testid="decision" data-stale={d.stale}>
           <div className="flex flex-wrap items-center gap-2">
-            <span className="font-medium text-slate-900">{d.kind === "escalation_request" ? "Escalation requested" : (OUTCOME_LABEL[d.outcome ?? ""] ?? d.outcome)}</span>
-            {d.kind === "escalation_decision" && <Chip tone="violet">senior decision</Chip>}
-            {d.stale && <Chip tone="red">stale</Chip>}
-            <span className="ml-auto text-xs text-slate-500">
+            <span className="font-medium text-foreground">{d.kind === "escalation_request" ? "Escalation requested" : (OUTCOME_LABEL[d.outcome ?? ""] ?? d.outcome)}</span>
+            {d.kind === "escalation_decision" && <span className="text-xs text-muted-foreground">senior decision</span>}
+            {d.stale && <StatusDot tone="stop" className="text-xs">stale</StatusDot>}
+            <span className="ml-auto text-xs text-muted-foreground">
               {userName(payload, d.actorId)} · {formatDateTime(d.createdAt)}
             </span>
           </div>
-          <p className="mt-1 text-slate-700">{d.rationale}</p>
-          {d.stale && d.staleReason && <p className="mt-1 text-xs font-medium text-red-700">Stale: {d.staleReason}. The finding was reopened.</p>}
+          <p className="mt-1 text-foreground">{d.rationale}</p>
+          {d.stale && d.staleReason && <p className="mt-1 text-xs font-medium text-foreground">Stale: {d.staleReason}. The finding was reopened.</p>}
           {d.evidence.length > 0 && (
-            <details className="mt-1.5 text-xs text-slate-500">
+            <details className="mt-1.5 text-xs text-muted-foreground">
               <summary className="cursor-pointer" data-testid="decision-evidence">
                 Decided on evidence <span className="font-mono">#{shortHash(d.evidenceHash, 8)}</span> · {d.evidence.length} pinned source{d.evidence.length === 1 ? "" : "s"}
               </summary>
               <ul className="mt-1 space-y-0.5 pl-3">
                 {d.evidence.map((e, i) => (
                   <li key={i}>
-                    {humanize(e.sourceType)}: {e.sourceLabel} <span className="font-mono text-slate-400">{shortHash(e.sourceHash, 8)}</span>
+                    {humanize(e.sourceType)}: {e.sourceLabel} <span className="font-mono text-muted-foreground">{shortHash(e.sourceHash, 8)}</span>
                   </li>
                 ))}
               </ul>
@@ -130,12 +131,12 @@ const HISTORY_TEXT: Record<string, (p: Record<string, unknown>) => string> = {
 
 function History({ finding, payload }: { finding: FindingView; payload: WorkspacePayload }) {
   return (
-    <ol className="space-y-1 text-xs text-slate-600">
+    <ol className="space-y-1 text-xs text-muted-foreground">
       {finding.history.map((e) => (
         <li key={e.seq} className="flex gap-2">
-          <span className="w-8 shrink-0 text-right font-mono text-slate-400">#{e.seq}</span>
+          <span className="w-8 shrink-0 text-right font-mono">#{e.seq}</span>
           <span className="min-w-0 flex-1">{HISTORY_TEXT[e.type]?.(e.payload) ?? humanize(e.type)}</span>
-          <span className="shrink-0 text-slate-400">{userName(payload, e.actorId)}</span>
+          <span className="shrink-0">{userName(payload, e.actorId)}</span>
         </li>
       ))}
     </ol>
@@ -189,7 +190,7 @@ export function EvidencePane({ payload, selection, onSelect, refresh, focus }: {
   const claim = claimKey ? (payload.claims.find((c) => c.logicalKey === claimKey) ?? null) : null;
 
   if (!finding && !claim) {
-    return <div className="p-6 text-sm text-slate-500">Select a finding, or click a highlighted passage in the transcript, to see the evidence behind it.</div>;
+    return <div className="p-6 text-sm text-muted-foreground">Select a finding, or click a highlighted passage in the transcript, to see the evidence behind it.</div>;
   }
 
   return (
@@ -198,27 +199,27 @@ export function EvidencePane({ payload, selection, onSelect, refresh, focus }: {
         {finding ? (
           <>
             <div className="flex flex-wrap items-center gap-2">
-              <span className="font-mono text-sm font-semibold text-slate-900" data-testid="evidence-label">
+              <span className="font-mono text-sm font-medium text-foreground" data-testid="evidence-label">
                 {finding.label}
               </span>
               <StateChip state={finding.state} data-testid="evidence-state" />
-              <span className="text-xs font-medium text-slate-500 capitalize">{finding.severity} severity</span>
+              <span className="text-xs text-muted-foreground">{finding.severity} severity</span>
               {finding.origin === "ai_suggested" && (
-                <Chip tone="indigo">
+                <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
                   <Sparkles className="size-3" /> AI suggestion
-                </Chip>
+                </span>
               )}
-              {finding.origin === "reviewer" && <Chip tone="slate">raised by a reviewer</Chip>}
+              {finding.origin === "reviewer" && <span className="text-xs text-muted-foreground">raised by a reviewer</span>}
             </div>
-            <h2 className="mt-1.5 text-base font-semibold text-slate-900">{finding.title}</h2>
-            <p className="mt-0.5 text-xs text-slate-500" data-testid="hidden-status">
+            <h2 className="mt-1.5 text-base font-semibold text-foreground">{finding.title}</h2>
+            <p className="mt-0.5 text-xs text-muted-foreground" data-testid="hidden-status">
               {HIDDEN_STATUS_LABEL[finding.hidden]}
             </p>
-            <p className="mt-1 text-slate-700">{finding.explanation}</p>
-            {finding.origin === "ai_suggested" && <p className="mt-1 text-xs text-slate-500">Raised by the extraction model, not by a policy rule. It can open review work; only a reviewer can close it.</p>}
+            <p className="mt-1 text-foreground">{finding.explanation}</p>
+            {finding.origin === "ai_suggested" && <p className="mt-1 text-xs text-muted-foreground">Raised by the extraction model, not by a policy rule. It can open review work; only a reviewer can close it.</p>}
             {finding.path.length > 1 && (
               <div className="mt-2.5">
-                <PathChips path={finding.path} />
+                <StatePath path={finding.path} />
               </div>
             )}
           </>
@@ -226,11 +227,11 @@ export function EvidencePane({ payload, selection, onSelect, refresh, focus }: {
           claim && (
             <>
               <div className="flex flex-wrap items-center gap-2">
-                <span className="font-mono text-sm font-semibold text-slate-900">{claim.logicalKey}</span>
-                <Chip tone="slate">no finding</Chip>
-                {claim.eligibility.eligible ? <Chip tone="emerald">eligible for the brief</Chip> : claim.eligibility.detail && <Chip tone="amber">{claim.eligibility.detail}</Chip>}
+                <span className="font-mono text-sm font-medium text-foreground">{claim.logicalKey}</span>
+                <span className="text-xs text-muted-foreground">no finding</span>
+                {claim.eligibility.eligible ? <StatusDot tone="good" className="text-xs">eligible for the brief</StatusDot> : claim.eligibility.detail && <StatusDot tone="warn" className="text-xs">{claim.eligibility.detail}</StatusDot>}
               </div>
-              <p className="mt-1.5 text-slate-800">{claim.fields.summary}</p>
+              <p className="mt-1.5 text-foreground">{claim.fields.summary}</p>
             </>
           )
         )}
@@ -245,7 +246,7 @@ export function EvidencePane({ payload, selection, onSelect, refresh, focus }: {
       {claim && (
         <Section title="Linked passages" testId="linked-passages" hint="exact quotes, checked against the transcript">
           <LinkedPassages claim={claim} />
-          {finding && claim.logicalKey && <p className="mt-1.5 text-xs text-slate-400">{claim.logicalKey}: {claim.fields.summary}</p>}
+          {finding && claim.logicalKey && <p className="mt-1.5 text-xs text-muted-foreground">{claim.logicalKey}: {claim.fields.summary}</p>}
         </Section>
       )}
 

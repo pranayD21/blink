@@ -1371,10 +1371,10 @@ git commit   # style(ui): restyle the queue, intake and the banker's pages
 **Files:**
 - Modify: every file in `src/components/workspace/` not done in Task 31, `src/app/cases/[id]/page.tsx`, `tests/helpers/ui-scope.ts`
 
-- [ ] **Step 1: Extend the scope to `src/components/workspace` and see the rule test fail.**
-- [ ] **Step 2: Restyle.** Three panes and all content stay. Findings become one line each: label, a `StateLabel`, title, turns. Transcript highlights use one tint per state from tokens. The state path reads "Unassessed → Needs context at T5 → Review required at T11" in plain text.
-- [ ] **Step 3: Run the checks and look.** Run: `pnpm test && pnpm e2e`, screenshot into `test-results/redesign/32/`. Expected: PASS.
-- [ ] **Step 4: Commit.**
+- [x] **Step 1: Extend the scope to `src/components/workspace` and see the rule test fail.**
+- [x] **Step 2: Restyle.** Three panes and all content stay. Findings become one line each: label, a `StateLabel`, title, turns. Transcript highlights use one tint per state from tokens. The state path reads "Unassessed → Needs context at T5 → Review required at T11" in plain text.
+- [x] **Step 3: Run the checks and look.** Run: `pnpm test && pnpm e2e`, screenshot into `test-results/redesign/32/`. Expected: PASS.
+- [x] **Step 4: Commit.**
 
 ```bash
 git add src/components/workspace src/app/cases tests/helpers/ui-scope.ts
