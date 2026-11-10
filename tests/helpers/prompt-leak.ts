@@ -6,6 +6,7 @@
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import type { ValidationIssue } from "@/core/policy/validate";
+import { PREDICATE_NAMES, getPredicate, predicatePhrase } from "@/core/predicates/registry";
 import type { CaseContext, ExpertProfile } from "@/core/types";
 import { BRIEF_SYSTEM, buildBriefUser } from "@/server/llm/prompts/brief";
 import { DOCFACTS_SYSTEM, buildDocFactsUser } from "@/server/llm/prompts/docfacts";
@@ -38,9 +39,20 @@ const EMPTY_EXPERT: ExpertProfile = { name: "", current_title: "", current_emplo
 const ISSUE: ValidationIssue[] = [{ code: "SCHEMA_INVALID", severity: "blocking", message: "" }];
 const EMPTY_RULES = { rules: [], unsupported_clauses: [] };
 
-/** Every system prompt, and the fixed text of every user-prompt builder (including the predicate vocabulary Pass B sends). */
+/**
+ * Predicate wording outside the vocabulary: each phrase reaches the assembly and
+ * scenario models inside `guard_in_english` (rendered bare and with a typical
+ * parameter), and each clarifying question is kept to the same standard because
+ * it is model-ready text a reviewer reads.
+ */
+function predicateWording(): string[] {
+  return PREDICATE_NAMES.flatMap((name) => [predicatePhrase(name), predicatePhrase(name, { months: 12 }), getPredicate(name)!.clarifyQuestion]);
+}
+
+/** Every system prompt, the fixed text of every user-prompt builder (including the predicate vocabulary Pass B sends), and the predicate phrases. */
 export function promptSources(): string[] {
   return [
+    ...predicateWording(),
     FIELD_GUIDE,
     EXTRACT_SYSTEM,
     buildExtractUser({ ctx: EMPTY_CTX, researchQuestions: [], expert: EMPTY_EXPERT, turns: [] }),
@@ -70,7 +82,7 @@ function realTranscripts(dir: string): string[] {
   return out;
 }
 
-/** The Halvorsen transcripts, every variant transcript, both demo policies, and any real test transcripts. */
+/** The Halvorsen transcripts, every variant transcript, both demo policies, the curated public documents, and any real test transcripts. */
 export function fixtureSources(): string[] {
   const read = (...p: string[]) => readFileSync(join(FIXTURES, ...p), "utf8");
   const variants = readdirSync(join(FIXTURES, "cases", "variants"))
@@ -83,6 +95,10 @@ export function fixtureSources(): string[] {
     ...variants,
     read("policy", "blink-demo-policy-v1.md"),
     read("policy", "blink-demo-policy-v1-broken.md"),
+    ...readdirSync(join(FIXTURES, "documents"))
+      .filter((f) => f.endsWith(".md"))
+      .sort()
+      .map((f) => read("documents", f)),
     ...realTranscripts(join(FIXTURES, "real")),
   ];
 }

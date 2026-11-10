@@ -116,7 +116,7 @@ export function buildPassBUser(input: PassBInput): string {
 // ── Assembly: monitors ──────────────────────────────────────────────────────
 
 export const ASSEMBLY_STAGE = "policy_assembly";
-export const ASSEMBLY_PROMPT_VERSION = "assemble-v1";
+export const ASSEMBLY_PROMPT_VERSION = "assemble-v2";
 
 export const ASSEMBLY_SYSTEM = `You assemble one monitor per rule for an expert-call compliance system. A monitor is a small state machine that tracks the evidence status of one rule for one statement. Code runs it; a validator first enumerates every combination of evidence and rejects any monitor that is ambiguous, ignores missing evidence, or does not do what its rule declares.
 
@@ -180,7 +180,7 @@ export function buildAssemblyUser(input: AssemblyInput): string {
 // ── AI-proposed scenarios ───────────────────────────────────────────────────
 
 export const SCENARIOS_STAGE = "policy_scenarios";
-export const SCENARIOS_PROMPT_VERSION = "scenarios-v1";
+export const SCENARIOS_PROMPT_VERSION = "scenarios-v2";
 
 export const SCENARIOS_SYSTEM = `You write adversarial test scenarios for compliance monitors. Each rule below has a monitor: a small state machine, assembled by another model, that tracks the evidence status of that rule for one statement an expert made on a call. You are NOT shown the monitors. You are given the rules and what a correct monitor must do, and you write scenarios stating what should happen. Code then runs each scenario through the real monitor, and any disagreement is shown to the policy owner to inspect. A separate set of scenarios written by a human reviewer is the actual acceptance gate; yours are an independent second opinion.
 

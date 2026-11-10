@@ -81,9 +81,12 @@ When the owner has reported, the next step is to fill in the answers here, write
 
 - Every prompt now passes the five-word leak test (`tests/core/prompt-leak.test.ts`) with an empty `ALLOWED` list. The demo and all nine eval fixtures kept their outcomes on the first re-record (10 of 10 expected findings, 0 extra, 41 of 41 quotes valid; `pnpm demo:check` passes), so no improvement rounds were needed.
 - Deviation, wider than the brief's two prompt files: `brief.ts` (hedge examples taken from transcript T19) and `docfacts.ts` (the 10-Q's "$412 million" and "second quarter of fiscal 2027", and "Backlog is other") also quoted fixtures, so their examples were replaced too and their versions bumped to `brief-v2` and `docfacts-v2`. The predicate descriptions in `src/core/predicates/registry.ts` go to the Pass B model as the vocabulary, and three of them repeated paragraph 2 and 3 of the demo policy or transcript phrases, so they were reworded; the leak test covers them through `buildPassBUser`'s fixed text.
-- `ASSEMBLY_PROMPT_VERSION` and `SCENARIOS_PROMPT_VERSION` stay at v1: neither system prompt held fixture text.
-- Not changed, for the owner to decide: the predicate `phrase` strings (the English guard preview shown to the policy owner and sent to the assembly and scenario models inside `guard_in_english`) still echo the demo policy, for example "the expert signals the information is confidential or not yet announced" and "within the last {months} months". Rewording them changes what the policy owner reads and assertions in `tests/core/validate.test.ts`, so it was left out of this prompt-only task. The leak test does not cover them, because they reach a model only inside rule-specific text.
-- The fixture set for the leak test is the brief's: transcripts, variant transcripts and both policies. The curated public documents in `fixtures/documents/` are not in it (their boilerplate would produce chance matches); the docfacts examples were checked against them by hand.
+- Review fix round 1:
+  - The predicate `phrase` strings reach the assembly and scenario models inside `guard_in_english`. Four of them repeated the demo policy, so they were reworded in plain terms: "the statement gives an operating figure for one company", "the expert credits an internal company source", "the expert has worked at the covered issuer in the past {months} months", "the expert marks the information as secret or unreleased". One clarifying question was reworded too.
+  - The leak test now covers every phrase, every clarifying question, and the curated documents in `fixtures/documents/`. No chance matches appeared, so `ALLOWED` is still empty.
+  - The docfacts example "the third quarter of fiscal 2031" matched the 10-Q by chance and became "Q3 of fiscal 2031" (`docfacts-v3`).
+  - The phrase change bumped `assemble-v2` and `scenarios-v2`. Only the docfacts, assembly and scenario recordings were re-made; the demo and the nine eval fixtures kept their outcomes.
+  - A metric in category `other` at unspecified scope is now unknown as well (controller ruling).
 
 ## Spend log
 
@@ -92,6 +95,7 @@ When the owner has reported, the next step is to fill in the answers here, write
 | 2026-11-10 | 2 | Anthropic: 30 `claude-haiku-5-5` calls, about 1.0k uncached input, 71k cache-read, 2.5k cache-write, 7.4k output tokens (cache write priced at an assumed 1.25 times input) | $0.005 |
 | 2026-11-10 | 2 | Deepgram Flux: about 47 real-time streams of 7 to 8 s each, roughly 6 minutes of audio (estimate at the pay-as-you-go streaming rate; the console shows the exact figure) | about $0.05 |
 | 2026-11-10 | 5 | Anthropic: re-recorded every fixture after the prompt cleanup, one round. `pnpm record` made 19 live `claude-opus-5-5` calls ($1.19, as the script reports); `BLINK_LLM_MODE=record pnpm eval` added 8 extraction calls (about $0.32). Total from the 27 recordings' token counts priced by `costUsd` | $1.51 |
+| 2026-11-10 | 5 (fix round 1) | Anthropic: re-recorded only the stages whose request text changed: 10 live `claude-opus-5-5` calls (6 docfacts, 3 assembly, 1 scenarios), as `pnpm record` reports; the eval reused every recording | $0.43 |
 
 ## Waiting on the owner
 

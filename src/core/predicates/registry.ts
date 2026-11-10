@@ -161,7 +161,7 @@ const defs: PredicateDef[] = [
   },
   {
     name: "company_specific_operating_metric",
-    phrase: "the statement describes company-specific operating results",
+    phrase: "the statement gives an operating figure for one company",
     description:
       "True when the statement gives a company-specific operating result: orders, bookings, revenue, margin, pricing, inventory, headcount, guidance, or capex. False when the figure is an industry aggregate or comes from a sample of companies (this is how the industry-observation exception is expressed), or when the statement is not about an operating result. Unknown when the metric or its scope is unclear, or when a company figure fits none of the metric categories.",
     params: {},
@@ -177,9 +177,10 @@ const defs: PredicateDef[] = [
         }
         return { state: "unknown", explanation: "no operating metric could be identified" };
       }
-      // A company figure the categories do not fit may still be an operating result
-      // (churn, utilisation, backlog): refuting it would hide it, so a person decides.
-      if (fields.metric.category === "other" && (fields.scope === "company_wide" || fields.scope === "segment_or_region" || fields.scope === "single_customer")) {
+      // A figure the categories do not fit may still be an operating result (churn,
+      // utilisation, backlog): refuting it would hide it, so a person decides. Industry
+      // and sample scopes were refuted above.
+      if (fields.metric.category === "other") {
         return { state: "unknown", explanation: `"${fields.metric.label}" fits no known category; a reviewer should say whether it is an operating result` };
       }
       if (!OPERATING_METRICS.has(fields.metric.category)) {
@@ -225,7 +226,7 @@ const defs: PredicateDef[] = [
   },
   {
     name: "internal_source_claimed",
-    phrase: "the expert attributes the information to an internal company source",
+    phrase: "the expert credits an internal company source",
     description:
       "True when the expert says the information came from inside the company: its systems (reporting tools, CRM, ERP), its internal documents, or people who work there. False when the expert credits a public source, an industry survey, or their own outside observation. Unknown when the source is not stated or is speculation.",
     params: {},
@@ -261,7 +262,7 @@ const defs: PredicateDef[] = [
   },
   {
     name: "expert_recent_issuer_employee",
-    phrase: "the expert was employed by the covered issuer within the last {months} months",
+    phrase: "the expert has worked at the covered issuer in the past {months} months",
     description:
       "From the expert's profile only (never from the transcript). True when the expert worked at the covered issuer and that employment ended within `months` months of the call date, or is current. False when the profile shows no employment at the issuer or it ended earlier. Unknown when dates are missing.",
     params: { months: { type: "int", min: 1, max: 36, description: "look-back window in months before the call date" } },
@@ -304,12 +305,12 @@ const defs: PredicateDef[] = [
   },
   {
     name: "confidentiality_signal_present",
-    phrase: "the expert signals the information is confidential or not yet announced",
+    phrase: "the expert marks the information as secret or unreleased",
     description:
       "True when the expert used words signalling confidentiality or non-public status (for example \"off the record\", \"not public until the launch\", \"don't repeat this\"). False when the statement was quoted and carries no such signal. Unknown when the statement could not be grounded in a quote.",
     params: {},
     inputs: ["confidentiality_signals"],
-    clarifyQuestion: "Did the expert indicate this information is confidential or not yet public?",
+    clarifyQuestion: "Did the expert say this was secret or not yet released?",
     evaluate({ fields, validatedQuoteCount }) {
       if (fields.confidentiality_signals.length > 0) {
         return { state: "supported", explanation: `the expert said ${fields.confidentiality_signals.map((s) => `"${s}"`).join(", ")}` };

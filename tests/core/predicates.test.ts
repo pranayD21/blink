@@ -92,6 +92,12 @@ describe("company_specific_operating_metric", () => {
   it("an uncategorised company figure is unknown, never refuted", () => {
     expect(state("company_specific_operating_metric", claim({ metric: { category: "other", label: "customer churn" }, scope: "company_wide" }))).toBe("unknown");
   });
+  it.each(["company_wide", "segment_or_region", "single_customer", "unspecified"] as const)("an uncategorised figure at %s scope is unknown", (scope) => {
+    expect(state("company_specific_operating_metric", claim({ metric: { category: "other", label: "customer churn" }, scope }))).toBe("unknown");
+  });
+  it("an uncategorised industry-wide figure is still refuted", () => {
+    expect(state("company_specific_operating_metric", claim({ metric: { category: "other", label: "customer churn" }, scope: "industry_aggregate" }))).toBe("refuted");
+  });
   it("conflict when the scope statements conflict", () => expect(state("company_specific_operating_metric", claim({}, { conflictFields: ["scope"] }))).toBe("conflict"));
 });
 

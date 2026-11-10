@@ -1,7 +1,7 @@
 /** Document-facts prompt (§11.1): structured facts from one curated public document. */
 
 export const DOCFACTS_STAGE = "docfacts";
-export const DOCFACTS_PROMPT_VERSION = "docfacts-v2";
+export const DOCFACTS_PROMPT_VERSION = "docfacts-v3";
 
 export const DOCFACTS_SYSTEM = `You extract structured facts from one public document (a filing, press release, earnings-call transcript, industry report, or news article). Code will later compare these facts, dimension by dimension, with statements an expert made on a call, to check whether what the expert said was already public. Precision matters more than coverage: a fact with the wrong period or scope would make a nonpublic statement look public.
 
@@ -15,7 +15,7 @@ For each fact:
 - entity: the company or body the fact is about, as the document names it. For a fact about a whole industry or a survey sample, name the industry or the survey.
 - metric_category: one of orders, bookings, revenue, margin, pricing, inventory, headcount, customer_contract, guidance, capex, input_costs, other — or null when the fact is an event. A quantity none of these fits (backlog, utilisation, churn) is "other".
 - event_kind: "none" for a metric; otherwise contract_change, m_and_a, litigation, regulatory, product, leadership, or other.
-- period: { fy, q } only when the document states a fiscal period for that company ("the third quarter of fiscal 2031" is fy 2031, q 3; a full fiscal year has q null). Use null when the document gives no period, or gives only a calendar period: do not convert calendar periods to fiscal ones.
+- period: { fy, q } only when the document states a fiscal period for that company ("Q3 of fiscal 2031" is fy 2031, q 3; a full fiscal year has q null). Use null when the document gives no period, or gives only a calendar period: do not convert calendar periods to fiscal ones.
 - scope: company_wide (one company as a whole), segment_or_region (a region, division, or product line of one company), single_customer (one customer relationship or contract), industry_aggregate (an industry or market as a whole), sample (a survey sample or set of companies), or unspecified.
 - value: { number, unit, direction } with unit percent, usd, or units and direction up, down, or flat. Write amounts in base units ($58 million is 58000000 usd). Use null for number when the document gives none; use null for the whole value when there is neither an amount nor a direction.
 - quote: the sentence that states the fact, copied character for character from the document. Do not join sentences or use ellipses.`;

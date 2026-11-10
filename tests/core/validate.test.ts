@@ -314,9 +314,9 @@ describe("policy paragraphs", () => {
 describe("deterministic preview", () => {
   it("renders guards in English", () => {
     expect(guardToEnglish(policy.rules.get("R1")!.guard)).toBe(
-      "the statement is about the covered issuer AND the statement describes company-specific operating results AND the expert attributes the information to an internal company source",
+      "the statement is about the covered issuer AND the statement gives an operating figure for one company AND the expert credits an internal company source",
     );
-    expect(guardToEnglish(policy.rules.get("R4")!.guard)).toContain("within the last 12 months AND");
+    expect(guardToEnglish(policy.rules.get("R4")!.guard)).toContain("in the past 12 months AND");
     expect(guardToEnglish(policy.rules.get("R4")!.guard)).toMatch(/AND NOT \(the information matches a verified public source\)$/);
   });
 
