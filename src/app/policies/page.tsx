@@ -1,7 +1,8 @@
 import { Plus } from "lucide-react";
 import Link from "next/link";
 import { PageShell } from "@/components/app/page-shell";
-import { Chip, StateChip } from "@/components/app/status-chip";
+import { StateChip } from "@/components/app/status-chip";
+import { StatusDot } from "@/components/app/status-dot";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { formatCount, formatDateTime, shortHash } from "@/lib/format";
@@ -25,14 +26,14 @@ export default async function PoliciesPage() {
             </Link>
           </Button>
         ) : (
-          <span className="text-xs text-slate-500">Read-only: only the policy owner can compile or approve.</span>
+          <span className="text-xs text-muted-foreground">Read-only: only the policy owner can compile or approve.</span>
         )
       }
     >
-      <div className="overflow-hidden rounded-xl border bg-white">
+      <div className="overflow-hidden rounded-xl border bg-card">
         <Table>
           <TableHeader>
-            <TableRow className="bg-slate-50 hover:bg-slate-50">
+            <TableRow className="bg-muted hover:bg-muted">
               <TableHead>Version</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Compiled by</TableHead>
@@ -45,7 +46,7 @@ export default async function PoliciesPage() {
           <TableBody>
             {versions.length === 0 && (
               <TableRow>
-                <TableCell colSpan={7} className="py-8 text-center text-slate-500" data-testid="no-policies">
+                <TableCell colSpan={7} className="py-8 text-center text-muted-foreground" data-testid="no-policies">
                   No policy version yet. {owner ? "Create one to start evaluating calls." : "The policy owner creates and approves one."}
                 </TableCell>
               </TableRow>
@@ -56,20 +57,20 @@ export default async function PoliciesPage() {
                   <Link href={`/policies/${v.id}`} className="hover:underline">
                     {v.label}
                   </Link>
-                  <div className="max-w-64 truncate text-xs font-normal text-slate-500">{v.title}</div>
+                  <div className="max-w-36 truncate text-xs font-normal text-muted-foreground">{v.title}</div>
                 </TableCell>
                 <TableCell>
                   <StateChip state={v.status} />
                 </TableCell>
-                <TableCell>{v.status === "DRAFT" ? <span className="text-slate-400">—</span> : <Chip tone={v.compileSource === "manual" ? "amber" : "indigo"}>{v.compileSource === "manual" ? "manual fallback" : "AI-compiled"}</Chip>}</TableCell>
+                <TableCell>{v.status === "DRAFT" ? <span className="text-muted-foreground">—</span> : v.compileSource === "manual" ? <StatusDot tone="warn">manual fallback</StatusDot> : <span>AI-compiled</span>}</TableCell>
                 <TableCell className="text-sm">
-                  {v.combinations > 0 ? `${formatCount(v.combinations)} combinations · ${v.monitors} monitors` : <span className="text-slate-400">—</span>}
-                  {v.blocking > 0 && <div className="text-xs text-red-700">{v.blocking} blocking</div>}
-                  {v.warnings > 0 && <div className="text-xs text-amber-700">{v.warnings} warnings</div>}
+                  {v.combinations > 0 ? `${formatCount(v.combinations)} combinations · ${v.monitors} monitors` : <span className="text-muted-foreground">—</span>}
+                  {v.blocking > 0 && <div><StatusDot tone="stop" className="text-xs">{v.blocking} blocking</StatusDot></div>}
+                  {v.warnings > 0 && <div><StatusDot tone="warn" className="text-xs">{v.warnings} warnings</StatusDot></div>}
                 </TableCell>
-                <TableCell>{v.reviewerScenarios ? `${v.reviewerScenarios.passed}/${v.reviewerScenarios.total}` : <span className="text-slate-400">—</span>}</TableCell>
-                <TableCell className="font-mono text-xs text-slate-600">{shortHash(v.bundleHash, 12)}</TableCell>
-                <TableCell className="text-xs text-slate-500">{formatDateTime(v.createdAt)}</TableCell>
+                <TableCell>{v.reviewerScenarios ? `${v.reviewerScenarios.passed}/${v.reviewerScenarios.total}` : <span className="text-muted-foreground">—</span>}</TableCell>
+                <TableCell className="font-mono text-xs text-muted-foreground">{shortHash(v.bundleHash, 12)}</TableCell>
+                <TableCell className="text-xs text-muted-foreground">{formatDateTime(v.createdAt)}</TableCell>
               </TableRow>
             ))}
           </TableBody>

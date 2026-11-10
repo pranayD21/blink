@@ -2,7 +2,7 @@ import { readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 
 /** Files and folders held to the look rules: theme tokens only, no capital-letter styling. Later tasks extend this list. */
-export const UI_RULE_SCOPE: string[] = ["src/components/app", "src/app/layout.tsx", "src/components/live", "src/app/desktop", "src/app/analyst/[releaseId]", "src/app/calls", "src/components/calls", "src/app/page.tsx", "src/app/cases/new", "src/components/cases", "src/components/ui", "src/app/analyst", "src/components/workspace", "src/app/cases/[id]/page.tsx", "src/components/brief", "src/components/audit", "src/components/baseline", "src/app/cases/[id]/brief", "src/app/cases/[id]/audit", "src/app/cases/[id]/baseline"];
+export const UI_RULE_SCOPE: string[] = ["src/components", "src/app"];
 
 /** Every .ts and .tsx file under the given paths (a folder is walked recursively, a file is taken as it is). */
 export function filesIn(paths: string[]): string[] {

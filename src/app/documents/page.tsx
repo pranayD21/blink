@@ -22,7 +22,7 @@ export default async function DocumentsPage() {
           <DocumentCard key={d.id} doc={d} />
         ))}
       </div>
-      <p className="mt-4 text-xs text-slate-500">Ticking “verified” records that a reviewer checked the fact against the document. It changes the document&apos;s hash, so every analyzed case is compared again and decisions that depended on the old state reopen.</p>
+      <p className="mt-4 text-xs text-muted-foreground">Ticking “verified” records that a reviewer checked the fact against the document. It changes the document&apos;s hash, so every analyzed case is compared again and decisions that depended on the old state reopen.</p>
     </PageShell>
   );
 }

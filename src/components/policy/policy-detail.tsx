@@ -1,13 +1,14 @@
 "use client";
 
-import { AlertTriangle, CheckCircle2, PlayCircle, ShieldCheck, Sparkles, UserRound, Wrench, XCircle } from "lucide-react";
+import { ShieldCheck, Sparkles, Wrench } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
 import { JobProgress } from "@/components/app/job-progress";
 import { MarkdownLite } from "@/components/app/markdown-lite";
 import { Panel } from "@/components/app/page-shell";
-import { Chip, StateChip } from "@/components/app/status-chip";
+import { StateChip } from "@/components/app/status-chip";
+import { StatusDot } from "@/components/app/status-dot";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -36,8 +37,8 @@ function HighlightedParagraph({ text, clauses }: { text: string; clauses: { clau
     if (at < cursor) continue;
     if (at > cursor) out.push(text.slice(cursor, at));
     out.push(
-      <mark key={c.clause_id} className={cn("rounded px-0.5", c.supported ? "bg-indigo-100/70 text-slate-900" : "bg-amber-100/80 text-slate-900")}>
-        <sup className="mr-0.5 font-mono text-[10px] font-semibold text-indigo-700">{c.clause_id}</sup>
+      <mark key={c.clause_id} className={cn("rounded px-0.5", c.supported ? "bg-muted text-foreground" : "bg-warning/15 text-foreground")}>
+        <sup className="mr-0.5 font-mono text-[10px] font-medium text-muted-foreground">{c.clause_id}</sup>
         {c.verbatim}
       </mark>,
     );
@@ -51,26 +52,26 @@ function ScenarioList({ report }: { report: ScenarioReport }) {
   return (
     <ul className="space-y-2">
       {report.results.map((r, i) => (
-        <li key={i} className={cn("rounded-lg border bg-white px-3 py-2", !r.pass && (report.source === "reviewer" ? "border-red-200 bg-red-50" : "border-amber-200 bg-amber-50"))} data-testid="scenario" data-pass={r.pass}>
+        <li key={i} className="rounded-lg border bg-card px-3 py-2" data-testid="scenario" data-pass={r.pass}>
           <div className="flex items-start gap-2 text-sm">
-            {r.pass ? <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-emerald-600" /> : <XCircle className={cn("mt-0.5 size-4 shrink-0", report.source === "reviewer" ? "text-red-600" : "text-amber-600")} />}
-            <span className="font-medium text-slate-900">{r.name}</span>
-            <span className="ml-auto shrink-0 font-mono text-xs text-slate-500">{r.resolved_rule_id ?? r.rule_id}</span>
+            <StatusDot tone={r.pass ? "good" : report.source === "reviewer" ? "stop" : "warn"} className="mt-1.5" />
+            <span className="font-medium text-foreground">{r.name}</span>
+            <span className="ml-auto shrink-0 font-mono text-xs text-muted-foreground">{r.resolved_rule_id ?? r.rule_id}</span>
           </div>
-          <div className="mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-1 pl-6 text-xs text-slate-600">
+          <div className="mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-1 pl-6 text-xs text-muted-foreground">
             {r.steps.map((s, j) => (
               <span key={j} className="inline-flex items-center gap-1">
                 {j === 0 && <StateChip state={s.state_before} />}
-                <span className="text-slate-400">
+                <span className="text-muted-foreground">
                   —{s.event === "CONTEXT_UPDATED" ? "context" : "claim"} · {s.result}→
                 </span>
                 <StateChip state={s.state_after} />
               </span>
             ))}
-            {r.steps.at(-1) && r.steps.at(-1)!.effects.length > 0 && <span className="font-mono text-[11px] text-slate-500">{r.steps.at(-1)!.effects.join(", ")}</span>}
+            {r.steps.at(-1) && r.steps.at(-1)!.effects.length > 0 && <span className="font-mono text-[11px] text-muted-foreground">{r.steps.at(-1)!.effects.join(", ")}</span>}
           </div>
           {!r.pass && (
-            <ul className="mt-1 list-disc pl-10 text-xs text-red-800">
+            <ul className="mt-1 list-disc pl-10 text-xs text-foreground">
               {r.failures.map((f, j) => (
                 <li key={j}>{f}</li>
               ))}
@@ -118,20 +119,20 @@ export function PolicyDetail({ detail, guardEnglish, canEdit, llmMode }: { detai
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-2">
-        <StateChip state={detail.status} className="h-6 px-2.5 text-xs" data-testid="policy-status" />
+        <StateChip state={detail.status} className="text-sm font-medium" data-testid="policy-status" />
         {detail.status !== "DRAFT" && (
-          <Chip tone={detail.compileSource === "manual" ? "amber" : "indigo"} data-testid="compile-source">
+          <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground" data-testid="compile-source">
             {detail.compileSource === "manual" ? <Wrench className="size-3" /> : <Sparkles className="size-3" />}
             {detail.compileSource === "manual" ? "manual fallback (hand-written monitors)" : "AI-compiled"}
-          </Chip>
+          </span>
         )}
         {detail.llm.replayed > 0 && (
-          <Chip tone="sky" title="This compile replayed recorded model responses; no network call was made." data-testid="replayed-badge">
-            <PlayCircle className="size-3" /> Replayed from recorded run · {formatDate(detail.llm.recordedAt)}
-          </Chip>
+          <span className="text-xs text-muted-foreground" title="This compile replayed recorded model responses; no network call was made." data-testid="replayed-badge">
+            Replayed from recorded run · {formatDate(detail.llm.recordedAt)}
+          </span>
         )}
-        {detail.bundleHash && <span className="font-mono text-xs text-slate-500">bundle {shortHash(detail.bundleHash, 12)}</span>}
-        {detail.activatedAt && <span className="text-xs text-slate-500">active since {formatDateTime(detail.activatedAt)}</span>}
+        {detail.bundleHash && <span className="font-mono text-xs text-muted-foreground">bundle {shortHash(detail.bundleHash, 12)}</span>}
+        {detail.activatedAt && <span className="text-xs text-muted-foreground">active since {formatDateTime(detail.activatedAt)}</span>}
         <div className="ml-auto flex items-center gap-2">
           {canEdit && (detail.status === "DRAFT" || detail.status === "COMPILE_FAILED" || detail.status === "VALIDATED") && (
             <>
@@ -148,17 +149,19 @@ export function PolicyDetail({ detail, guardEnglish, canEdit, llmMode }: { detai
 
       {compiling && detail.compileJobId && <JobProgress jobId={detail.compileJobId} label="Compiling the policy" stages={["Pass A", "Pass B", "Assembling monitors", "Validating", "Scenario tests", "Done"]} onFinished={refresh} />}
       {error && (
-        <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-800" role="alert" data-testid="policy-error">
-          {error}
+        <p role="alert" data-testid="policy-error">
+          <StatusDot tone="stop" className="items-start text-sm whitespace-normal [&>span:first-child]:mt-1.5">
+            {error}
+          </StatusDot>
         </p>
       )}
 
       {detail.status === "COMPILE_FAILED" && (
-        <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3" data-testid="compile-failed-banner">
-          <div className="flex items-center gap-2 text-sm font-semibold text-red-900">
-            <AlertTriangle className="size-4" /> This version cannot become active: {plural(blocking.length, "blocking issue")}.
-          </div>
-          <ul className="mt-2 space-y-1 text-sm text-red-900">
+        <div className="rounded-xl border bg-card px-4 py-3" data-testid="compile-failed-banner">
+          <StatusDot tone="stop" className="text-sm font-medium text-foreground">
+            This version cannot become active: {plural(blocking.length, "blocking issue")}.
+          </StatusDot>
+          <ul className="mt-2 space-y-1 text-sm text-foreground">
             {blocking.slice(0, 6).map((issue, i) => (
               <li key={i} className="flex gap-2" data-testid="blocking-issue" data-code={issue.code}>
                 <span className="shrink-0 font-mono text-xs font-semibold">{issue.code}</span>
@@ -166,12 +169,12 @@ export function PolicyDetail({ detail, guardEnglish, canEdit, llmMode }: { detai
               </li>
             ))}
           </ul>
-          {validation?.compileError && llmMode === "replay" && validation.compileError.code === "LLM_REPLAY_MISS" && <p className="mt-2 text-xs text-red-800">Replay mode serves only recorded model responses. This policy text has no recording; use the manual fallback, or record it with BLINK_LLM_MODE=record.</p>}
+          {validation?.compileError && llmMode === "replay" && validation.compileError.code === "LLM_REPLAY_MISS" && <p className="mt-2 text-xs text-muted-foreground">Replay mode serves only recorded model responses. This policy text has no recording; use the manual fallback, or record it with BLINK_LLM_MODE=record.</p>}
         </div>
       )}
       {detail.status === "VALIDATED" && validation && (
-        <div className="flex items-center gap-2 rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-3 text-sm text-indigo-900" data-testid="validated-banner">
-          <CheckCircle2 className="size-4" /> Validated. It is not in force until the policy owner approves the bundle hash on the Approve tab.
+        <div className="rounded-xl border bg-card px-4 py-3 text-sm" data-testid="validated-banner">
+          <StatusDot tone="ring">Validated. It is not in force until the policy owner approves the bundle hash on the Approve tab.</StatusDot>
         </div>
       )}
 
@@ -190,11 +193,11 @@ export function PolicyDetail({ detail, guardEnglish, canEdit, llmMode }: { detai
 
         <TabsContent value="clauses" className="mt-4 grid grid-cols-2 items-start gap-4">
           <Panel title="Source text">
-            <div className="space-y-3 text-sm leading-relaxed text-slate-700">
+            <div className="space-y-3 text-sm leading-relaxed text-foreground">
               {detail.source.paragraphs.map((p) => (
                 <p key={p.id}>
-                  <span className="mr-1.5 font-mono text-xs font-semibold text-slate-500">{p.id}</span>
-                  {detail.source.requiredParagraphs.includes(p.id) && <Chip tone="slate" className="mr-1.5 align-middle">must be automated</Chip>}
+                  <span className="mr-1.5 font-mono text-xs font-semibold text-muted-foreground">{p.id}</span>
+                  {detail.source.requiredParagraphs.includes(p.id) && <span className="mr-1.5 align-middle text-xs text-muted-foreground">must be automated</span>}
                   <HighlightedParagraph text={p.text} clauses={clauses.filter((c) => c.paragraph === p.id).map((c) => ({ clause_id: c.clause_id, verbatim: c.verbatim, supported: !unsupportedIds.has(c.clause_id) }))} />
                 </p>
               ))}
@@ -203,37 +206,37 @@ export function PolicyDetail({ detail, guardEnglish, canEdit, llmMode }: { detai
           <div className="space-y-4">
             <Panel title={`Clause inventory (${clauses.length})`} bodyClassName="p-0">
               {clauses.length === 0 ? (
-                <p className="p-4 text-sm text-slate-500">Not compiled yet.</p>
+                <p className="p-4 text-sm text-muted-foreground">Not compiled yet.</p>
               ) : (
-                <ul className="divide-y divide-slate-100 text-sm">
+                <ul className="divide-y divide-border text-sm">
                   {clauses.map((c) => (
                     <li key={c.clause_id} className="px-4 py-2" data-testid={`clause-${c.clause_id}`}>
                       <div className="flex flex-wrap items-center gap-2">
-                        <span className="font-mono text-xs font-semibold text-slate-900">{c.clause_id}</span>
-                        <span className="font-mono text-xs text-slate-400">{c.paragraph}</span>
-                        <Chip tone="slate">{humanize(c.kind).toLowerCase()}</Chip>
+                        <span className="font-mono text-xs font-semibold text-foreground">{c.clause_id}</span>
+                        <span className="font-mono text-xs text-muted-foreground">{c.paragraph}</span>
+                        <span className="text-xs text-muted-foreground">{humanize(c.kind).toLowerCase()}</span>
                         {unsupportedIds.has(c.clause_id) && (
-                          <Chip tone="amber" data-testid={`unsupported-${c.paragraph}`}>
-                            <UserRound className="size-3" /> not automated
-                          </Chip>
+                          <StatusDot tone="warn" className="text-xs" data-testid={`unsupported-${c.paragraph}`}>
+                            not automated
+                          </StatusDot>
                         )}
                       </div>
-                      <p className="mt-1 text-slate-700">{c.plain_meaning}</p>
-                      {c.ambiguity && <p className="mt-0.5 text-xs text-amber-700">Ambiguity: {c.ambiguity}</p>}
+                      <p className="mt-1 text-foreground">{c.plain_meaning}</p>
+                      {c.ambiguity && <p className="mt-0.5 text-xs text-muted-foreground">Ambiguity: {c.ambiguity}</p>}
                     </li>
                   ))}
                 </ul>
               )}
             </Panel>
             {unsupported.length > 0 && (
-              <Panel title="Not automated — a reviewer must apply these manually" className="border-amber-200" bodyClassName="p-0">
-                <ul className="divide-y divide-amber-100 text-sm" data-testid="unsupported-list">
+              <Panel title="Not automated — a reviewer must apply these manually" bodyClassName="p-0">
+                <ul className="divide-y divide-border text-sm" data-testid="unsupported-list">
                   {unsupported.map((u) => {
                     const clause = clauses.find((c) => c.clause_id === u.clause_id);
                     return (
                       <li key={u.clause_id} className="px-4 py-2">
-                        <span className="font-mono text-xs font-semibold text-slate-900">{u.clause_id}</span> <span className="font-mono text-xs text-slate-400">{clause?.paragraph}</span>
-                        <p className="text-slate-700">{u.reason}</p>
+                        <span className="font-mono text-xs font-semibold text-foreground">{u.clause_id}</span> <span className="font-mono text-xs text-muted-foreground">{clause?.paragraph}</span>
+                        <p className="text-foreground">{u.reason}</p>
                       </li>
                     );
                   })}
@@ -244,7 +247,7 @@ export function PolicyDetail({ detail, guardEnglish, canEdit, llmMode }: { detai
         </TabsContent>
 
         <TabsContent value="rules" className="mt-4 space-y-3">
-          {rules.length === 0 && <p className="text-sm text-slate-500">No rules yet.</p>}
+          {rules.length === 0 && <p className="text-sm text-muted-foreground">No rules yet.</p>}
           {rules.map((rule) => (
             <Panel
               key={rule.rule_id}
@@ -253,26 +256,26 @@ export function PolicyDetail({ detail, guardEnglish, canEdit, llmMode }: { detai
                   <span className="font-mono">{rule.rule_id}</span> {rule.intent}
                 </span>
               }
-              action={<Chip tone={rule.severity === "high" ? "red" : rule.severity === "medium" ? "amber" : "slate"}>{rule.severity}</Chip>}
+              action={<StatusDot tone={rule.severity === "high" ? "stop" : rule.severity === "medium" ? "warn" : "none"} className="text-xs text-muted-foreground">{rule.severity}</StatusDot>}
             >
-              <blockquote className="rounded-r-md border-l-4 border-indigo-300 bg-indigo-50/60 px-3 py-2 text-sm text-slate-800" data-testid={`guard-${rule.rule_id}`}>
+              <blockquote className="rounded-r-md border-l-2 border-foreground/30 bg-muted px-3 py-2 text-sm text-foreground" data-testid={`guard-${rule.rule_id}`}>
                 {guardEnglish[rule.rule_id] ?? "(malformed guard)"}
               </blockquote>
               <dl className="mt-3 grid grid-cols-[10rem_1fr] gap-x-3 gap-y-1 text-sm">
-                <dt className="text-slate-500">When true</dt>
-                <dd className="text-slate-800">{ON_TRUE[rule.on_true]}</dd>
-                <dt className="text-slate-500">When evidence is missing</dt>
-                <dd className="text-slate-800">{ON_INDETERMINATE[rule.on_indeterminate]}</dd>
-                <dt className="text-slate-500">Source clauses</dt>
-                <dd className="font-mono text-xs text-slate-700">{rule.source_clause_ids.join(", ") || "—"}</dd>
+                <dt className="text-muted-foreground">When true</dt>
+                <dd className="text-foreground">{ON_TRUE[rule.on_true]}</dd>
+                <dt className="text-muted-foreground">When evidence is missing</dt>
+                <dd className="text-foreground">{ON_INDETERMINATE[rule.on_indeterminate]}</dd>
+                <dt className="text-muted-foreground">Source clauses</dt>
+                <dd className="font-mono text-xs text-foreground">{rule.source_clause_ids.join(", ") || "—"}</dd>
                 {rule.exception_clause_ids.length > 0 && (
                   <>
-                    <dt className="text-slate-500">Exceptions in the guard</dt>
-                    <dd className="font-mono text-xs text-slate-700">{rule.exception_clause_ids.join(", ")}</dd>
+                    <dt className="text-muted-foreground">Exceptions in the guard</dt>
+                    <dd className="font-mono text-xs text-foreground">{rule.exception_clause_ids.join(", ")}</dd>
                   </>
                 )}
-                <dt className="text-slate-500">Predicates</dt>
-                <dd className="font-mono text-xs text-slate-700">
+                <dt className="text-muted-foreground">Predicates</dt>
+                <dd className="font-mono text-xs text-foreground">
                   {rule.guard.nodes
                     .filter((n) => n.op === "pred")
                     .map((n) => `${n.name}${n.params && Object.keys(n.params).length > 0 ? `(${Object.entries(n.params).map(([k, v]) => `${k}=${v}`).join(",")})` : ""}`)
@@ -284,22 +287,22 @@ export function PolicyDetail({ detail, guardEnglish, canEdit, llmMode }: { detai
         </TabsContent>
 
         <TabsContent value="monitors" className="mt-4 space-y-4">
-          {detail.monitors.length === 0 && <p className="text-sm text-slate-500">No monitors yet.</p>}
+          {detail.monitors.length === 0 && <p className="text-sm text-muted-foreground">No monitors yet.</p>}
           {detail.monitors.map((m) => (
             <Panel key={m.monitor_id} title={<span className="font-mono">Monitor {m.monitor_id} · rule {m.rule_id}</span>}>
               <MonitorGraph monitor={m} />
               <div className="mt-3 overflow-x-auto rounded-lg border">
                 <table className="w-full text-xs">
-                  <thead className="bg-slate-50 text-left text-slate-600">
+                  <thead className="bg-muted text-left text-muted-foreground">
                     <tr>
                       {["#", "From", "Event", "Guard is", "To", "Effects"].map((h) => (
                         <th key={h} className="px-2 py-1.5 font-medium">{h}</th>
                       ))}
                     </tr>
                   </thead>
-                  <tbody className="font-mono text-[11px] text-slate-700">
+                  <tbody className="font-mono text-[11px] text-foreground">
                     {m.transitions.map((t) => (
-                      <tr key={t.id} className="border-t border-slate-100">
+                      <tr key={t.id} className="border-t border-border">
                         <td className="px-2 py-1">{t.id}</td>
                         <td className="px-2 py-1">{t.from.join(", ")}</td>
                         <td className="px-2 py-1">{t.event}</td>
@@ -311,32 +314,35 @@ export function PolicyDetail({ detail, guardEnglish, canEdit, llmMode }: { detai
                   </tbody>
                 </table>
               </div>
-              <p className="mt-2 text-xs text-slate-500">States describe evidence only. No transition leaves REVIEW_REQUIRED: once review is required, only a person can close it. Any other event leaves the state unchanged and is audited.</p>
+              <p className="mt-2 text-xs text-muted-foreground">States describe evidence only. No transition leaves REVIEW_REQUIRED: once review is required, only a person can close it. Any other event leaves the state unchanged and is audited.</p>
             </Panel>
           ))}
         </TabsContent>
 
         <TabsContent value="validation" className="mt-4 space-y-4">
           {!validation ? (
-            <p className="text-sm text-slate-500">Not compiled yet.</p>
+            <p className="text-sm text-muted-foreground">Not compiled yet.</p>
           ) : (
             <>
-              <div className={cn("rounded-xl border px-4 py-3 text-sm", validation.totals.deterministic && validation.totals.indeterminate_handled ? "border-emerald-200 bg-emerald-50 text-emerald-900" : "border-red-200 bg-red-50 text-red-900")} data-testid="enumeration-summary">
+              <div className="flex items-start gap-2 rounded-xl border bg-card px-4 py-3 text-sm" data-testid="enumeration-summary">
+                <span aria-hidden="true" className={cn("mt-1.5 inline-block size-2 shrink-0 rounded-full", validation.totals.deterministic && validation.totals.indeterminate_handled ? "bg-success" : "bg-destructive")} />
+                <div>
                 <span className="font-semibold">{formatCount(validation.totals.combinations)} evidence combinations</span> checked across {plural(validation.totals.monitors, "monitor")}: {validation.totals.deterministic ? "deterministic" : "NOT deterministic"}, {validation.totals.indeterminate_handled ? "indeterminate always handled" : "indeterminate NOT always handled"}.
-                <span className="ml-1 text-xs opacity-80">Every assignment of supported / refuted / unknown / conflict to each rule&apos;s predicates was enumerated.</span>
+                <span className="ml-1 text-xs text-muted-foreground">Every assignment of supported / refuted / unknown / conflict to each rule&apos;s predicates was enumerated.</span>
+                </div>
               </div>
 
               <Panel title={`Issues (${blocking.length} blocking, ${warnings.length} warnings)`} bodyClassName="p-0">
                 {validation.issues.length === 0 ? (
-                  <p className="p-4 text-sm text-slate-500">No issues.</p>
+                  <p className="p-4 text-sm text-muted-foreground">No issues.</p>
                 ) : (
-                  <ul className="divide-y divide-slate-100 text-sm" data-testid="issues">
+                  <ul className="divide-y divide-border text-sm" data-testid="issues">
                     {[...blocking, ...warnings].map((issue, i) => (
                       <li key={i} className="flex gap-3 px-4 py-2" data-code={issue.code} data-severity={issue.severity}>
-                        <Chip tone={issue.severity === "blocking" ? "red" : "amber"} className="mt-0.5 font-mono">
+                        <StatusDot tone={issue.severity === "blocking" ? "stop" : "warn"} className="mt-0.5 h-fit font-mono text-xs">
                           {issue.code}
-                        </Chip>
-                        <span className="text-slate-700">{issue.message}</span>
+                        </StatusDot>
+                        <span className="text-foreground">{issue.message}</span>
                       </li>
                     ))}
                   </ul>
@@ -345,7 +351,7 @@ export function PolicyDetail({ detail, guardEnglish, canEdit, llmMode }: { detai
 
               <Panel title="Exhaustive enumeration, per monitor" bodyClassName="p-0">
                 <table className="w-full text-sm">
-                  <thead className="bg-slate-50 text-left text-xs text-slate-600">
+                  <thead className="bg-muted text-left text-xs text-muted-foreground">
                     <tr>
                       {["Monitor", "Rule", "Predicates", "Combinations", "True", "False", "Indeterminate", "Deterministic", "Indeterminate handled", "Coverage"].map((h) => (
                         <th key={h} className="px-3 py-1.5 font-medium">{h}</th>
@@ -354,7 +360,7 @@ export function PolicyDetail({ detail, guardEnglish, canEdit, llmMode }: { detai
                   </thead>
                   <tbody className="tabular-nums">
                     {validation.enumeration.map((e) => (
-                      <tr key={e.monitor_id} className="border-t border-slate-100" data-testid={`enumeration-${e.monitor_id}`}>
+                      <tr key={e.monitor_id} className="border-t border-border" data-testid={`enumeration-${e.monitor_id}`}>
                         <td className="px-3 py-1.5 font-mono text-xs">{e.monitor_id}</td>
                         <td className="px-3 py-1.5 font-mono text-xs">{e.rule_id}</td>
                         <td className="px-3 py-1.5">{e.predicates.length}</td>
@@ -362,8 +368,12 @@ export function PolicyDetail({ detail, guardEnglish, canEdit, llmMode }: { detai
                         <td className="px-3 py-1.5">{e.outcomes.true}</td>
                         <td className="px-3 py-1.5">{e.outcomes.false}</td>
                         <td className="px-3 py-1.5">{e.outcomes.indeterminate}</td>
-                        <td className={cn("px-3 py-1.5", e.determinism.pass ? "text-emerald-700" : "font-semibold text-red-700")}>{e.determinism.pass ? "yes" : "NO"}</td>
-                        <td className={cn("px-3 py-1.5", e.indeterminate_handled ? "text-emerald-700" : "font-semibold text-red-700")}>{e.indeterminate_handled ? "yes" : "NO"}</td>
+                        <td className="px-3 py-1.5">
+                          <StatusDot tone={e.determinism.pass ? "good" : "stop"}>{e.determinism.pass ? "yes" : "no"}</StatusDot>
+                        </td>
+                        <td className="px-3 py-1.5">
+                          <StatusDot tone={e.indeterminate_handled ? "good" : "stop"}>{e.indeterminate_handled ? "yes" : "no"}</StatusDot>
+                        </td>
                         <td className="px-3 py-1.5">
                           {e.coverage.handled}/{e.coverage.total}
                         </td>
@@ -377,16 +387,16 @@ export function PolicyDetail({ detail, guardEnglish, canEdit, llmMode }: { detai
 
           <Panel title="Compile attempts" bodyClassName="p-0">
             {detail.attempts.length === 0 ? (
-              <p className="p-4 text-sm text-slate-500">None yet.</p>
+              <p className="p-4 text-sm text-muted-foreground">None yet.</p>
             ) : (
-              <ol className="divide-y divide-slate-100 text-sm" data-testid="attempts">
+              <ol className="divide-y divide-border text-sm" data-testid="attempts">
                 {detail.attempts.map((a) => (
                   <li key={a.id} className="flex flex-wrap items-center gap-3 px-4 py-2">
-                    <span className="w-56 text-slate-800">
-                      {STAGE_LABEL[a.stage] ?? a.stage} <span className="text-slate-400">#{a.attemptNo}</span>
+                    <span className="w-56 text-foreground">
+                      {STAGE_LABEL[a.stage] ?? a.stage} <span className="text-muted-foreground">#{a.attemptNo}</span>
                     </span>
-                    {a.issues.length === 0 ? <Chip tone="emerald">no blocking issues</Chip> : <Chip tone="red">{[...new Set(a.issues.map((i) => i.code))].join(", ")}</Chip>}
-                    <span className="ml-auto text-xs text-slate-400">{formatDateTime(a.createdAt)}</span>
+                    {a.issues.length === 0 ? <StatusDot tone="good" className="text-xs">no blocking issues</StatusDot> : <StatusDot tone="stop" className="font-mono text-xs">{[...new Set(a.issues.map((i) => i.code))].join(", ")}</StatusDot>}
+                    <span className="ml-auto text-xs text-muted-foreground">{formatDateTime(a.createdAt)}</span>
                   </li>
                 ))}
               </ol>
@@ -400,62 +410,64 @@ export function PolicyDetail({ detail, guardEnglish, canEdit, llmMode }: { detai
               <span className="flex items-center gap-2">
                 Reviewer-authored
                 {detail.scenarios?.reviewer && (
-                  <Chip tone={detail.scenarios.reviewer.failed === 0 ? "emerald" : "red"} data-testid="reviewer-scenarios">
+                  <StatusDot tone={detail.scenarios.reviewer.failed === 0 ? "good" : "stop"} className="text-xs font-normal text-muted-foreground" data-testid="reviewer-scenarios">
                     {detail.scenarios.reviewer.passed}/{detail.scenarios.reviewer.total} pass
-                  </Chip>
+                  </StatusDot>
                 )}
               </span>
             }
           >
-            <p className="mb-3 text-xs text-slate-600">Written by a person before any model tuning. Each is run through the real monitor reducer. A mismatch blocks activation.</p>
-            {detail.scenarios?.reviewer ? <ScenarioList report={detail.scenarios.reviewer} /> : <p className="text-sm text-slate-500">{detail.source.hasReviewerScenarios ? "Not run: the compile did not get as far as scenarios." : "This policy has no reviewer-authored scenarios."}</p>}
+            <p className="mb-3 text-xs text-muted-foreground">Written by a person before any model tuning. Each is run through the real monitor reducer. A mismatch blocks activation.</p>
+            {detail.scenarios?.reviewer ? <ScenarioList report={detail.scenarios.reviewer} /> : <p className="text-sm text-muted-foreground">{detail.source.hasReviewerScenarios ? "Not run: the compile did not get as far as scenarios." : "This policy has no reviewer-authored scenarios."}</p>}
           </Panel>
           <Panel
             title={
               <span className="flex items-center gap-2">
-                <Sparkles className="size-3.5 text-indigo-500" /> AI-proposed
+                <Sparkles className="size-3.5 text-muted-foreground" /> AI-proposed
                 {detail.scenarios?.ai && (
-                  <Chip tone={detail.scenarios.ai.failed === 0 ? "slate" : "amber"}>
+                  <StatusDot tone={detail.scenarios.ai.failed === 0 ? "none" : "warn"} className="text-xs font-normal text-muted-foreground">
                     {detail.scenarios.ai.failed === 0 ? `${detail.scenarios.ai.total} agree` : `${plural(detail.scenarios.ai.failed, "disagreement")} of ${detail.scenarios.ai.total}`}
-                  </Chip>
+                  </StatusDot>
                 )}
               </span>
             }
           >
-            <p className="mb-3 text-xs text-slate-600">A model that was not shown the monitors states what should happen; code runs each case. Disagreements are warnings for the owner to inspect. They never block, and agreement is not proof.</p>
-            {detail.scenarios?.ai ? <ScenarioList report={detail.scenarios.ai} /> : <p className="text-sm text-slate-500">Not run.</p>}
+            <p className="mb-3 text-xs text-muted-foreground">A model that was not shown the monitors states what should happen; code runs each case. Disagreements are warnings for the owner to inspect. They never block, and agreement is not proof.</p>
+            {detail.scenarios?.ai ? <ScenarioList report={detail.scenarios.ai} /> : <p className="text-sm text-muted-foreground">Not run.</p>}
           </Panel>
         </TabsContent>
 
         <TabsContent value="preview" className="mt-4">
-          <Panel title="Deterministic preview (generated by code, no model)">{detail.previewMd ? <MarkdownLite source={detail.previewMd} /> : <p className="text-sm text-slate-500">Available once the policy compiles to well-formed rules and monitors.</p>}</Panel>
+          <Panel title="Deterministic preview (generated by code, no model)">{detail.previewMd ? <MarkdownLite source={detail.previewMd} /> : <p className="text-sm text-muted-foreground">Available once the policy compiles to well-formed rules and monitors.</p>}</Panel>
         </TabsContent>
 
         <TabsContent value="approve" className="mt-4">
           <Panel title="Approve and activate" className="max-w-2xl">
             {detail.status === "ACTIVE" ? (
-              <p className="flex items-center gap-2 text-sm text-emerald-800" data-testid="active-note">
-                <CheckCircle2 className="size-4" /> ACTIVE. Approved{detail.approvedAt ? ` on ${formatDateTime(detail.approvedAt)}` : ""}. This version is immutable; to change the policy, create a new version.
+              <p className="text-sm" data-testid="active-note">
+                <StatusDot tone="good" className="items-start whitespace-normal [&>span:first-child]:mt-1.5">Active. Approved{detail.approvedAt ? ` on ${formatDateTime(detail.approvedAt)}` : ""}. This version is immutable; to change the policy, create a new version.</StatusDot>
               </p>
             ) : detail.status === "SUPERSEDED" ? (
-              <p className="text-sm text-slate-600">Superseded by a newer version{detail.supersededAt ? ` on ${formatDateTime(detail.supersededAt)}` : ""}. Immutable.</p>
+              <p className="text-sm text-muted-foreground">Superseded by a newer version{detail.supersededAt ? ` on ${formatDateTime(detail.supersededAt)}` : ""}. Immutable.</p>
             ) : (
               <div className="space-y-3 text-sm">
-                <p className="text-slate-700">Approving states that this exact bundle — source text, clause inventory, rules, monitors, validation report, and scenario report — is the firm&apos;s policy. Cases are then re-evaluated under it, and decisions made under the previous version reopen.</p>
+                <p className="text-foreground">Approving states that this exact bundle — source text, clause inventory, rules, monitors, validation report, and scenario report — is the firm&apos;s policy. Cases are then re-evaluated under it, and decisions made under the previous version reopen.</p>
                 <div>
-                  <div className="text-xs font-medium text-slate-500">Bundle hash (SHA-256)</div>
-                  <div className="mt-0.5 rounded-md bg-slate-100 px-2 py-1.5 font-mono text-xs break-all text-slate-800" data-testid="bundle-hash">
+                  <div className="text-xs font-medium text-muted-foreground">Bundle hash (SHA-256)</div>
+                  <div className="mt-0.5 rounded-md bg-muted px-2 py-1.5 font-mono text-xs break-all text-foreground" data-testid="bundle-hash">
                     {detail.bundleHash ?? "— not compiled —"}
                   </div>
                 </div>
                 {detail.status !== "VALIDATED" && (
-                  <p className="rounded-md bg-red-50 px-3 py-2 text-red-800" data-testid="approve-disabled-reason">
+                  <p data-testid="approve-disabled-reason">
+                    <StatusDot tone="stop" className="items-start whitespace-normal [&>span:first-child]:mt-1.5">
                     {detail.status === "COMPILE_FAILED" ? `Approval is disabled: this version has ${plural(blocking.length, "blocking issue")}. The server refuses it as well.` : detail.status === "COMPILING" ? "Approval is disabled while the compile is running." : "Approval is disabled: compile the policy first."}
+                    </StatusDot>
                   </p>
                 )}
-                {!canEdit && <p className="rounded-md bg-amber-50 px-3 py-2 text-amber-900">Only the policy owner can approve.</p>}
+                {!canEdit && <StatusDot tone="warn">Only the policy owner can approve.</StatusDot>}
                 <label className="block">
-                  <span className="text-xs font-medium text-slate-500">To confirm, type the first 6 characters of the bundle hash</span>
+                  <span className="block text-xs font-medium text-muted-foreground">To confirm, type the first 6 characters of the bundle hash</span>
                   <Input value={confirm} onChange={(e) => setConfirm(e.target.value.trim())} placeholder={canApprove ? hashPrefix : "------"} className="mt-0.5 w-40 font-mono" maxLength={6} disabled={!canApprove} data-testid="approve-confirm" />
                 </label>
                 <Button disabled={!canApprove || busy || confirm.toLowerCase() !== hashPrefix.toLowerCase()} onClick={() => call(`/api/policies/${detail.id}/approve`, { bundleHash: detail.bundleHash }, `${detail.label} is now ACTIVE.`)} data-testid="approve-policy">

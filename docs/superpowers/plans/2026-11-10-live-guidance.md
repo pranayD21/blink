@@ -1401,10 +1401,10 @@ git commit   # style(ui): restyle the brief and the audit trail
 **Files:**
 - Modify: `src/components/policy/*.tsx`, `src/app/policies/**`, `src/components/documents/document-card.tsx`, `src/app/documents/page.tsx`, `src/app/metrics/page.tsx`, `tests/helpers/ui-scope.ts`
 
-- [ ] **Step 1: Set the scope to all of `src/components` and `src/app`, and see the rule test fail.**
-- [ ] **Step 2: Restyle.** The monitor graph's nodes use tokens. The metrics page keeps its content; its cost column shows "unknown" where a model has no price.
-- [ ] **Step 3: Run the checks and look.** Run: `pnpm test && pnpm e2e`, screenshot into `test-results/redesign/34/`. Expected: PASS.
-- [ ] **Step 4: Commit.**
+- [x] **Step 1: Set the scope to all of `src/components` and `src/app`, and see the rule test fail.**
+- [x] **Step 2: Restyle.** The monitor graph's nodes use tokens. The metrics page keeps its content; its cost column shows "unknown" where a model has no price.
+- [x] **Step 3: Run the checks and look.** Run: `pnpm test && pnpm e2e`, screenshot into `test-results/redesign/34/`. Expected: PASS.
+- [x] **Step 4: Commit.**
 
 ```bash
 git add src/components/policy src/app/policies src/components/documents src/app/documents src/app/metrics tests/helpers/ui-scope.ts

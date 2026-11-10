@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
-import { Chip } from "@/components/app/status-chip";
+import { StatusDot } from "@/components/app/status-dot";
 import { Checkbox } from "@/components/ui/checkbox";
 import { api, errorMessage } from "@/lib/api";
 import { formatDate, humanize, shortHash } from "@/lib/format";
@@ -33,22 +33,22 @@ export function DocumentCard({ doc }: { doc: Doc }) {
   }
 
   return (
-    <article className="rounded-xl border bg-white" data-testid={`document-${doc.id}`}>
+    <article className="rounded-xl border bg-card" data-testid={`document-${doc.id}`}>
       <header className="flex flex-wrap items-center gap-2 border-b px-4 py-2.5">
-        <h2 className="text-sm font-semibold text-slate-900">{doc.title}</h2>
-        <Chip tone="slate">{humanize(doc.sourceType).toLowerCase()}</Chip>
-        <span className="text-xs text-slate-500">
+        <h2 className="text-sm font-semibold text-foreground">{doc.title}</h2>
+        <span className="text-xs text-muted-foreground">{humanize(doc.sourceType).toLowerCase()}</span>
+        <span className="text-xs text-muted-foreground">
           {doc.issuer} · published {formatDate(doc.publishedAt)}
         </span>
-        <span className="ml-auto font-mono text-xs text-slate-400" title="Hash of the document body and its facts. Decisions that compared a claim against this document depend on it.">
+        <span className="ml-auto font-mono text-xs text-muted-foreground" title="Hash of the document body and its facts. Decisions that compared a claim against this document depend on it.">
           {shortHash(doc.hash, 10)}
         </span>
       </header>
       {doc.factsStatus !== "extracted" ? (
-        <p className="px-4 py-3 text-sm text-amber-800">{doc.factsStatus === "failed" ? "Fact extraction failed for this document." : "Facts have not been extracted yet. The worker does this in the background."}</p>
+        <p className="px-4 py-3 text-sm"><StatusDot tone={doc.factsStatus === "failed" ? "stop" : "warn"}>{doc.factsStatus === "failed" ? "Fact extraction failed for this document." : "Facts have not been extracted yet. The worker does this in the background."}</StatusDot></p>
       ) : (
         <table className="w-full text-xs">
-          <thead className="bg-slate-50 text-left text-slate-600">
+          <thead className="bg-muted text-left text-muted-foreground">
             <tr>
               {["Fact", "About", "Metric / event", "Period", "Scope", "Value", "Quote from the document", "Verified"].map((h) => (
                 <th key={h} className="px-3 py-1.5 font-medium">{h}</th>
@@ -57,14 +57,14 @@ export function DocumentCard({ doc }: { doc: Doc }) {
           </thead>
           <tbody>
             {doc.facts.map((f) => (
-              <tr key={f.fact_id} className="border-t border-slate-100 align-top">
-                <td className="px-3 py-1.5 font-mono font-semibold text-slate-700">{f.fact_id}</td>
-                <td className="px-3 py-1.5 text-slate-800">{f.entity}</td>
-                <td className="px-3 py-1.5 text-slate-800">{f.metric_category ? humanize(f.metric_category) : humanize(f.event_kind)}</td>
-                <td className="px-3 py-1.5 whitespace-nowrap text-slate-800">{f.period ? `${f.period.q ? `Q${f.period.q} ` : ""}FY${f.period.fy}` : "—"}</td>
-                <td className="px-3 py-1.5 text-slate-800">{humanize(f.scope)}</td>
-                <td className="px-3 py-1.5 whitespace-nowrap text-slate-800">{valueText(f.value)}</td>
-                <td className="px-3 py-1.5 text-slate-600 italic">“{f.quote}”</td>
+              <tr key={f.fact_id} className="border-t border-border align-top">
+                <td className="px-3 py-1.5 font-mono font-semibold text-foreground">{f.fact_id}</td>
+                <td className="px-3 py-1.5 text-foreground">{f.entity}</td>
+                <td className="px-3 py-1.5 text-foreground">{f.metric_category ? humanize(f.metric_category) : humanize(f.event_kind)}</td>
+                <td className="px-3 py-1.5 whitespace-nowrap text-foreground">{f.period ? `${f.period.q ? `Q${f.period.q} ` : ""}FY${f.period.fy}` : "—"}</td>
+                <td className="px-3 py-1.5 text-foreground">{humanize(f.scope)}</td>
+                <td className="px-3 py-1.5 whitespace-nowrap text-foreground">{valueText(f.value)}</td>
+                <td className="px-3 py-1.5 text-muted-foreground italic">“{f.quote}”</td>
                 <td className="px-3 py-1.5">
                   <Checkbox checked={Boolean(f.verified)} disabled={busy !== null} onCheckedChange={(v) => toggle(f.fact_id, v === true)} aria-label={`Verify ${f.fact_id}`} data-testid={`verify-${doc.id}-${f.fact_id}`} />
                 </td>
@@ -74,10 +74,10 @@ export function DocumentCard({ doc }: { doc: Doc }) {
         </table>
       )}
       <div className="border-t px-4 py-2">
-        <button type="button" className="text-xs text-indigo-700 hover:underline" onClick={() => setOpen((v) => !v)}>
+        <button type="button" className="text-xs text-muted-foreground hover:text-foreground hover:underline" onClick={() => setOpen((v) => !v)}>
           {open ? "Hide" : "Show"} document text
         </button>
-        {open && <pre className="mt-2 max-h-64 overflow-y-auto rounded-md bg-slate-50 p-3 font-sans text-xs whitespace-pre-wrap text-slate-700">{doc.body}</pre>}
+        {open && <pre className="mt-2 max-h-64 overflow-y-auto rounded-md bg-muted p-3 font-sans text-xs whitespace-pre-wrap text-foreground">{doc.body}</pre>}
       </div>
     </article>
   );

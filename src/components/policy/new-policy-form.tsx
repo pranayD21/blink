@@ -4,6 +4,7 @@ import { FileText } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { Panel } from "@/components/app/page-shell";
+import { StatusDot } from "@/components/app/status-dot";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
@@ -61,7 +62,7 @@ export function NewPolicyForm({ presets }: { presets: PolicyPreset[] }) {
     <div className="grid grid-cols-[1fr_20rem] items-start gap-4">
       <Panel title="Policy text" bodyClassName="space-y-3">
         <div className="flex flex-wrap items-center gap-2">
-          <span className="text-xs text-slate-500">Synthetic fixtures:</span>
+          <span className="text-xs text-muted-foreground">Synthetic fixtures:</span>
           {presets.map((p) => (
             <Button key={p.label} type="button" size="sm" variant="outline" onClick={() => load(p)} data-testid={`preset-${p.label}`}>
               <FileText /> {p.label}
@@ -71,12 +72,14 @@ export function NewPolicyForm({ presets }: { presets: PolicyPreset[] }) {
         <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Title, for example: Expert Call Policy v2" data-testid="policy-title" />
         <Textarea value={text} onChange={(e) => setText(e.target.value)} placeholder={"Paste the policy in plain language. Mark each paragraph:\n\n[P1] This policy applies to…\n\n[P2] Compliance must review any statement…"} className="h-96 font-mono text-xs leading-relaxed" data-testid="policy-text" />
         {error && (
-          <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-800" role="alert">
-            {error}
+          <p role="alert">
+            <StatusDot tone="stop" className="items-start text-sm whitespace-normal [&>span:first-child]:mt-1.5">
+              {error}
+            </StatusDot>
           </p>
         )}
         <div className="flex items-center justify-end gap-2">
-          {missing.length > 0 && <span className="mr-auto text-xs text-amber-700">Still needed: {missing.join("; ")}.</span>}
+          {missing.length > 0 && <StatusDot tone="warn" className="mr-auto text-xs text-muted-foreground">Still needed: {missing.join("; ")}.</StatusDot>}
           <Button variant="outline" size="sm" disabled={busy || missing.length > 0} onClick={() => submit(false)}>
             Save draft
           </Button>
@@ -88,9 +91,9 @@ export function NewPolicyForm({ presets }: { presets: PolicyPreset[] }) {
 
       <div className="space-y-4">
         <Panel title="Paragraphs that must be automated" bodyClassName="p-3">
-          <p className="mb-2 text-xs text-slate-600">If the compiler cannot turn a ticked paragraph into a rule, the version fails validation instead of quietly leaving it out.</p>
+          <p className="mb-2 text-xs text-muted-foreground">If the compiler cannot turn a ticked paragraph into a rule, the version fails validation instead of quietly leaving it out.</p>
           {paragraphs.length === 0 ? (
-            <p className="text-xs text-slate-400">Paragraphs appear here once the text has [P1]-style markers.</p>
+            <p className="text-xs text-muted-foreground">Paragraphs appear here once the text has [P1]-style markers.</p>
           ) : (
             <ul className="space-y-1.5">
               {paragraphs.map((p) => (
@@ -98,7 +101,7 @@ export function NewPolicyForm({ presets }: { presets: PolicyPreset[] }) {
                   <label className="flex items-start gap-2 text-xs">
                     <Checkbox checked={required.includes(p.id)} onCheckedChange={(v) => setRequired((r) => (v === true ? [...new Set([...r, p.id])] : r.filter((x) => x !== p.id)))} className="mt-0.5" data-testid={`required-${p.id}`} />
                     <span>
-                      <span className="font-mono font-semibold text-slate-700">{p.id}</span> <span className="line-clamp-2 text-slate-600">{p.text}</span>
+                      <span className="font-mono font-semibold text-foreground">{p.id}</span> <span className="line-clamp-2 text-muted-foreground">{p.text}</span>
                     </span>
                   </label>
                 </li>
@@ -108,11 +111,11 @@ export function NewPolicyForm({ presets }: { presets: PolicyPreset[] }) {
         </Panel>
         <Panel title="Reviewer-authored scenarios" bodyClassName="p-3">
           {scenarios ? (
-            <p className="text-xs text-slate-600">
-              <span className="font-semibold text-slate-800">{scenarios.count} scenarios</span> loaded with the fixture. They were written before any model tuning, and every one must pass for the version to validate.
+            <p className="text-xs text-muted-foreground">
+              <span className="font-semibold text-foreground">{scenarios.count} scenarios</span> loaded with the fixture. They were written before any model tuning, and every one must pass for the version to validate.
             </p>
           ) : (
-            <p className="text-xs text-slate-500">None. Scenarios are the acceptance tests a compiled policy must pass. The fixture policies come with eight.</p>
+            <p className="text-xs text-muted-foreground">None. Scenarios are the acceptance tests a compiled policy must pass. The fixture policies come with eight.</p>
           )}
         </Panel>
       </div>

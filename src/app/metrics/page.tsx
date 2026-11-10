@@ -1,6 +1,6 @@
 import { EmptyState, PageShell, Panel, Stat } from "@/components/app/page-shell";
 import { RoleGate } from "@/components/app/role-gate";
-import { Chip } from "@/components/app/status-chip";
+import { StatusDot } from "@/components/app/status-dot";
 import { formatDateTime, formatMinutes, formatPercent, formatUsd } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { DEMO_USERS } from "@/server/auth/actor";
@@ -30,8 +30,8 @@ export default async function MetricsPage() {
 
   return (
     <PageShell title="Metrics" description="Everything here is measured from what the app recorded: review sessions, corrections, model calls, and the eval run.">
-      <div className="mb-5 rounded-lg border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm text-amber-900" data-testid="synthetic-note">
-        Synthetic fixtures. These numbers show the measurement works. They are not production accuracy.
+      <div className="mb-5 rounded-lg border bg-card px-4 py-2.5 text-sm text-muted-foreground" data-testid="synthetic-note">
+        <StatusDot tone="warn">Synthetic fixtures. These numbers show the measurement works. They are not production accuracy.</StatusDot>
       </div>
 
       <div className="mb-5 grid grid-cols-4 gap-3">
@@ -43,15 +43,15 @@ export default async function MetricsPage() {
 
       <div className="grid grid-cols-2 items-start gap-4">
         <Panel title="The pitch number, and where it comes from">
-          <p className="text-sm text-slate-700" data-testid="pilot-target">
+          <p className="text-sm text-foreground" data-testid="pilot-target">
             Pilot target: <span className="font-semibold">{formatPercent(target.savedFraction)} less review time</span> per call. With the same compliance hours that is <span className="font-semibold">{formatPercent(target.moreCallsFraction)} more calls</span>.
           </p>
-          <p className="mt-2 text-xs text-slate-500">
+          <p className="mt-2 text-xs text-muted-foreground">
             If a review takes a fraction <span className="font-mono">s</span> less time, the same hours cover <span className="font-mono">1 / (1 − s) − 1</span> more calls. The target is a goal for a pilot, not a result. The measured figure above is from this machine&apos;s timed sessions only.
           </p>
           {(blink.perCase.length > 0 || baseline.perCase.length > 0) && (
             <table className="mt-3 w-full text-xs">
-              <thead className="text-left text-slate-500">
+              <thead className="text-left text-muted-foreground">
                 <tr>
                   <th className="py-1 font-medium">Case</th>
                   <th className="py-1 font-medium">Blink</th>
@@ -60,8 +60,8 @@ export default async function MetricsPage() {
               </thead>
               <tbody className="tabular-nums">
                 {[...new Set([...blink.perCase, ...baseline.perCase].map((c) => c.caseId))].map((id) => (
-                  <tr key={id} className="border-t border-slate-100">
-                    <td className="py-1 text-slate-700">{[...blink.perCase, ...baseline.perCase].find((c) => c.caseId === id)?.title}</td>
+                  <tr key={id} className="border-t border-border">
+                    <td className="py-1 text-foreground">{[...blink.perCase, ...baseline.perCase].find((c) => c.caseId === id)?.title}</td>
                     <td className="py-1">{formatMinutes(blink.perCase.find((c) => c.caseId === id)?.activeMs)}</td>
                     <td className="py-1">{formatMinutes(baseline.perCase.find((c) => c.caseId === id)?.activeMs)}</td>
                   </tr>
@@ -73,7 +73,7 @@ export default async function MetricsPage() {
 
         <Panel title="Reviewer corrections per case" bodyClassName="p-0">
           <table className="w-full text-sm">
-            <thead className="bg-slate-50 text-left text-xs text-slate-600">
+            <thead className="bg-muted text-left text-xs text-muted-foreground">
               <tr>
                 {["Case", "Policy findings", "Field corrections", "Findings added by a reviewer", "AI suggestions dismissed"].map((h) => (
                   <th key={h} className="px-3 py-1.5 font-medium">{h}</th>
@@ -82,8 +82,8 @@ export default async function MetricsPage() {
             </thead>
             <tbody className="tabular-nums">
               {m.corrections.map((c) => (
-                <tr key={c.caseId} className="border-t border-slate-100">
-                  <td className="px-3 py-1.5 text-slate-800">{c.title}</td>
+                <tr key={c.caseId} className="border-t border-border">
+                  <td className="px-3 py-1.5 text-foreground">{c.title}</td>
                   <td className="px-3 py-1.5">{c.policyFindings}</td>
                   <td className="px-3 py-1.5">{c.claimCorrections}</td>
                   <td className="px-3 py-1.5">{c.reviewerFindings}</td>
@@ -94,26 +94,26 @@ export default async function MetricsPage() {
               ))}
             </tbody>
           </table>
-          <p className="border-t px-3 py-2 text-xs text-slate-500">A proxy for extraction quality: what a reviewer had to fix or add by hand.</p>
+          <p className="border-t px-3 py-2 text-xs text-muted-foreground">A proxy for extraction quality: what a reviewer had to fix or add by hand.</p>
         </Panel>
 
         <CostPanel llm={m.llm} />
 
         <Panel title="Quote validity">
-          <div className="text-2xl font-semibold text-slate-900 tabular-nums">{m.quotes.rate === null ? "—" : formatPercent(m.quotes.rate, 1)}</div>
-          <p className="mt-1 text-sm text-slate-600">{m.quotes.proposed > 0 ? `${m.quotes.valid} of ${m.quotes.proposed} quotes proposed by the model were found character for character in the transcript.` : "No AI extraction has run yet."}</p>
-          <p className="mt-2 text-xs text-slate-500">A quote that cannot be found is dropped, and a claim with no valid quote is rejected. Nothing ungrounded reaches a reviewer.</p>
+          <div className="text-2xl font-semibold text-foreground tabular-nums">{m.quotes.rate === null ? "—" : formatPercent(m.quotes.rate, 1)}</div>
+          <p className="mt-1 text-sm text-muted-foreground">{m.quotes.proposed > 0 ? `${m.quotes.valid} of ${m.quotes.proposed} quotes proposed by the model were found character for character in the transcript.` : "No AI extraction has run yet."}</p>
+          <p className="mt-2 text-xs text-muted-foreground">A quote that cannot be found is dropped, and a claim with no valid quote is rejected. Nothing ungrounded reaches a reviewer.</p>
         </Panel>
       </div>
 
-      <Panel title="Gold-label recall and precision, per fixture" className="mt-4" bodyClassName="p-0" action={m.eval ? <span className="text-xs text-slate-500">pnpm eval · {m.eval.mode} mode · {m.eval.model} · {formatDateTime(m.eval.storedAt)}</span> : null}>
+      <Panel title="Gold-label recall and precision, per fixture" className="mt-4" bodyClassName="p-0" action={m.eval ? <span className="text-xs text-muted-foreground">pnpm eval · {m.eval.mode} mode · {m.eval.model} · {formatDateTime(m.eval.storedAt)}</span> : null}>
         {!m.eval ? (
           <EmptyState className="m-4">
             No eval run stored. Run <code className="font-mono">pnpm eval</code>.
           </EmptyState>
         ) : (
           <table className="w-full text-sm" data-testid="eval-table">
-            <thead className="bg-slate-50 text-left text-xs text-slate-600">
+            <thead className="bg-muted text-left text-xs text-muted-foreground">
               <tr>
                 {["Fixture", "Claims", "Quotes valid", "Expected findings", "Found", "Extra", "Recall", "Precision", "Assertions", "Notes"].map((h) => (
                   <th key={h} className="px-3 py-1.5 font-medium">{h}</th>
@@ -124,13 +124,13 @@ export default async function MetricsPage() {
               {m.eval.fixtures.map((f) => {
                 const notes = [...f.missed.map((x) => `missed ${x}`), ...f.extra.map((x) => `extra ${x}`), ...f.stateMismatches, ...f.assertionFailures, ...(f.comparisons ?? []).filter((c) => !c.ok).map((c) => `comparison at ${c.turn}: got ${c.actual ?? "none"}`)];
                 return (
-                  <tr key={f.id} className="border-t border-slate-100 align-top">
+                  <tr key={f.id} className="border-t border-border align-top">
                     <td className="px-3 py-1.5">
-                      <span className="font-mono text-xs font-semibold text-slate-900">{f.id}</span> <span className="text-slate-600">{f.title}</span>
+                      <span className="font-mono text-xs font-semibold text-foreground">{f.id}</span> <span className="text-muted-foreground">{f.title}</span>
                     </td>
                     {f.status === "error" ? (
-                      <td colSpan={9} className="px-3 py-1.5 text-red-700">
-                        Could not run: {f.error}
+                      <td colSpan={9} className="px-3 py-1.5">
+                        <StatusDot tone="stop">Could not run: {f.error}</StatusDot>
                       </td>
                     ) : (
                       <>
@@ -140,11 +140,11 @@ export default async function MetricsPage() {
                         </td>
                         <td className="px-3 py-1.5">{f.expectedFindings}</td>
                         <td className="px-3 py-1.5">{f.matchedFindings}</td>
-                        <td className={cn("px-3 py-1.5", f.extraFindings > 0 && "text-amber-700")}>{f.extraFindings}</td>
+                        <td className={cn("px-3 py-1.5", f.extraFindings > 0 && "font-medium text-foreground")}>{f.extraFindings}</td>
                         <td className="px-3 py-1.5">{f.recall === null ? "n/a" : `${f.matchedFindings}/${f.expectedFindings}`}</td>
                         <td className="px-3 py-1.5">{f.precision === null ? "n/a" : `${f.matchedFindings}/${f.matchedFindings + f.extraFindings}`}</td>
                         <td className="px-3 py-1.5">{f.assertionsTotal > 0 ? `${f.assertionsPassed}/${f.assertionsTotal}` : "—"}</td>
-                        <td className="px-3 py-1.5 text-xs">{notes.length === 0 ? <Chip tone="emerald">as expected</Chip> : <span className="text-amber-800">{notes.join("; ")}</span>}</td>
+                        <td className="px-3 py-1.5 text-xs">{notes.length === 0 ? <StatusDot tone="good">as expected</StatusDot> : <StatusDot tone="warn" className="items-start whitespace-normal [&>span:first-child]:mt-1">{notes.join("; ")}</StatusDot>}</td>
                       </>
                     )}
                   </tr>
@@ -153,18 +153,18 @@ export default async function MetricsPage() {
             </tbody>
           </table>
         )}
-        <p className="border-t px-3 py-2 text-xs text-slate-500">Shown per fixture with counts, never as one accuracy figure. Policy and document facts are the hand-written fixtures here, so the result reflects extraction only.</p>
+        <p className="border-t px-3 py-2 text-xs text-muted-foreground">Shown per fixture with counts, never as one accuracy figure. Policy and document facts are the hand-written fixtures here, so the result reflects extraction only.</p>
       </Panel>
 
       <Panel title="Missed concerns" className="mt-4">
         {!m.eval ? (
-          <p className="text-sm text-slate-500">Needs an eval run.</p>
+          <p className="text-sm text-muted-foreground">Needs an eval run.</p>
         ) : m.missedConcerns.length === 0 ? (
-          <p className="text-sm text-slate-700" data-testid="missed-none">
+          <p className="text-sm text-foreground" data-testid="missed-none">
             None: every gold finding in the {m.eval.fixtures.length} fixtures has a Blink finding.
           </p>
         ) : (
-          <ul className="list-disc space-y-0.5 pl-5 text-sm text-red-800">
+          <ul className="list-disc space-y-0.5 pl-5 text-sm text-foreground">
             {m.missedConcerns.map((c) => (
               <li key={c}>{c}</li>
             ))}
@@ -180,10 +180,10 @@ function CostPanel({ llm }: { llm: StageMetrics["llm"] }) {
   return (
     <Panel title="Cost and latency per stage" bodyClassName="p-0">
       {llm.stages.length === 0 ? (
-        <p className="p-4 text-sm text-slate-500">No model call has been made yet.</p>
+        <p className="p-4 text-sm text-muted-foreground">No model call has been made yet.</p>
       ) : (
         <table className="w-full text-sm">
-          <thead className="bg-slate-50 text-left text-xs text-slate-600">
+          <thead className="bg-muted text-left text-xs text-muted-foreground">
             <tr>
               {["Stage", "Calls", "Input tokens", "Output tokens", "Avg latency", "Avg cost"].map((h) => (
                 <th key={h} className="px-3 py-1.5 font-medium">{h}</th>
@@ -192,10 +192,10 @@ function CostPanel({ llm }: { llm: StageMetrics["llm"] }) {
           </thead>
           <tbody className="tabular-nums">
             {llm.stages.map((s) => (
-              <tr key={s.stage} className="border-t border-slate-100">
-                <td className="px-3 py-1.5 text-slate-800">
+              <tr key={s.stage} className="border-t border-border">
+                <td className="px-3 py-1.5 text-foreground">
                   {STAGE_LABEL[s.stage] ?? s.stage}
-                  {s.replayed > 0 && <span className="ml-1.5 text-xs text-sky-700">{s.replayed === s.calls ? "replayed" : `${s.replayed} replayed`}</span>}
+                  {s.replayed > 0 && <span className="ml-1.5 text-xs text-muted-foreground">{s.replayed === s.calls ? "replayed" : `${s.replayed} replayed`}</span>}
                 </td>
                 <td className="px-3 py-1.5">{s.calls}</td>
                 <td className="px-3 py-1.5">{s.inputTokens.toLocaleString("en-US")}</td>
@@ -207,7 +207,7 @@ function CostPanel({ llm }: { llm: StageMetrics["llm"] }) {
           </tbody>
         </table>
       )}
-      <p className="border-t px-3 py-2 text-xs text-slate-500">
+      <p className="border-t px-3 py-2 text-xs text-muted-foreground">
         Tokens × the list price of each model (Claude Opus 5.5 $4 / $20, Claude Haiku 5.5 $0.10 / $0.50 per million input / output tokens). A model with no listed price shows as unknown. {llm.anyReplayed ? "Replayed calls show the tokens and latency of the recorded run; no money was spent replaying them." : ""}
       </p>
     </Panel>
