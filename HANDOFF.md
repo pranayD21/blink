@@ -165,8 +165,8 @@ pnpm test && pnpm e2e  # everything that should stay green
 ```
 
 - **Remote:** `https://github.com/pranayD21/blink.git`, branch `main`.
-- **Local checkout used for this work:** `~/.t3/scratch/2026-11-10-goal-follow-everything-in-the-67af752d/blink`. Its `.env.local` holds the API key and sets replay mode. A new machine needs its own key for record or live mode; replay needs none.
-- **Node 26** is not installed system-wide on that machine. An official build is unpacked next to the checkout, at `../tools/node26/node-v26.13.0-darwin-arm64/bin`; put it first on `PATH` to use it. `node_modules` in the checkout is built for Node 24.
+- **Local checkout:** `~/Documents/blink` on the owner's machine (moved there on 2026-11-10 from a scratch folder). Its `.env.local` holds the API key and sets replay mode. A new machine needs its own key for record or live mode; replay needs none.
+- **Node 26** is not installed system-wide on that machine. An official build is unpacked at `~/.t3/scratch/2026-11-10-goal-follow-everything-in-the-67af752d/tools/node26/node-v26.13.0-darwin-arm64/bin`; put it first on `PATH` to use it. That is a scratch folder and may be cleaned up; any Node 26 install does the same job. `node_modules` in the checkout is built for Node 24.
 - **Databases** under `data/` are disposable: `blink.db` (dev), `e2e.db`, `record.db`.
 
 Where to look first:
