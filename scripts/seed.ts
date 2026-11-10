@@ -4,6 +4,8 @@
  *   tsx scripts/seed.ts                           demo start: users, documents, the Halvorsen case
  *   tsx scripts/seed.ts --manual-policy           also activate the labeled manual fallback policy
  *   tsx scripts/seed.ts --manual-policy --gold    also upload transcript v1 with hand-labeled claims (no model)
+ *
+ * `pnpm db:reset:dev` is the last form: a case ready to review with no model involved.
  */
 import { closeDb } from "../src/server/db/client";
 import { loadEnv } from "../src/server/env";
@@ -22,7 +24,7 @@ async function main() {
   console.log(`  case:  ${result.caseId} — Halvorsen Pumps (synthetic)`);
   if (result.policyVersionId) console.log(`  policy: manual fallback activated (${result.policyVersionId})`);
   if (options.gold) console.log("  transcript v1 uploaded with hand-labeled claims (no model call)");
-  if (queued > 0) console.log(`  ${queued} job(s) queued for the worker (document facts). Start it with: pnpm dev`);
+  if (queued > 0) console.log(`  ${queued} job(s) queued for the worker (document facts). It runs with: pnpm dev, or pnpm demo`);
   closeDb();
 }
 

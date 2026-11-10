@@ -10,6 +10,7 @@
     "demo": "BLINK_LLM_MODE=replay pnpm build && BLINK_LLM_MODE=replay concurrently -n web,worker \"next start\" \"tsx scripts/worker.ts\"",
     "db:generate": "drizzle-kit generate",
     "db:reset": "rm -f data/blink.db data/blink.db-wal data/blink.db-shm && mkdir -p data && drizzle-kit migrate && tsx scripts/seed.ts && BLINK_LLM_MODE=replay tsx scripts/eval.ts --quiet",
+    "db:reset:dev": "rm -f data/blink.db data/blink.db-wal data/blink.db-shm && mkdir -p data && drizzle-kit migrate && tsx scripts/seed.ts --manual-policy --gold && BLINK_LLM_MODE=replay tsx scripts/eval.ts --quiet",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
