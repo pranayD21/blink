@@ -4,6 +4,7 @@
  * that shares a five-word run with a fixture has been tuned on the answer key.
  */
 import { existsSync, readFileSync, readdirSync } from "node:fs";
+import { homedir } from "node:os";
 import { join } from "node:path";
 import type { ValidationIssue } from "@/core/policy/validate";
 import { PREDICATE_NAMES, getPredicate, predicatePhrase } from "@/core/predicates/registry";
@@ -86,7 +87,13 @@ function realTranscripts(dir: string): string[] {
   return out;
 }
 
-/** The Halvorsen transcripts, every variant transcript, both demo policies, the curated public documents, and any real test transcripts. */
+/**
+ * Real cases whose source may not be published sit outside the repository
+ * (see fixtures/real/README.md); they count when this machine has them.
+ */
+const LOCAL_REAL = join(homedir(), ".blink-real-local");
+
+/** The Halvorsen transcripts, every variant transcript, both demo policies, the curated public documents, and any real test transcripts, in the repository or local. */
 export function fixtureSources(): string[] {
   const read = (...p: string[]) => readFileSync(join(FIXTURES, ...p), "utf8");
   const variants = readdirSync(join(FIXTURES, "cases", "variants"))
@@ -104,5 +111,6 @@ export function fixtureSources(): string[] {
       .sort()
       .map((f) => read("documents", f)),
     ...realTranscripts(join(FIXTURES, "real")),
+    ...realTranscripts(LOCAL_REAL),
   ];
 }

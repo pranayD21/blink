@@ -1,0 +1,15 @@
+{
+  "title": "Goldman Sachs — Rajaratnam and Lau, 24 October 2008",
+  "issuer": "The Goldman Sachs Group, Inc.",
+  "ticker": "GS",
+  "aliases": ["Goldman Sachs", "Goldman", "GS"],
+  "issuer_fiscal": {
+    "fiscal_year_end_month": 11,
+    "fiscal_quarters_note": "FY2008 ended 28 November 2008. Q3 FY2008 ended 29 August 2008.",
+    "last_reported": { "fy": 2008, "q": 3, "reported_on": "2008-09-16" },
+    "next_report_expected": null
+  },
+  "call_date": "2008-10-24",
+  "research_questions": ["General investment advice: the pulse of the market"],
+  "analyst_notes": "David Lau was a Singapore-based portfolio manager for Galleon International. The opinion quotes the call in two excerpts; T12 ends the first."
+}

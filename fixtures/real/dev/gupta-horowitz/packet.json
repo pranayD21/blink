@@ -1,0 +1,15 @@
+{
+  "title": "Goldman Sachs — Rajaratnam and Horowitz, morning of 24 September 2008",
+  "issuer": "The Goldman Sachs Group, Inc.",
+  "ticker": "GS",
+  "aliases": ["Goldman Sachs", "Goldman", "GS"],
+  "issuer_fiscal": {
+    "fiscal_year_end_month": 11,
+    "fiscal_quarters_note": "FY2008 ended 28 November 2008. Q3 FY2008 ended 29 August 2008.",
+    "last_reported": { "fy": 2008, "q": 3, "reported_on": "2008-09-16" },
+    "next_report_expected": null
+  },
+  "call_date": "2008-09-24",
+  "research_questions": ["Report on the previous afternoon's events"],
+  "analyst_notes": "Two calls on the same morning, at 7:09 a.m. and 7:56 a.m.; the first ends at T11. Ian Horowitz was Galleon's principal trader."
+}

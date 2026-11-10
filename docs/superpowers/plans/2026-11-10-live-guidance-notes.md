@@ -288,3 +288,17 @@ Step 1 is done: `pnpm live:prepare` (`scripts/prepare-live-call.sh`) resets `dat
 - **Metrics.** Content unchanged. The cost column already showed "unknown" for a model with no price (a call with no price in the per-call tile, an unpriced stage in the stage table).
 - **Small layout fixes found in the screenshots.** The policy list no longer clips its Created column or runs "monitors" into "2 blocking"; the confirm-hash label sits above its input.
 - **Screenshots.** `.superpowers/sdd/2026-11-10-live-guidance/shots/34/` (not `test-results/`, as the dispatch said): policy list, new policy, the failed and the active policy on every tab (Monitors with the graph, Validation, Scenarios, Clauses, Rules, Approve), documents, and metrics as a reviewer and as the policy owner, light and dark at 1440 by 900. They were taken by a temporary copy of the demo spec, deleted afterwards.
+
+## Task 35: the real development set
+
+- **Built:** three public cases in `fixtures/real/dev/`: `gupta-horowitz` (29 turns, 0 labels), `gupta-lau` (19 turns, 3 labels) and `chu` (4 turns, 0 labels). Two private cases, `kyprios-1` and `kyprios-2`, are in `~/.blink-real-local/dev/` on the owner's machine. The reasons are in `fixtures/real/README.md` and each `source.md`.
+- **Owner decision (fix round 1): the Kyprios cases stay out of the repository.** They come from a UK regulator's notice whose site terms forbid putting it in any public or private retrieval system without permission, and this repository is public. They are in `~/.blink-real-local/dev/`, with the same layout, and are not in any commit. `tests/core/real-fixtures.test.ts` and `tests/helpers/prompt-leak.ts` also read that folder when it exists, and skip it silently when it does not.
+- **Controller ruling (fix round 1): `gupta-horowitz` has no labels.** The court quotes Rajaratnam's statements to Horowitz as admissions against penal interest. It does not say they conveyed inside information, so the case is a faulted call with no labeled passage, like `chu`. The private `kyprios-2` label is kept.
+- **Deviation: `gupta-horowitz` joins two calls.** Both of the morning's calls (7:09 and 7:56 a.m.) are in one transcript, T1 to T11 and T12 to T29; `analyst_notes` says where the second starts.
+- **Deviation: placeholder fiscal values.** `src/core/evidence/fiscal.ts` (`lastReportedAsOf`, `isUnreported`) reads these, so they shape whether a period counts as reported:
+  - `kyprios-1` and `kyprios-2` (private): `fiscal_year_end_month` 12 is from a public filing. `last_reported` Q2 FY2009, dated 2009-06-30, is a placeholder, because the source gives no reporting dates.
+  - `chu`: `fiscal_year_end_month` 12 and Q2 FY2009 are placeholders, because the company is unnamed. `reported_on` 2009-07-21 is from the release.
+  - Each packet's `fiscal_quarters_note` says so, and that note reaches the extraction and live prompts.
+- **Ticker:** where a company has no ticker, the packets use `n/a`. The app has no empty-ticker sentinel: the schema needs 1 to 10 characters.
+- **Not done: the scanned Galleon complaints.** The plan names no documents or URLs for them; they were not fetched or OCR'd.
+- **No prompt edits, no spend.** The prompt-leak test passes with every real transcript, public and private.

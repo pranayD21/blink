@@ -1,0 +1,1314 @@
+
+[Page 1 of 48]
+
+12-4448
+USA v. Gupta
+
+UNITED STATES COURT OF APPEALS
+FOR THE SECOND CIRCUIT
+-----August Term, 2012
+(Argued: May 21, 2013
+
+Decided: March 25, 2014)
+Docket No. 12-4448
+
+_________________________________________________________
+UNITED STATES OF AMERICA,
+Appellee,
+- v. RAJAT K. GUPTA,
+Defendant-Appellant.
+_________________________________________________________
+Before: NEWMAN, KEARSE, and POOLER, Circuit Judges.
+Appeal from a judgment of the United States District Court for the Southern District
+of New York, Jed S. Rakoff, Judge, convicting defendant of securities fraud, see 15 U.S.C. §§ 78j(b)
+and 78ff, and conspiracy to commit securities fraud, see 18 U.S.C. § 371, based on insider trading.
+Affirmed.
+RICHARD C. TARLOWE, Assistant United States Attorney, New
+York, New York (Preet Bharara, United States Attorney for the
+Southern District of New York, Damian Williams, Edward B. Diskant,
+Justin S. Weddle, Assistant United States Attorneys, New York, New
+York, on the brief), for Appellee.
+
+
+[Page 2 of 48]
+
+SETH P. WAXMAN, Wilmer Cutler Pickering Hale & Dorr,
+Washington, D.C. (Paul R.Q. Wolfson, Megan Barbero, Daniel
+Aguilar, Wilmer Cutler Pickering Hale & Dorr, Washington, D.C.;
+Gary P. Naftalis, David S. Frankel, Alan R. Friedman, Robin M.
+Wilcox, Kramer Levin Naftalis & Frankel, New York, New York;
+Peter G. Neiman, Alan E. Schoenfeld, Wilmer Cutler Pickering Hale
+& Dorr, New York, New York, on the brief), for Defendant-Appellant.
+
+KEARSE, Circuit Judge:
+Defendant Rajat Gupta ("Gupta") appeals from a judgment entered in the United States
+District Court for the Southern District of New York on November 9, 2012, following a jury trial
+before Jed S. Rakoff, Judge, convicting him on three counts of securities fraud, in violation of 15
+U.S.C. §§ 78j(b) and 78ff, and one count of conspiracy to commit securities fraud, in violation of 18
+U.S.C. § 371. Gupta was sentenced principally to 24 months' imprisonment, to be followed by a oneyear term of supervised release, and was ordered to pay a fine of $5,000,000. In an amended
+judgment entered in February 2013, Gupta was also ordered to pay restitution in the amount of
+$6,218,223.59, an order that is the subject of a separate appeal that has been held in abeyance pending
+decision of the present appeal. In the present appeal, Gupta challenges his conviction, contending
+principally that he is entitled to a new trial on the grounds that the trial court erred (1) by admitting
+statements of a coconspirator, recorded in wiretapped telephone conversations to which Gupta was
+not a party, and (2) by excluding relevant evidence offered by Gupta. For the reasons that follow, we
+conclude that Gupta's contentions lack merit, and we affirm the judgment.
+
+
+[Page 3 of 48]
+
+I. BACKGROUND
+
+At the times pertinent to this prosecution, Gupta was a member of the board of
+directors of The Goldman Sachs Group, Inc. ("Goldman Sachs" or "Goldman"), the global financial
+services firm headquartered in New York. Gupta was also involved in several financial ventures with
+Raj Rajaratnam (or "Raj"), founder of The Galleon Group ("Galleon"), a family of hedge funds that
+invested billions of dollars for its principals and clients. The present prosecution arose out of a
+multiyear government investigation of insider trading at Galleon which included court-authorized
+wiretaps of Rajaratnam's cell phone, see United States v. Rajaratnam, 719 F.3d 139, 144-45 (2d Cir.
+2013).
+During its investigation, the government discovered evidence indicating, inter alia, that
+Rajaratnam was receiving inside information about Goldman Sachs from Gupta and trading on that
+information. Eventually, Gupta was charged with six counts of securities law violations. Count One
+of the superseding indictment on which Gupta was tried (the "Indictment") alleged, inter alia, that
+Gupta, Rajaratnam, "and others . . . conspire[d] . . . to commit . . . securities fraud" (Indictment ¶ 30);
+that "GUPTA disclosed . . . Inside Information" about Goldman Sachs "to Rajaratnam, with the
+understanding that Rajaratnam would use the Inside Information to purchase and sell securities" (id.
+¶ 12(b)); and that Rajaratnam, knowing the information he received from Gupta was confidential,
+"shared the Inside Information with other coconspirators at Galleon and caused the execution of
+transactions in the securities of Goldman Sachs" (id. ¶ 12(c)). The object of the conspiracy was the
+"purchase and sale of securities" in order to "receive illegal profits and/or illegally avoid losses" (id.
+¶¶ 31 and 32(b)) based on "GUPTA['s] disclos[ure of] Inside Information obtained from Goldman
+
+
+[Page 4 of 48]
+
+Sachs" to Rajaratnam, which information "Rajaratnam shared . . . with other coconspirators at
+Galleon" (id. ¶¶ 32(a) and (d)). Gupta was convicted on the conspiracy count and on three substantive
+counts of securities fraud (Counts Three, Four, and Five), all relating to trades of Goldman Sachs
+stock by Rajaratnam based on confidential inside information Rajaratnam received from Gupta in the
+fall of 2008.
+
+A. Evidence Supporting the Counts of Conviction
+All of the government's evidence that Gupta passed confidential information about
+Goldman Sachs to Rajaratnam, on the basis of which Rajaratnam made purchases or sales of Goldman
+stock, was circumstantial. Most of the evidence described below was presented through testimony
+from employees of Galleon or Goldman, wiretapped telephone calls between Rajaratnam and other
+Galleon employees, records of calls made to or from telephones used by Gupta or Rajaratnam, and
+records as to the timing of trades by Galleon in Goldman Sachs stock.
+
+1. Galleon Trades of Goldman Sachs Stock on September 23, 2008
+At 3:15 p.m. on September 23, 2008, Goldman Sachs held a special meeting of its
+board of directors. The purpose of the meeting was to approve an investment of $5 billion in
+Goldman by Warren Buffett. The imminent investment was highly confidential, as it was likely to
+have "a meaningful impact" on Goldman's stock price. (Trial Transcript ("Tr.") 1590.) It was to be
+announced to the public after the 4 p.m. close of trading on the New York Stock Exchange.
+Gupta, a former managing director of the consulting firm McKinsey & Company
+("McKinsey"), participated in the Goldman Sachs board meeting via telephone from a conference
+
+
+[Page 5 of 48]
+
+room at McKinsey's New York office. Telephone records indicated that Gupta was on the Goldman
+Sachs conference call from 3:13 p.m. until 3:53 p.m.
+At approximately 3:54 p.m., Gupta's assistant, Renee Gomes, dialed Rajaratnam's
+direct line; the McKinsey conference room telephone from which Gupta had participated in the
+Goldman Sachs board meeting was then connected to the call to Rajaratnam's line. The connection
+between Rajaratnam's line and the telephone Gupta used lasted approximately 30 to 35 seconds.
+Caryn Eisenberg, Rajaratnam's assistant in 2008-2009, testified that on September 23,
+2008, she answered a call on his direct line at about 10 minutes before the 4:00 p.m. market close.
+As a general rule Eisenberg was not to put calls through to Rajaratnam near the end of the trading day,
+but she put the caller on hold, located Rajaratnam, and put the call through. Although at the time of
+trial Eisenberg no longer remembered the name of the man who was on the line, she testified that she
+put this call through because his name was on the short list of persons whose calls Rajaratnam would
+accept near the end of the trading day; she recognized his voice as that of a frequent caller; and the
+man said it was "urgent" that he "speak to Raj." (Tr. 238-39.)
+Rajaratnam took the call in his office and was on the telephone only briefly. Eisenberg
+testified that Rajaratnam thereafter summoned Galleon cofounder Gary Rosenbach into his office and
+the two had a closed-door conversation. Rosenbach then "went back to his desk," picked up his
+telephone, "and started saying buy Goldman Sachs." (Id. at 254.)
+Galleon trader Ananth Muniyappa testified that at approximately 3:56 p.m. on
+September 23, Rajaratnam, as he was hanging up his telephone, instructed Muniyappa, who was at
+his own desk nearby, to purchase 100,000 shares of Goldman Sachs stock. When Muniyappa
+determined that he would probably be unable to buy as many as 100,000 shares before the market's
+
+
+[Page 6 of 48]
+
+close (he managed to buy only a total of 67,200 shares), he quickly informed Rajaratnam, who
+promptly instructed Rosenbach to buy Goldman stock.
+Rosenbach proceeded to buy 200,000 shares of the stock, 150,000 for Rajaratnam's
+portfolio--which specialized in technology stocks--and 50,000 for Rosenbach's own portfolio.
+Rosenbach also bought 1.5 million shares (1,000,000 for Rajaratnam's portfolio and 500,000 for his
+own) of a financial-sector index fund made up of stocks of several institutions, including Goldman.
+Each of these trades was made in the final "three to four minutes" of the trading day (Tr. 401), i.e.,
+between approximately 3:56 p.m. and 4:00 p.m. In all, the Goldman Sachs stock purchased by
+Muniyappa and Rosenbach at the behest of Rajaratnam in the final minutes of the trading day on
+September 23--excluding the shares of the index fund--cost more than $33 million.
+Warren Buffett's $5 billion investment in Goldman Sachs was announced at
+approximately 6:00 p.m. on September 23. The next morning, Goldman's stock price rose to a high
+nearly 7% above its September 23 closing price. A government witness testified that the profits on
+the above Galleon purchases of Goldman stock at the end of the trading day on September 23
+exceeded $1 million.
+Eisenberg testified that after Rajaratnam took the urgent call near the close of trading
+on September 23 he was smiling more than usual. (See Tr. 259.) But not everyone at Galleon was
+happy. Leon Shaulov was a Galleon trader and portfolio manager. Muniyappa did not buy any
+Goldman Sachs stock for Shaulov on September 23. Muniyappa testified that that evening, shortly
+after Goldman announced the Warren Buffett investment, Shaulov sent Rosenbach an email saying,
+"Thanks for the heads up, by the way. I'm short 170 million in financials. Not one word from anyone.
+Thank you very much. All I get is sick dilution. Zero help. Zero." (Id. at 441-42; see also id. at 439
+
+
+[Page 7 of 48]
+
+(a "short" position is one speculating that the market price will go down).)
+On the morning of September 24, 2008, before the stock markets opened, Rajaratnam
+placed two calls from his cell phone (which was wiretapped) to Ian Horowitz, his principal trader.
+In the first call, at 7:09 a.m., Rajaratnam began to tell Horowitz about the events of the previous
+afternoon:
+RAJ RAJARATNAM: . . . . So, big drama yesterday, but I have to ....
+IAN HOROWITZ: Yeah, I, I, I heard.
+RAJ RAJARATNAM: Hum.
+IAN HOROWITZ: I heard a little, um, you mean the last three minutes
+of the day?
+RAJ RAJARATNAM: No, I got a call at 3:58, right?
+IAN HOROWITZ: Yeah.
+RAJ RAJARATNAM: Saying something good might happen to
+Goldman. Right?
+IAN HOROWITZ: So it is what it is. Everything's, everyone's fine,
+I saw it cross the board....
+RAJ RAJARATNAM: No I saw, I, so, I told Ananth [Muniyappa] to
+buy some, he was fucking around, he can't, you know. So I went to Gary
+[Rosenbach] and said just buy me, right?
+IAN HOROWITZ: Mm hmm.
+RAJ RAJARATNAM: Because you were not there. It happens all the
+fucking time, you know you're there every day of the year, right? . . . .
+(Government Exhibit ("GX") 21-T ("First Rajaratnam-Horowitz Call"), at 1-2 (emphases added).)
+Rajaratnam called Horowitz again at 7:56 a.m. After asking how much Goldman Sachs
+stock Galleon currently owned, Rajaratnam continued his report on the previous afternoon's events:
+
+
+[Page 8 of 48]
+
+RAJ RAJARATNAM: Okay, yeah, let me tell you what happened,
+honestly, right?
+IAN HOROWITZ: Yeah, no, I looked at our price, I looked at our
+price, and I looked at what happened.
+RAJ RAJARATNAM: Yeah.
+IAN HOROWITZ: Someone had this before us, someone, whatever
+went on, something happened, someone, they ...
+RAJ RAJARATNAM: I got a call, right, saying something good's
+gonna happen.
+IAN HOROWITZ: We'll talk about, how 'bout this, we'll talk when
+you come in.
+RAJ RAJARATNAM: Okay.
+IAN HOROWITZ: We'll talk when you come in, okay?
+RAJ RAJARATNAM: But I didn't do anything, you were not there,
+I asked Ananth to buy some.
+IAN HOROWITZ: You did nothing.
+RAJ RAJARATNAM: Then I went to Gary ... and ...
+IAN HOROWITZ: You did nothing wrong.
+RAJ RAJARATNAM: Yeah at 3:58, I can't, I can't yell out in the
+fucking halls.
+IAN HOROWITZ: No. You did nothing wrong, we'll talk about it
+when you come in, nothing's wrong.
+RAJ RAJARATNAM: It is, I guess, Leon [Shaulov] was very upset.
+You know, fuck him, look, I've kept my mouth shut when he gave me WaMu,
+right?
+IAN HOROWITZ: Get, get upset about what? You got nothing, this
+is at 3:58.
+
+
+[Page 9 of 48]
+
+RAJ RAJARATNAM: Yeah, if it was, one o'clock, I always am good
+with him, I always call him in, I tell him everything, you know? AMD, IBM,
+everything, right?
+IAN HOROWITZ: He's not in, so I'm, he hasn't said anything. Listen,
+if something comes in, I'll let you know.
+(GX 22-T ("Second Rajaratnam-Horowitz Call"), at 2-3 (emphases added).)
+
+2. Galleon Trades of Goldman Sachs Stock on October 24, 2008
+On October 23, 2008, more than halfway through the fourth quarter of Goldman
+Sachs's fiscal year, Goldman's chairman convened an unofficial board meeting by conference call to
+bring the directors up-to-date on company events. At that time, Wall Street analysts were projecting
+that Goldman--which, since becoming a public company, had never reported a quarterly loss--would
+continue to report profits. In the conference call, which began at 4:15 p.m., Goldman's management
+informed the board that the company's fourth-quarter result would be a loss.
+Records were introduced to show that Gupta, on a telephone in his home office,
+participated in the Goldman Sachs conference call for approximately 33 minutes and disconnected
+at 4:49 p.m. At 4:50 p.m., a call was placed from the telephone of Gupta's assistant Renee Gomes to
+the direct office line of Rajaratnam; Gupta's home office line was conferenced in to that call, and
+Gomes's line was disconnected. Gupta's home office telephone was connected to Rajaratnam's direct
+line for some 12½ minutes, until 5:03 p.m.
+The next morning, October 24, 2008, in three transactions, Rajaratnam sold a total of
+150,000 shares of Goldman Sachs stock. The first 50,000 shares were sold at 9:31 a.m., one minute
+after the stock market opened--the first opportunity to trade in Goldman shares since the board
+
+
+[Page 10 of 48]
+
+meeting the previous day. Another 50,000 shares were sold at 10:09 a.m.; and the final 50,000 shares
+were sold at 10:37 a.m. Goldman Sachs's fourth-quarter losses were not announced to the public until
+December 16. Based on the decline in Goldman's stock price after that announcement, the
+government introduced calculations showing that Rajaratnam, by selling his shares on October 24,
+avoided a loss of more than $3.8 million.
+At 12:12 p.m. on October 24, Rajaratnam returned a call to David Lau, a Singaporebased portfolio manager for Galleon International, one of Galleon's hedge funds. Lau had sought to
+reach Rajaratnam for general investment advice. Galleon International invested in non-U.S. securities
+primarily (see Tr. 1467), but not exclusively (see id. at 2415); and it had in the past owned stock in
+Goldman (see GX 90). The conversation began with Rajaratnam advising that, as a general matter,
+it would be safer to invest in United States companies than in emerging market countries:
+RAJ RAJARATNAM: Hey David, you called?
+DAVID LAU: Yeah, just to give me, give me a, find the pulse because
+we are quite shocked overseas and uh long bonds, I mean quite shocked in
+relative for the VAR ... because VAR broke out, blew out and our positions are
+the same so I just want to find out what you guys are thinking.
+RAJ RAJARATNAM: Yeah, I mean, I think, ah we think that the US
+is um relatively the safe haven, right.
+DAVID LAU: Um.
+RAJ RAJARATNAM: Because all of these um emerging market ah
+countries, many of them have to reduce interest rates, which is bad for their
+currencies, right.
+DAVID LAU: Um um um.
+RAJ RAJARATNAM: And, I mean today for example there is a
+reasonable calmness in the market you know the market is only down 2 or 3%,
+right.
+
+
+[Page 11 of 48]
+
+DAVID LAU: Yeah, that's why I'm surprised. I thought it would go
+nuts.
+RAJ RAJARATNAM: Yeah I mean our risk here is ah hedge fund
+redemption risk, right Citadel I hear is in trouble, you know, and things like
+that but I think generally, not that I want to be long equities, but generally I
+think one trade in equities would be, you know, buy the Spiders and short the
+EEMs or something, you know.
+DAVID LAU: Hmm Hmm.
+RAJ RAJARATNAM: But it looks like here the most cyclical
+companies the semi equipment companies, and the home builders are the ones
+that are leading the way out right.
+DAVID LAU: Right.
+(GX 29-T ("Rajaratnam-Lau Call"), at 1-2 (emphasis added).)
+Rajaratnam then proceeded to describe to Lau the confidential negative information
+he had received the previous day "from somebody who's on the Board of Goldman Sachs," which
+"they don't report until December." (GX 29-T, at 2.) Rajaratnam noted the current optimistic view
+of Wall Street analysts of Goldman Sachs's likely profits, and he described the potential for selling
+the stock short:
+RAJ RAJARATNAM: Um, now I, I heard yesterday from somebody
+who's on the Board of Goldman Sachs, that they are gonna lose $2 per share.
+The Street has them making $2.50.
+DAVID LAU: Really?
+RAJ RAJARATNAM: You know. Yeah. Now I can get that number,
+you know, one, they don't report until December, they, I think their quarter
+ends in November, but (UI [i.e., unintelligible]) one more, but you know they
+have these huge marks in ICBC and all of that stuff right. That uh is getting
+absolutely clobbered. You know.
+DAVID LAU: Right.
+
+
+[Page 12 of 48]
+
+RAJ RAJARATNAM: So what he was telling me was that uh,
+Goldman, the quarter's pretty bad. They have zero revenues because their
+trading revenues are offset by asset losses, and to date they have lost $2 per
+share, they just announced a 10% cut and uh you know, the basic business is
+ok but uh you know this is uh tough for them. I don't think that's built into
+Goldman Sachs stock price. So if it gets to $105, I'm gonna, it's $99 now, it
+was at $102. I was looking for $105, I'm gonna whack it you know.
+DAVID LAU: (Laughs) Okay. Okay. Okay (UI) ...
+RAJ RAJARATNAM: Okay, I don't think it makes sense to take
+longer term views right now. . . .
+(GX 29-T, at 2 (emphases added).)
+
+3. The Relationship Between Gupta and Rajaratnam
+The government also presented evidence that Gupta and Rajaratnam had a close
+relationship. Gupta described Rajaratnam as a "close friend[]" (GX 1905)--indeed, "a very close
+friend" (GX 1922)--and was in frequent communication with him. Rajaratnam's address book noted
+Gupta as a "Good friend." (Tr. 223.) Rajaratnam had instructed Eisenberg that there were only five
+people she was authorized to connect with him near the end of the trading day; Gupta was one of
+them. (See id. at 210, 213-14; see also id. at 273 (during the two years when Eisenberg was
+Rajaratnam's assistant, the list was expanded to about 10 names).)
+Gupta and Rajaratnam were also involved in several business ventures together. In
+2005, they, along with a third partner, formed Voyager Capital Partners Ltd. ("Voyager"), an
+investment fund capitalized with $50 million, $5 million of which was contributed by Gupta and
+$40 million by Rajaratnam; Gupta later borrowed $5 million from Rajaratnam in order to buy out the
+third partner's share (see Tr. 1858-59), giving Gupta a $10 million stake in Voyager. Other
+
+
+[Page 13 of 48]
+
+collaborations were discussed in a July 29, 2008 call from Gupta to Rajaratnam (see GX 9-T ("GuptaRajaratnam Call"))--the only call between these two that was captured in the wiretaps. In 2007,
+Gupta, Rajaratnam, and two others launched another investment fund, New Silk Route, in which
+Rajaratnam invested $50 million (see id. at 8); Gupta was the chairman (see GX 2164). Gupta was
+also heavily involved in Galleon itself. He had invested several million dollars in Galleon funds; he
+was involved in the planning of a new Galleon fund called Galleon Global (which ultimately was not
+created); he had a keycard allowing him access to Galleon's New York offices; and he regularly
+worked on Galleon's behalf in seeking potential investors (see GX 9-T, at 13-14). In early 2008,
+Gupta was made chairman of Galleon International, which, as of April 2008, managed assets totaling
+some $1.1 billion and could earn "performance fees" (Tr. 1696). Gupta was given a 15 percent
+ownership stake. (See, e.g., id.; GX 9-T, at 6; id. at 13 (Gupta: "you've given me . . . a position in
+Galleon International").)
+In the July 2008 Gupta-Rajaratnam Call, Rajaratnam asked Gupta about a rumor that
+Goldman Sachs might seek to buy a commercial bank. Gupta responded that there had been "a big
+discussion" of that possibility, in particular with respect to "Wachovia," as well as of the possibility
+of buying an insurance company, in particular "AIG." (GX 9-T, at 2-3.) Gupta said the Goldman
+board was divided and that such purchases were unlikely to be "imminent," but that if certain banks
+were "a good deal . . . it's quite conceivable they'd come and say let's go buy" one. (Id. at 3-4.) The
+board's discussions were confidential. (See, e.g., Tr. 856-58.) Even the matter of whether or not a
+subject had been discussed at a Goldman board meeting was confidential. (See, e.g., id. at 2048.)
+
+
+[Page 14 of 48]
+
+B. The Defense Case
+Gupta called several witnesses in his defense. Most were character witnesses who
+testified that they believed Gupta to be an honest person; Gupta also sought to have them testify that
+he had "integrity" and thus would not have been inclined to share inside information with Rajaratnam.
+Gupta's daughter Geetanjali Gupta ("Geetanjali") testified about certain conversations Gupta had with
+her about Rajaratnam, and sought to indicate that Gupta would not have been inclined to share inside
+information with Rajaratnam because Gupta believed Rajaratnam had cheated him out of money with
+respect to the Voyager investment. Gupta also sought to introduce documentary evidence suggesting
+that a different Goldman Sachs insider was giving Rajaratnam confidential information about
+Goldman Sachs, and that Gupta contemplated leaving a substantial portion of his wealth to charity.
+As discussed in greater detail in Part II.B. below, the trial judge imposed limitations with respect to
+each category of Gupta's proposed evidence.
+
+C. The Verdict
+The jury found Gupta guilty on four of the six counts against him: Count One,
+conspiracy to commit securities fraud in violation of 18 U.S.C. § 371, and three substantive counts
+of securities fraud in violation of 15 U.S.C. §§ 78j(b) and 78ff. The substantive securities fraud
+convictions were on Count Three, based on Rosenbach's purchase of 150,000 shares of Goldman
+Sachs stock for Rajaratnam on September 23, 2008; Count Four, based on Muniyappa's purchase of
+67,200 shares of Goldman Sachs stock for Rajaratnam on September 23, 2008; and Count Five, based
+on Rajaratnam's sale of 150,000 shares of Goldman Sachs stock on October 24, 2008.
+
+
+[Page 15 of 48]
+
+Gupta was sentenced principally to 24 months' imprisonment and ordered to pay a
+$5 million fine. This Court granted his motion for bail pending appeal.
+
+II. DISCUSSION
+
+On appeal, Gupta argues principally that Rajaratnam's wiretapped conversations with
+Horowitz and Lau were inadmissible hearsay; that the trial court erred in curtailing evidence proffered
+by Gupta in his defense; and that the errors, either singly or in combination, entitle him to a new trial.
+For the reasons that follow, we disagree.
+
+A. The Wiretap Evidence
+Preliminarily, we note that Gupta's brief on appeal challenged the admission of any
+wiretapped conversations, including the conversation between Rajaratnam and Gupta himself, on the
+ground that the wiretap authorizations were obtained in violation of Title III of the Omnibus Crime
+Control and Safe Streets Act of 1968, see 18 U.S.C. §§ 2510-2522, and the Fourth Amendment to the
+Constitution. Rajaratnam, who was prosecuted and convicted on multiple counts of securities fraud
+and conspiracy, had raised such challenges in his case; and Gupta's brief on appeal stated that Gupta
+was raising the same issues as Rajaratnam and was adopting the challenges made in Rajaratnam's
+appeal. Rajaratnam's challenges were rejected in United States v. Rajaratnam, 719 F.3d at 151-57,
+160. Gupta's Title III and constitutional challenges are thus foreclosed.
+With respect to Rajaratnam's statements in his two conversations with Horowitz and
+in his conversation with Lau, Gupta also objected to their admission on the ground that they were
+
+
+[Page 16 of 48]
+
+hearsay. The government contended that Rajaratnam's statements either were nonhearsay because
+they were statements in furtherance of a conspiracy of which Rajaratnam and Gupta were members,
+see Fed. R. Evid. 801(d)(2)(E), or were hearsay statements within the exception for declarations
+against penal interest, see Fed. R. Evid. 804(b)(3), or within the residual hearsay exception, see Fed.
+R. Evid. 807.
+The district court found that the government had sufficiently established the existence
+of a conspiracy among Gupta, Rajaratnam, and others (see Tr. 430-31, 434-35, 440), and that
+Rajaratnam's statements in each of the three conversations were in furtherance of the conspiracy. The
+court thus ruled that all three conversations were admissible under Rule 801(d)(2)(E). (See
+Tr. 633-35, 695; see also Hearing Transcript, May 16, 2012 ("Hearing Tr."), at 4, 24-25.)
+The district court rejected outright the government's contention that Rajaratnam's
+statements were admissible under the residual hearsay exception. And the court stated that it was
+"dubious" as to whether the statements could be admitted as statements against penal interest but that
+it need not resolve that issue in light of its ruling that they were admissible as nonhearsay statements
+in furtherance of a conspiracy of which Rajaratnam and Gupta were members. (Hearing Tr. 4.)
+Gupta challenges the rulings that Rajaratnam's statements to Lau and Horowitz were
+in furtherance of a conspiracy of which Gupta was a member. He contends that Lau was not alleged
+to be a coconspirator and that Rajaratnam's statements to Horowitz were in furtherance only of a
+separate conspiracy between Rajaratnam and Shaulov. The government defends the court's admission
+of the Rajaratnam statements as coconspirator statements in furtherance of a conspiracy of which
+Rajaratnam and Gupta were not the only members; in addition, it argues that Rajaratnam's statements
+could properly have been admitted as statements against his penal interest. We conclude that, under
+
+
+[Page 17 of 48]
+
+Rules 801 and 804 of the Federal Rules of Evidence, Rajaratnam's statements in all three
+conversations were admissible both as nonhearsay statements in furtherance of the Rajaratnam-Gupta
+conspiracy and under the exception for statements against penal interest. We address these issues
+separately with respect to the statements to Horowitz and those to Lau.
+
+1. Statements in Furtherance of a Conspiracy
+Under Rule 801(d), an out-of-court statement offered for the truth of its contents is not
+hearsay if "[t]he statement is offered against an opposing party and" it "was made by the party's
+coconspirator during and in furtherance of the conspiracy." Fed. R. Evid. 801(d)(2)(E). Thus, "[i]n
+order to admit a statement under this Rule, the court must find (a) that there was a conspiracy, (b) that
+its members included the declarant and the party against whom the statement is offered, and (c) that
+the statement was made during the course of and in furtherance of the conspiracy." United States v.
+Maldonado-Rivera, 922 F.2d 934, 958 (2d Cir. 1990), cert. denied, 501 U.S. 1233 (1991). In
+determining the existence and membership of the alleged conspiracy, the court must consider the
+circumstances surrounding the statement, as well as the contents of the alleged coconspirator's
+statement itself. See Fed. R. Evid. 801(d)(2); see also Bourjaily v. United States, 483 U.S. 171,
+176-81 (1987).
+"To be in furtherance of the conspiracy, a statement must be more than 'a merely
+narrative' description by one co-conspirator of the acts of another." United States v. SKW Metals &
+Alloys, Inc., 195 F.3d 83, 88 (2d Cir. 1999) ("SKW Metals") (quoting United States v. Beech-Nut
+Nutrition Corp., 871 F.2d 1181, 1199 (2d Cir.) ("Beech-Nut"), cert. denied, 493 U.S. 933 (1989)).
+
+
+[Page 18 of 48]
+
+While idle chatter between co-conspirators does not further a conspiracy, see
+United States v. Paone, 782 F.2d 386, 390 (2d Cir.), cert. denied, 479 U.S. 882,
+107 S.Ct. 269, 93 L.Ed.2d 246 (1986), we have recognized that "[s]tatements
+between conspirators which provide reassurance, serve to maintain trust and
+cohesiveness among them, or inform each other of the current status of the
+conspiracy, further the ends of [a] conspiracy."
+United States v. Simmons, 923 F.2d 934, 945 (2d Cir.) (quoting United States v. Rahme, 813 F.2d 31,
+35-36 (2d Cir. 1987) (other internal quotation marks omitted)), cert. denied, 500 U.S. 919 (1991); see,
+e.g., United States v. Maldonado-Rivera, 922 F.2d at 958-59.
+"A finding as to whether or not a proffered statement was made in furtherance of the
+conspiracy should be supported by a preponderance of the evidence, and such a finding will not be
+overturned on appeal unless it is clearly erroneous." United States v. Thai, 29 F.3d 785, 814 (2d Cir.),
+cert. denied, 513 U.S. 977 (1994); see, e.g., United States v. James, 712 F.3d 79, 105-06 (2d Cir.),
+petition for cert. filed, No. 13-632 (U.S. Nov. 22, 2013). "'Where there are two permissible views of
+the evidence, the factfinder's choice between them cannot be clearly erroneous.'" Beech-Nut, 871 F.2d
+at 1199 (quoting Anderson v. Bessemer City, 470 U.S. 564, 574 (1985)). The court's ultimate
+decision to admit or exclude a proffered statement is reviewed for abuse of discretion. See, e.g.,
+United States v. Persico, 645 F.3d 85, 99 (2d Cir. 2011), cert. denied, 132 S. Ct. 1637 (2012); SKW
+Metals, 195 F.3d at 87-88.
+
+a. Rajaratnam's in-Furtherance Statements to Horowitz
+We see no error or abuse of discretion in the district court's admission of the statements
+by Rajaratnam in his two telephone conversations with Horowitz. Although Gupta insists that
+Rajaratnam had a "separate conspiracy with Shaulov" (e.g. Gupta brief on appeal at 38, 39), that
+
+
+[Page 19 of 48]
+
+Rajaratnam's statements to Horowitz were "focus[ed] on placating Shaulov" (id. at 37), and that
+"Rajaratnam's conversation with Horowitz was not 'in furtherance of' the alleged Rajaratnam/Gupta
+conspiracy" (id. at 36; see id. at 37 ("placating Shaulov had nothing to do with furthering the alleged
+conspiracy between Rajaratnam and Gupta")), that argument suffers from multiple flaws. First, the
+Indictment did not allege a conspiracy only between Rajaratnam and Gupta; it alleged that the
+conspiracy also encompassed "other coconspirators at Galleon" (Indictment ¶¶ 12(c), 32(d)). Second,
+so long as a coconspirator statement was in furtherance of the conspiracy, there is no requirement that
+it have been in furtherance of the interests of the defendant himself or of any particular coconspirator.
+Third, there was ample evidence that the conspiracy of which Gupta and Rajaratnam were members
+included Horowitz, Rosenbach, and Shaulov.
+For example, after receiving the September 23 call at 3:54 p.m. from Gupta,
+Rajaratnam had a closed-door conversation with Rosenbach; Rosenbach immediately began buying
+Goldman Sachs stock and shares of an index fund that included Goldman stock; Rosenbach made
+those purchases not only for Rajaratnam's portfolio but for his own portfolio as well; and after the
+market closed, Rosenbach returned to Rajaratnam's office for another closed-door conversation (see
+Tr. 254-55). That evening, when Shaulov bitterly complained that he had not been given a "heads up"
+on the Buffett investment, he complained to Rosenbach. (Id. at 441-42.) The next morning,
+Rosenbach sent Rajaratnam an email stating "I spoke to Leon and believe I diffused [sic] him."
+(GX 1632.) Rajaratnam, in his conversations with Horowitz that morning, explained why he had not
+immediately informed Horowitz and Shaulov upon receipt of the September 23 Goldman Sachs
+information. In his first call, Rajaratnam pointed out that Horowitz, who was the head of the Galleon
+trading desk and the trader principally responsible for executing trades for Rajaratnam (see Tr. 205,
+
+
+[Page 20 of 48]
+
+361), had not been in the office when the call came in. The district court found that this conversation
+was in furtherance of the conspiracy of which Gupta was a member because Rajaratnam needed to
+explain to Horowitz, his trader, why the purchases of Goldman stock were made (see Hearing
+Tr. 19-20); and the court found that the ensuing conversation between Rajaratnam and Horowitz
+"reeks of knowledge, intent, and the need of Mr. Rajaratnam to explain to his lieutenant why in his
+absence the significant trade occurred" (id. at 21). In that second conversation, Rajaratnam told
+Horowitz that Shaulov was upset but should not have been because the call about Goldman Sachs
+came in late, at "3:58"; had it come in at "one o'clock," Rajaratnam would have informed Shaulov
+because he "always" relayed "everything" to Shaulov. (GX 22-T, at 3.)
+Thus, there was ample evidence to support findings (1) that the members of the
+conspiracy in which Gupta passed confidential Goldman Sachs information to Rajaratnam included
+not only Gupta and Rajaratnam but also Rosenbach, Horowitz, and Shaulov, and (2) that Rajaratnam's
+statements and explanations to Horowitz served to further the conspiracy by informing Horowitz, and
+eventually Shaulov, of the status of that conspiracy, reassuring them of its continuity, and preserving
+trust and cohesiveness among the coconspirators. Rajaratnam's statements in his telephone calls to
+Horowitz were properly admitted under Rule 801(d)(2)(E).
+
+b. Rajaratnam's in-Furtherance Statements to Lau
+Although the government concedes that Lau was not a member of the alleged
+conspiracy, the district court admitted under Rule 801(d)(2)(E) Rajaratnam's statements to Lau as
+well. While that Rule "'requires that both the declarant and the party against whom the statement is
+offered be members of the conspiracy, there is no requirement that the person to whom the statement
+
+
+[Page 21 of 48]
+
+is made also be a member.'" In re Terrorist Bombings of U.S. Embassies in East Africa, 552 F.3d 93,
+139 (2d Cir. 2008) ("Terrorist Bombings") (quoting Beech-Nut, 871 F.2d at 1199) (emphasis ours),
+cert. denied, 558 U.S. 1137 (2010). Statements designed to induce the listener's assistance with
+respect to the conspiracy's goals satisfy the Rule's in-furtherance requirement. See, e.g., Terrorist
+Bombings, 552 F.3d at 139; Beech-Nut, 871 F.2d at 1199 ("Coconspirator statements may be found
+to be 'in furtherance' of the conspiracy within the meaning of Rule 801(d)(2)(E) if they 'prompt the
+listener to respond in a way that facilitates the carrying out of criminal activity.'" (quoting United
+States v. Rahme, 813 F.2d at 35)).
+Applying these principles, we conclude that there was no clear error in the district
+court's finding that Rajaratnam's statements to Lau were in furtherance of a conspiracy of which Gupta
+and Rajaratnam were members. Lau was a portfolio manager for Galleon International, seeking to
+make profitable investment decisions for his portfolio. The Rajaratnam-Lau Call resulted from Lau's
+solicitation of Rajaratnam's view of "the pulse" of the market. (GX 29-T, at 1.) The conversation
+took place on October 24, 2008, shortly after Rajaratnam had sold his Goldman Sachs stock in the
+wake of Gupta's call to Rajaratnam, a call placed one minute after the end of the Goldman Sachs
+board of directors conference call in which Gupta learned that Goldman in December would report
+a quarterly loss. Rajaratnam responded to Lau's request for guidance on the market by advising that
+"the US is . . . relatively the safe haven" and providing his opinion with respect to specific sectors (id.
+at 1-2); but Rajaratnam went on to say that he had nonpublic information that, contrary to the
+prevailing view of market analysts, Goldman's current quarter would not be profitable (see id. at 2 ("I
+heard yesterday from somebody who's on the Board of Goldman Sachs, that they are gonna lose $2
+per share. The Street has them making $2.50.")). Rajaratnam noted that Goldman would not report
+
+
+[Page 22 of 48]
+
+its quarterly results until December; stated that if the stock price reached a certain level, he would sell
+short (see id. ("whack it")); and concluded, "I don't think it makes sense to take longer term views
+right now" (id.).
+We see no error in the district court's finding that Rajaratnam's statements to Lau, "an
+important colleague and subordinate who had the ability to execute further trades in Galleon
+International" (Hearing Tr. 22), were in furtherance of the conspiracy of which Rajaratnam and Gupta
+were members. Although Gupta argues that in connection with these statements the government was
+required to "pro[ve] . . . not merely that Lau was theoretically capable" of trading in Goldman Sachs
+stock but that Rajaratnam's "purpose was to induce Lau to trade" (Gupta brief on appeal at 33
+(emphasis omitted)), this argument ignores the allegation and the proof that one of the goals of the
+conspiracy was to use inside information to avoid losses--a goal clearly pursued by Rajaratnam in
+dumping his Goldman Sachs shares as quickly as possible after learning that Goldman would later
+publicly announce a quarterly loss. Gupta had a 15 percent ownership stake in Galleon International,
+which was entitled to fees based on its performance. (See Tr. 1696.) Although Galleon International
+invested principally in securities of non-United States companies (see id. at 1467), it was not
+precluded from investing in domestic securities (see id. at 2415); and, indeed, it had in the past owned
+stock in Goldman (see GX 90). In light of this evidence, Rajaratnam's statements to Lau could have
+prompted Lau not to purchase Goldman shares for Galleon International in October 2008. This
+supports the district court's conclusion that such statements were in furtherance of the conspiracy of
+which Gupta was a member.
+Although Gupta argues that Rajaratnam was simply "bragging" about his sources
+(Gupta brief on appeal at 35), this was at best an argument for the jury. Further, to the extent that it
+
+
+[Page 23 of 48]
+
+could be permissible to view the conversation as Gupta urges, i.e., that it was merely a "casual
+conversation about past events," not one in which Rajaratnam's statements were in furtherance of the
+conspiracy (Gupta brief on appeal at 35-36 (citing United States v. Lieberman, 637 F.2d 95, 102 (2d
+Cir. 1980))), the clear-error standard for reversal has not been met. To the extent that there may be
+more than one permissible view as to Rajaratnam's purpose in making the October 24, 2008
+statements to Lau, the district court's determination that the statements about Goldman shares were
+made in furtherance of the conspiracy was a choice between or among permissible inferences and
+hence cannot be deemed clearly erroneous, see Anderson, 470 U.S. at 574. Gupta's contentions
+provide no basis for overturning the district court's finding that Rajaratnam's statements to Lau were
+in furtherance of the insider-trading, loss-avoidance conspiracy of which Gupta was a member and
+by which Gupta sought to profit, and thus were admissible.
+
+2. Statements Against Penal Interest
+Rule 804(b)(3) allows the admission of statements against a declarant's proprietary,
+pecuniary, or penal interest if the declarant is unavailable as a witness. A statement is against such
+an interest if it is a statement that:
+(A) a reasonable person in the declarant's position would have made
+only if the person believed it to be true because, when made, it was so contrary
+to the declarant's proprietary or pecuniary interest or had so great a tendency
+to invalidate the declarant's claim against someone else or to expose the
+declarant to civil or criminal liability; and
+(B) is supported by corroborating circumstances that clearly indicate
+its trustworthiness, if it is offered in a criminal case as one that tends to expose
+the declarant to criminal liability.
+
+
+[Page 24 of 48]
+
+Fed. R. Evid. 804(b)(3) (emphases added). This Rule "is founded on the commonsense notion that
+reasonable people, even reasonable people who are not especially honest, tend not to make selfinculpatory statements unless they believe them to be true." Williamson v. United States, 512 U.S.
+594, 599 (1994).
+In assessing whether a statement is against penal interest within the meaning of Rule
+804(b)(3), the district court must first ask whether "a reasonable person in the declarant's shoes would
+perceive the statement as detrimental to his or her own penal interest," United States v. Saget, 377
+F.3d 223, 231 (2d Cir. 2004) ("Saget"), cert. denied, 543 U.S. 1079 (2005), a question that can be
+answered only "in light of all the surrounding circumstances," Williamson, 512 U.S. at 604; see also
+Saget, 377 F.3d at 231 (an "adequately particularized analysis" is required). The proffered statement
+"[need] not have been sufficient, standing alone, to convict [the declarant] of any crime," so long as
+it would have been "probative" in a criminal case against him. United States v. Persico, 645 F.3d
+at 102.
+If the court finds that the statement is against the declarant's penal interest, the court
+must then determine whether there are corroborating circumstances indicating "both the declarant's
+trustworthiness and the truth of the statement." United States v. Lumpkin, 192 F.3d 280, 287 (2d Cir.
+1999). Further, "the inference of trustworthiness from the proffered 'corroborating circumstances'
+must be strong, not merely allowable." United States v. Salvador, 820 F.2d 558, 561 (2d Cir.), cert.
+denied, 484 U.S. 966 (1987). In the context of assessing whether a statement against penal interest
+was sufficiently reliable to satisfy the Confrontation Clause of the Constitution, we have noted that
+[a] statement incriminating both the declarant and the defendant may possess
+adequate reliability if . . . the statement was made to a person whom the
+declarant believes is an ally, and the circumstances indicate that those portions
+
+
+[Page 25 of 48]
+
+of the statement that inculpate the defendant are no less reliable than the selfinculpatory parts of the statement.
+Saget, 377 F.3d at 230 (internal quotation marks omitted).
+The trial court's ultimate decision to admit such evidence is reviewed for abuse of
+discretion. See, e.g., United States v. Williams, 506 F.3d 151, 155 (2d Cir. 2007), cert. denied, 552
+U.S. 1223 (2008); Saget, 377 F.3d at 231; United States v. Salvador, 820 F.2d at 562.
+
+a. Rajaratnam's Self-Incriminating Statements to Horowitz
+Even if Rajaratnam's statements in his conversations with Horowitz on the morning
+after his September 23 purchases of Goldman Sachs stock were not in furtherance of the RajaratnamGupta conspiracy, the pertinent statements were contrary to Rajaratnam's penal interest and therefore
+could properly have been admitted pursuant to Rule 804(b)(3). In the First Rajaratnam-Horowitz
+Call, Rajaratnam said, "I got a call at 3:58 . . . . [s]aying something good might happen to
+Goldman. . . . [S]o, I told Ananth to buy some" and "I went to Gary and said just buy me" (GX 21-T,
+at 1-2). In the Second Rajaratnam-Horowitz Call, Rajaratnam's statements included the following:
+# I got a call, right, saying something good's gonna happen.
+# I asked Ananth to buy some.
+# Then I went to Gary . . . .
+# Yeah at 3:58, I can't, I can't yell out in the fucking halls.
+# Leon was very upset. You know, fuck him, look, I've kept my mouth shut
+when he gave me WaMu . . . .
+# [I]f it was, one o'clock, I always am good with him, I always call him in, I
+tell him everything, you know? AMD, IBM, everything . . . .
+(GX 22-T, at 2-3.)
+
+
+[Page 26 of 48]
+
+The corroborating evidence included proof that Rajaratnam did receive a call minutes
+before the close of trading on September 23; that the call was from Gupta, who had said it was
+"urgent"; that Gupta was a Goldman Sachs board member who had just received confidential
+Goldman information; and that something quite good for Goldman did in fact happen and was
+announced after the close of trading that very day. And Rajaratnam's reference to having shared
+information with respect to "AMD" provided additional corroboration of Rajaratnam's knowing
+wrongdoing, as Anil Kumar--who was on Rajaratnam's list of five people to whom he would speak
+near the close of trading (see Tr. 210, 213-14)--testified at trial that he had "pled guilty to one count
+of securities fraud for giving insider information to Mr. Rajaratnam about a company called ATI and
+AMD's acquisition of it in 2006" (id. at 1767). Thus, it would have been well within the bounds of
+discretion for the district court to conclude that the statements by Rajaratnam were contrary to his
+penal interest because they exposed him to criminal liability for trading on the basis of inside
+information, and that they were sufficiently reliable to be admitted in evidence under Rule 804(b)(3).
+
+b. Rajaratnam's Self-Incriminating Statements to Lau
+We reach the same conclusion with respect to Rajaratnam's statements about his inside
+information on Goldman Sachs to Lau. In his conversation with Lau, Rajaratnam's statements
+included the following:
+# I heard yesterday from somebody who's on the Board of Goldman Sachs,
+that they are gonna lose $2 per share. The Street has them making $2.50.
+# [T]hey don't report until December . . . .
+
+26
+
+
+[Page 27 of 48]
+
+# So what he was telling me was that uh, Goldman, the quarter's pretty
+bad. . . . I don't think that's built into Goldman Sachs stock price. So if it gets
+to $105, I'm gonna, it's $99 now, it was at $102. I was looking for $105, I'm
+gonna whack it you know.
+(GX 29-T, at 2.)
+Given that this conversation occurred on October 24, 2008, less than two hours after
+Rajaratnam unloaded his Goldman Sachs stock--beginning one minute after the market opened-Rajaratnam's statement that he had "heard yesterday" from a Goldman board member that Goldman
+would lose money and would not report its losses until December clearly exposed him to criminal
+liability for trading on inside information. Moreover, Rajaratnam's statement that if the stock reached
+a certain level he planned to sell it short was an admission of a plan to engage in additional unlawful
+insider trading in the future.
+Although Gupta argues that these statements were not sufficiently reliable to satisfy
+the statement-against-penal-interest exception, we disagree. The evidence as to the timing of the
+Goldman Sachs board's after-hours conference call on October 23, which ended at 4:49 p.m. and was
+followed by a 4:50 p.m. call from Goldman board member Gupta to Rajaratnam, coupled with
+Rajaratnam's commencing to dump his Goldman stock one minute after the market opened the next
+morning, provided ample corroboration for the October 24 statement that Rajaratnam had received
+information "yesterday" of Goldman's yet-to-be-announced "$2 per share" losses from "somebody
+who's on the Board of Goldman Sachs."
+Again, Gupta argues that Rajaratnam was merely attempting to impress Lau. That was
+a contention that could be argued to the jury; but as "reasonable people, even reasonable people who
+are not especially honest, tend not to make self-inculpatory statements unless they believe them to be
+27
+
+
+[Page 28 of 48]
+
+true," Williamson, 512 U.S. at 599, it would have been within the district court's discretion to find
+that Rajaratnam, as founder and head of Galleon, would have had no need to attempt to impress his
+subordinates and that he would not have made these self-incriminating statements without a
+foundation of truth.
+
+B. Limitations on Gupta's Defense Evidence
+Gupta also contends that he is entitled to a new trial on the ground that the district
+court unduly limited evidence proffered by the defense to show that any communication by Gupta of
+inside information to Rajaratnam in the fall of 2008 was improbable. For the reasons that follow, we
+conclude that none of the challenged rulings constituted an abuse of the court's discretion and that a
+new trial is unwarranted.
+
+1. Testimony by Gupta's Daughter
+The "linchpin" of the defense (Gupta brief on appeal at 46) was the proposition that
+in mid-September 2008, Gupta was angry with Rajaratnam for having withdrawn $25 million from
+the Voyager fund (in which Gupta had invested $10 million and Rajaratnam had invested $40 million)
+without informing Gupta of the withdrawal and without alerting Gupta to withdraw some of his own
+capital--so angry that Gupta would not have shared inside information about Goldman Sachs with
+Rajaratnam. To establish Gupta's state of mind--and to suggest that his September 23 and October
+23 calls to Rajaratnam were merely efforts to obtain information about Voyager--the defense
+proffered testimony from Gupta's daughter Geetanjali that on September 20 Gupta was angry with
+Rajaratnam, believing that Rajaratnam had cheated him. Gupta argues that
+28
+
+
+[Page 29 of 48]
+
+[s]pecifically, Geetanjali would have testified:
+He told me that he was upset about Voyager. He told me that he was
+worried about the performance of the fund and that he was frustrated
+that he couldn't get information from Raj about it.
+He also told me he was angry that Raj had taken money out of the fund
+without telling him and that he thought that that--he didn't understand
+why he had taken the money out of the fund, and why if he had taken
+money out of the fund, he had not gotten any of it.
+(Gupta brief on appeal at 47 (quoting Tr. 3079 (Geetanjali's statement in response to questioning by
+the court outside the presence of the jury) (emphases in brief)).)
+The government objected that this testimony would be hearsay; Gupta argued that it
+was admissible under Rule 803(3)'s "state of mind" exception to the hearsay rule. After exploring
+Geetanjali's proposed testimony in the absence of the jury and hearing arguments from both sides (see
+Tr. 2971-74, 3071-89), the district court ruled that Geetanjali could testify to Gupta's "attitude towards
+Rajaratnam" with respect to Voyager, "at a given point or maybe two or three points" in time, but that
+Geetanjali could not testify to the "substantive" details of what Gupta said, i.e., that Gupta stated that
+he believed Rajaratnam had cheated him (id. at 3087; see id. at 3086-89).
+Accordingly, Geetanjali testified that on September 20, 2008, she had a "conversation
+with [her] father relating to an investment that [he] had with Mr. Rajaratnam called Voyager" (id. at
+3093) and in that conversation Gupta expressed "significant concern" about his investment in Voyager
+(id. at 3094). Geetanjali continued as follows:
+THE COURT: And in relating this to you, what was his demeanor?
+THE WITNESS: He was upset. He was stressed. He was running his
+hands through his hair, which he often does when he's stressed. He was
+walking about. He was quite upset. He's normally a very calm and collected
+person.
+29
+
+
+[Page 30 of 48]
+
+THE COURT: Was it your understanding, if you had one, that this was
+because of how the investment was doing or because of how Mr. Rajaratnam
+was treating the investment or what?
+THE WITNESS: It was more because of how Mr. Rajaratnam was
+treating the investment. My father had been very upset that-THE COURT: No. You've answered the question.
+(Tr. 3094.) Geetanjali also testified that Gupta was frustrated by the difficulty he was having in
+getting information from Rajaratnam about Voyager. (See id. at 3095; see also id. at 3100 (testifying
+that at Thanksgiving Gupta was still upset at Rajaratnam about the Voyager investment).) The court
+instructed the jury that Geetanjali's testimony was to be considered "only on the issue of what bearing
+it has, if at all, on Mr. Gupta's attitude toward Mr. Rajaratnam during the period of time in question"
+(id. at 3095), and that "the limited purpose for which" Geetanjali's testimony was admitted was "not
+for . . . whatever may or may not have been going on at Voyager, but only for what Mr. Gupta's state
+of mind was with respect to Mr. Rajaratnam at this particular time" (id. at 3100).
+Gupta contends that the district court erred in preventing Geetanjali from testifying that
+Gupta believed Rajaratnam had cheated him, because
+Gupta did not seek to introduce Geetanjali's testimony to prove that
+Rajaratnam had in fact stolen from him (a point that was undisputed anyway);
+rather, he wanted to show that he believed Rajaratnam had stolen from him at
+a particular point in time.
+(Gupta brief on appeal at 48 (emphasis in original); see id. at 49 ("Gupta sought to establish that he
+believed at the time that Rajaratnam was defrauding him" (emphasis in original)).) Gupta argues that
+Rule 803(3) provides an exception to the hearsay rule for a declarant's then-existing state of mind and
+that "Geetanjali's testimony--that on September 20, Gupta told her 'he was angry that Raj had taken
+money out of the fund without telling him' [Tr. 3079]--was classically admissible evidence
+30
+
+
+[Page 31 of 48]
+
+establishing Gupta's state of mind, and directly relevant to his motive for calling Rajaratnam." (Gupta
+brief on appeal at 48-49 (emphasis added); see id. at 49 ("his statement was admissible as evidence
+of [his] belief" that Rajaratnam was defrauding him (emphasis added)).)
+We disagree with the thrust of Gupta's arguments, as we think it clear from the record
+that the court's limitation on Geetanjali's testimony was not based on a view that the testimony was
+being offered for its truth but rather was based on its view that the jury would likely be unable to
+comprehend that the statement could be considered only to show Gupta's belief and not to show the
+truth of what he believed. For the reasons that follow, we conclude that the limitation imposed was
+within the court's discretion, and that, in any event, if it was error to have thus limited Geetanjali's
+testimony, the error was harmless.
+
+a. The Exercise of Discretion Under Rule 403
+Generally, a statement made by a person while not testifying at the current trial, offered
+by that person to prove the truth of the matter asserted in his statement, is hearsay. See Fed. R. Evid.
+801(a)-(c). Hearsay generally is inadmissible if it does not fall within an exception provided by Rule
+803 or 804. See Fed. R. Evid. 802. Rule 803 provides an exception for "[a] statement of the
+declarant's then-existing state of mind (such as motive, intent, or plan) or emotional, sensory, or
+physical condition (such as mental feeling, pain, or bodily health), but not including a statement of
+memory or belief to prove the fact remembered or believed . . . ." Fed. R. Evid. 803(3) (emphasis
+added).
+However, the fact that a statement falls within an exception to the hearsay rule does
+not mean that the statement is not to be classified as hearsay; nor does it mean that the statement is
+31
+
+
+[Page 32 of 48]
+
+automatically admissible. It means simply that the statement--assuming that the criteria specified in
+the exception are met--is "not excluded by the rule against hearsay," Fed. R. Evid. 803, 804(b)
+(emphasis added); see, e.g., Li v. Canarozzi, 142 F.3d 83, 88 (2d Cir. 1998). "The court retains its
+normal discretion to exclude the evidence on other grounds such as lack of relevance, see Fed.R.Evid.
+402, improper purpose, see, e.g., Fed.R.Evid. 404, or undue prejudice, see Fed.R.Evid. 403." Li v.
+Canarozzi, 142 F.3d at 88; cf. United States v. Detrich, 865 F.2d 17, 21 (2d Cir. 1988) (for
+admissibility, it is not sufficient that a proffered statement is not hearsay: "To be admissible it must
+also be relevant.").
+Under Rule 403, even if proffered evidence is relevant, it may be excluded "if its
+probative value is substantially outweighed by a danger of one or more of the following: unfair
+prejudice, confusing the issues, misleading the jury, undue delay, wasting time, or needlessly
+presenting cumulative evidence." Fed. R. Evid. Rule 403; see, e.g., Huddleston v. United States, 485
+U.S. 681, 687-88 (1988); United States v. Reifler, 446 F.3d 65, 91 (2d Cir. 2006); United States v.
+Salameh, 152 F.3d 88, 122-23 (2d Cir. 1998) ("Salameh"), cert. denied, 525 U.S. 1112 (1999).
+In reviewing Rule 403 challenges, we "accord great deference" to the district
+court's assessment of the "relevancy and unfair prejudice of proffered
+evidence, mindful that it sees the witnesses, the parties, the jurors, and the
+attorneys, and is thus in a superior position to evaluate the likely impact of the
+evidence."
+United States v. Quinones, 511 F.3d 289, 310 (2d Cir. 2007) (quoting United States v. Paulino, 445
+F.3d 211, 217 (2d Cir.), cert denied, 549 U.S. 981 (2006)), cert denied, 555 U.S. 910 (2008). "A
+district judge's" ruling following a "Rule 403 analysis is reversible error only when it is a clear abuse
+of discretion." Salameh, 152 F.3d at 122. "To find such abuse, we must conclude that the challenged
+evidentiary rulings were arbitrary and irrational." United States v. Quinones, 511 F.3d at 307-08
+32
+
+
+[Page 33 of 48]
+
+(internal quotation marks omitted); see, e.g., United States v. Scott, 677 F.3d 72, 83-84 (2d Cir. 2012);
+Salameh, 152 F.3d at 110.
+We see no arbitrariness or irrationality in the present case. In limiting Geetanjali's
+testimony, the trial court made a Rule 403 assessment that the admission of testimony that Gupta
+believed Rajaratnam had cheated him--which the court observed would be "cumulative," given that
+the court had (as discussed in Part II.B.1.b. below) admitted other evidence to the same effect
+(Tr. 3085)--would be unduly prejudicial. Noting that, unlike the other witnesses whose similar
+testimony had been admitted, Geetanjali had no personal knowledge about Voyager, the court
+reasoned the jury would have undue difficulty in distinguishing between the aspect of Geetanjali's
+testimony that could be considered for its truth as to Gupta's state of mind and the aspect that
+indicated that Gupta had been cheated. When Gupta's counsel argued that the defense would be
+prejudiced if it could not have Geetanjali testify that Gupta thought Rajaratnam had cheated him, the
+court responded,
+I think the prejudice is the other way.
+The jury is going to, I think, draw from this, because the government
+can't cross-examine the witness in any meaningful way, that Rajaratnam, in
+fact, cheated Gupta, that Gupta knew it and that Gupta, therefore, was
+completely outraged; and, hence, it carries a danger here that no other witness
+carries for the reasons that I've already elaborated on the record.
+(Tr. 3086 (emphasis added); see, e.g., id. at 2972-73 ("[T]here is no way the jury can make th[e]
+distinction" between the belief and the substance of what was said to have been believed. "They are
+going to inevitably think if they accept this testimony at all that he is telling the truth to his own
+daughter, and they will be taking it for its truth, and I don't see how under 403 that gross violation of
+the hearsay rule can be avoided." (emphases added)).) Thus, the court limited Geetanjali's testimony
+33
+
+
+[Page 34 of 48]
+
+not on the ground that it was offered to prove that Rajaratnam had in fact cheated Gupta but rather
+because the court's view was that, if admitted, the jury would likely be unable to comprehend that it
+was not admitted for that purpose. We see no basis for second-guessing the district court's view as
+to the likely effect on the jury. Although it would have been within the court's discretion to admit the
+proposed Geetanjali testimony along with a clear and detailed limiting instruction to the jury if it
+believed such an instruction would be effective, we see no abuse of discretion in the court's decision
+to limit the testimony in light of its conclusion that there was "no way" such an instruction in this case
+would be effective.
+We note that although Gupta perhaps would have us classify the court's ruling as
+arbitrary on the ground that Geetanjali was not allowed to state that Gupta was "angry" (Gupta brief
+on appeal at 22), the record does not support that contention. The court ruled that she would be
+allowed to testify to Gupta's "attitude" toward Rajaratnam; the record does not indicate that the court
+placed any restriction on the words she could use to describe his attitude. Geetanjali described Gupta
+as "quite upset" (Tr. 3094) and "frustrated" (id. at 3095) by his inability to get information from
+Rajaratnam about Voyager--descriptions likely sufficient to imply anger; and there was no ruling
+barring her from expressly describing him as "angry."
+Gupta's additional contention that the limitation on Geetanjali's testimony made it seem
+"only that Gupta was upset in September 2008 about the performance of the Voyager investment"
+(Gupta brief on appeal at 22 (emphasis in original)) is belied by the testimony itself. The court asked
+whether Gupta was upset "because of how the investment was doing or because of how Mr.
+Rajaratnam was treating the investment or what"; Geetanjali responded "It was more because of how
+Mr. Rajaratnam was treating the investment." (Tr. 3094.)
+34
+
+
+[Page 35 of 48]
+
+Finally, Gupta suggests that allowing Geetanjali to testify that Gupta believed
+Rajaratnam had cheated him by taking money out of Voyager without alerting Gupta also to withdraw
+some of his capital from that venture would have been no more prejudicial than similar evidence that
+the court had previously admitted, because "the excluded statement did no more than confirm
+undisputed facts" (Gupta reply brief on appeal at 21). But this very argument substantiates the district
+court's view that this aspect of the Geetanjali testimony, with its potential for the jury to infer that
+Gupta had in fact been cheated, would have been cumulative. We cannot conclude that the court
+abused its discretion in viewing the potential for jury confusion and undue prejudice as substantially
+outweighing the cumulative evidence's probative value.
+
+b. Harmless Error
+The fact that "the excluded statement did no more than confirm undisputed facts"
+(Gupta reply brief on appeal at 21) also contributes to our conclusion that, if the limitation on
+Geetanjali's testimony was error, the error was harmless. A party may gain relief for an "error in a
+ruling to admit or exclude evidence only if," inter alia, "the error affect[ed] a substantial right of the
+party." Fed. R. Evid. 103(a); see, e.g., Fed. R. Crim. P. 52(a) ("Any error . . . that does not affect
+substantial rights must be disregarded."). Thus, "[u]nder harmless error review, we ask whether we
+can conclude with fair assurance that the errors did not substantially influence the jury." United States
+v. Oluwanisola, 605 F.3d 124, 133 (2d Cir. 2010) ("Oluwanisola") (internal quotation marks omitted);
+see, e.g., Kotteakos v. United States, 328 U.S. 750, 764-65 (1946). If defense evidence has been
+improperly excluded by the trial court, we normally consider such factors as
+
+35
+
+
+[Page 36 of 48]
+
+(1) the importance of . . . unrebutted assertions to the government's case; (2)
+whether the excluded material was cumulative; (3) the presence or absence of
+evidence corroborating or contradicting the government's case on the factual
+questions at issue; (4) the extent to which the defendant was otherwise
+permitted to advance the defense; and (5) the overall strength of the
+prosecution's case.
+Oluwanisola, 605 F.3d at 134; see also United States v. Miller, 626 F.3d 682, 690 (2d Cir. 2010)
+(focusing principally on the overall strength of the prosecution's case), cert. denied, 132 S. Ct. 379
+(2011); United States v. Song, 436 F.3d 137, 139-40 (2d Cir. 2006) (focusing principally on the extent
+to which the defendant was otherwise able to present the defense and on the presence of evidence
+corroborating the government's case); United States v. Lawal, 736 F.2d 5, 9 (2d Cir. 1984) (focusing
+principally on the overall strength of the prosecution's case and on the cumulative nature and marginal
+probative value of the excluded evidence).
+All five of the factors set out in Oluwanisola lead us to conclude that, if there was
+error, it was harmless. First, as to the assertions in the government's case that Gupta sought to rebut,
+he pointed to testimony by Kumar suggesting that Gupta did not learn of Rajaratnam's withdrawal of
+capital from Voyager until 2009 (see Tr. 1858-64); Gupta argued that the singular importance of the
+proposed evidence as to his conversation with Geetanjali was its timing--i.e., that Gupta told her he
+was upset with Rajaratnam on September 20 (several days prior to his September 23 call to
+Rajaratnam upon learning of the imminent Buffett investment) rather than not becoming upset until
+2009. (See, e.g., id. at 3086 ("Your Honor, this proof is pretty critical and crucial because they put
+Kumar on there to try and move the date to fit their theory."); see also Gupta brief on appeal at 46-47.)
+Thus, "Geetanjali's statement that Gupta told her he was angry that Rajaratnam had impermissibly and
+covertly redeemed money from the Voyager fund . . . was offered to prove when Gupta formed his
+
+36
+
+
+[Page 37 of 48]
+
+belief about the redemptions." (Gupta reply brief on appeal at 20 (emphasis in original).) "The
+importance of this timing question cannot be overstated." (Id. at 19.)
+But the court placed no restriction at all on the defense's ability to bring out the timing
+of Gupta's conversation with Geetanjali. Geetanjali testified amply that the conversation occurred on
+September 20, 2008. She testified that she remembered the date because, inter alia, it was her 30th
+birthday, and it occurred on a trip to Connecticut to celebrate both her birthday and her mother's
+birthday which was the next day. (See Tr. 3092-93.) Further, after Geetanjali proceeded to describe
+Gupta's being upset with Rajaratnam on account of Rajaratnam's treatment of the Voyager investment,
+the court highlighted the fact that that testimony was relevant to the "time" of Gupta's anger at
+Rajaratnam: It instructed the jury that Geetanjali's testimony was to be considered "only on the issue
+of what bearing it has, if at all, on Mr. Gupta's attitude toward Mr. Rajaratnam during the period of
+time in question" (id. at 3095 (emphasis added)), and that "the limited purpose for which" Geetanjali's
+testimony was admitted was "not for . . . whatever may or may not have been going on at Voyager,
+but only for what Mr. Gupta's state of mind was with respect to Mr. Rajaratnam at this particular time"
+(id. at 3100 (emphasis added)). The government's assertions as to the timing of Gupta's animus
+toward Rajaratnam thus did not go unnoticed or unchallenged.
+Second, the testimony that the basis for Gupta's attitude toward Rajaratnam was that
+Rajaratnam had made a concealed withdrawal from Voyager was plainly cumulative.
+
+The
+
+government had introduced the testimony of Kumar that Gupta told him that Gupta had discovered
+that Rajaratnam had withdrawn some of Rajaratnam's capital from Voyager, and that Gupta said that
+this was "just plain wrong" and wanted to sue Rajaratnam (Tr. 1863). In addition, Gupta had
+introduced the deposition testimony of Ajit Jain that Gupta had told him "that he had $10 million
+37
+
+
+[Page 38 of 48]
+
+invested with Raj in some venture and he had been gipped [sic], swindled or cheated by Raj and he
+had lost his entire 10 million that he had invested with Rajaratnam." (Jain Deposition at 6; see
+Tr. 2722-24, 2775.)
+As to the third Oluwanisola factor, "the presence or absence of evidence corroborating
+or contradicting the government's case on the factual question[] at issue," 605 F.3d at 134 (emphasis
+added), which was the timing of Gupta's anger at Rajaratnam, plainly Geetanjali's testimony
+contradicted the government's theory that Gupta was not angry about Rajaratnam's treatment of
+Voyager until early 2009. But there was also evidence corroborating the government's contention that
+Gupta was on friendly terms with Rajaratnam through the fall of 2008. The government introduced
+a voice mail message from Gupta to Rajaratnam on October 10, 2008, well after the September 20
+conversation with Geetanjali, saying "Hey Raj, Rajat here. Just, uh, calling to catch up. I know it
+must be an awful and busy week. I hope you are holding up well. Uh, and I'll, uh, try to give you a
+call over the weekend to just catch up. Uh, all the best to you, talk to you soon. Buh-bye."
+(GX 25-T; see also GX 2128-MCK (a January 2009 email from Gupta to Rajaratnam wishing him a
+"Happy New Year" and "a restful week," forwarding information about a possible Galleon hiree, and
+concluding "Let's catch up soon").)
+Fourth, the record easily establishes that Gupta was able, based on the evidence that
+was introduced, to advance his defense. The explicit testimony of Kumar and Jain that Gupta believed
+Rajaratnam had cheated him, along with documentary evidence that Rajaratnam had in fact withdrawn
+$25 million from Voyager and a tape-recorded conversation in which Rajaratnam stated he had not
+told Gupta about the withdrawal, were highlights of Gupta's summation to the jury, cited by his
+counsel Gary P. Naftalis as among Gupta's "badges of innocence" (Tr. 3266; see id. at 3270).
+38
+
+
+[Page 39 of 48]
+
+[A] second badge of innocence . . . . is Rajaratnam's defrauding of Mr. Gupta
+about the Voyager investment. . . . Remember Mr. Gupta invested $10 million
+in this Voyager investment, and ultimately--and it's kind of undisputed--he lost
+all of his $10 million. . . . We have heard testimony from a variety of sources
+about how Mr. Gupta was very upset about how he was treated with that
+investment, not only losing the money, but the conduct that he came to learn
+about which Rajaratnam engaged in which consisted of not giving him
+information.
+(Id. at 3270 (emphasis added).) Naftalis argued:
+[Kumar's] testimony is supportive of the fact that we were swindled, Mr. Gupta
+was swindled by Mr. Rajaratnam in his Voyager investment. If you remember,
+Mr. Gupta made this investment, put a lot of money, $10 million in Voyager,
+and it turned out that he lost every dime in that investment, every dime. He
+lost $10 million, and we also established, if you recall, that there was a
+schedule . . . .
+. . . . This is what Government Exhibit 2105 shows, unbeknownst to
+Rajat Gupta, behind the back of Rajat Gupta, concealed from Rajat Gupta, that
+Raj Rajaratnam put his hands into the cookie jar and took $25 million out . . . .
+....
+. . . [Y]esterday we put in evidence, an October 2nd tape, wiretap
+conversation that the government captured of Rajaratnam speaking on October
+2nd with one of his colleagues, Mr. Santhanam, and in this conversation
+[Rajaratnam] admitted that he never told Rajat Gupta he had taken the equity
+out.
+(Tr. 3258-59 (emphases added).)
+MR. NAFTALIS: (Continued) Can you stop [the tape] for a second
+there? Go back to "I told him I didn't take the equity out."
+"I didn't tell him, I didn't tell Rajat Gupta that I took the equity out. I
+didn't tell him I took the $25 million out."
+You recall that Mr. Kumar told us . . . in October he had conversations,
+he is one of the many witnesses who testified on this subject about how Rajat
+Gupta was very upset because he had lost his money and indeed came to learn
+that he had been swindled by Mr. Rajaratnam who took the money out,
+concealed it from him.
+39
+
+
+[Page 40 of 48]
+
+(Tr. 3260 (emphases added); see also id. at 3272 ("As we know, because we've just played it a few
+minutes ago, we know that Mr. Rajaratnam had taken $25 million out of the fund and concealed it
+from Mr. Gupta.").) Counsel also cited the deposition of Jain:
+He told us, Mr. Jain, he testified by videotape, that on January 12, 2009, he had
+lunch with Mr. Gupta, and Mr. Gupta told him that he had $10 million invested
+with Rajaratnam, and he had been gypped, swindled and mistreated by Raj and
+lost his entire $10 million.
+(Id. at 3276 (emphasis added).)
+Counsel also emphasized that "we learned that Mr. Gupta . . . was very upset about
+how he had been treated by Mr. Rajaratnam" with respect to Voyager "as early as September 20."
+(Tr. 3271.) He argued that Geetanjali "told you that on the 20th she had [the] conversation with her
+father" in which Gupta showed he was quite upset, and counsel pointed out, inter alia, that "that is a
+date that stuck in [Geetanjali's] mind" because she was "celebrating on September 20, 2008 her 30th
+birthday" and "her mother's birthday . . . was on the 21st of September." (Id.)
+In sum, the evidence "from a variety of sources," as defense counsel said (id. at 3270),
+including an exhibit, a wiretapped conversation, and testimony from three witnesses, was clearly
+sufficient to enable Gupta to present his main defense.
+Finally, the government's circumstantial evidence that Gupta in fact passed confidential
+information to Rajaratnam on September 23 and October 23 was strong. The timing of Gupta's calls
+to Rajaratnam--each placed approximately one minute after Gupta received extraordinary news about
+Goldman Sachs's finances--and the timing and nature of Rajaratnam's large trades in Goldman Sachs
+stock, i.e., purchases within minutes of the first such call in the wake of Gupta's receipt of favorable
+information, and sales a month later within the first possible minute of trading after the call following
+
+40
+
+
+[Page 41 of 48]
+
+Gupta's receipt of unfavorable information, were powerful evidence that Rajaratnam was given the
+confidential information by Gupta. And that evidence was supported by Rajaratnam's statements, in
+the wake of those trades, to Horowitz and Lau.
+We see no basis for a conclusion that, if Geetanjali had been allowed to testify that
+Gupta believed Rajaratnam's actions with respect to Voyager had cheated him--rather than to testify
+(as she was allowed to) that Gupta was quite upset over Rajaratnam's treatment of the Voyager
+investment--that testimony would have had any substantial influence on the jury. If it was error for
+the court to limit Geetanjali's testimony as it did pursuant to Rule 403, we conclude that the error was
+entirely harmless.
+
+2. Evidence To Suggest an Alternative Tipper
+Gupta's "second defense" at trial was to suggest that Rajaratnam had received the
+confidential Goldman Sachs information from a person other than Gupta. (Gupta brief on appeal
+at 53.) The person specified was David Loeb, a Goldman vice president who was "one of the sales
+guys who would call" Rajaratnam "a lot" (Tr. 274-75). Gupta sought to make this showing by
+proffering two taped telephone conversations and several dozen emails between Loeb and Rajaratnam
+(collectively the "documents" or "Loeb documents") that Gupta contended showed that Loeb had
+obtained inside information about technology companies including Intel Corporation and Apple Inc.
+and immediately attempted to reach Rajaratnam to pass that information to him. (See, e.g., id.
+at 2982, 2999.)
+The district court refused to admit the Loeb documents on grounds of hearsay,
+relevance, lack of foundation, and, given the absence of a proper foundation, the likelihood that the
+41
+
+
+[Page 42 of 48]
+
+documents would cause jury confusion. On appeal, Gupta argues that the trial court's exclusion of
+these documents was error because "'the accused may introduce any legal evidence tending to prove
+that another person may have committed the crime with which the defendant is charged'" (Gupta brief
+on appeal at 54 (quoting Holmes v. South Carolina, 547 U.S. 319, 327 (2006))), and that the proffered
+documentation showing "Loeb's history of providing Rajaratnam with inside information was
+sufficient to place an alternative-perpetrator theory before the jury" (Gupta brief on appeal at 53-54).
+Although Gupta's legal premise is sound, we disagree with his contention that his proffer was
+sufficient.
+"Evidence is relevant if . . . it has any tendency to make a fact" that is "of consequence
+in determining the action" "more or less probable than it would be without the evidence." Fed. R.
+Evid. 401. The assessment of the relevance of evidence for the purpose of its admission or exclusion
+is committed to the sound discretion of the district court. See, e.g., George v. Celotex Corp., 914
+F.2d 26, 28 (2d Cir. 1990). The trial court also has considerable discretion in deciding whether an
+adequate foundation has been laid for the introduction of relevant documents. See, e.g., Kirsch v.
+Fleet Street, Ltd., 148 F.3d 149, 166 (2d Cir. 1998). We accord particular deference to the trial court's
+rulings as to foundation and relevance, and we will not overturn those rulings except for abuse of
+discretion. See, e.g., Krieger v. Gold Bond Building Products, 863 F.2d 1091, 1097 (2d Cir. 1988)
+(relevance); LaForest v. Former Clean Air Holding Co., 376 F.3d 48, 58 (2d Cir. 2004) (foundation).
+At trial, in response to the government's contention that the Loeb documents were
+hearsay, Gupta argued that the information in the documents was "not being offered for the truth. It
+is being offered for the fact that Loeb is saying I have information for you urgently or information that
+is important, please give me a call or may I call you." (Tr. 2986.) The government pointed out,
+42
+
+
+[Page 43 of 48]
+
+however, that Gupta was seeking to introduce the documents without calling any witness to provide
+a foundation indicating that the information was in fact confidential. The government argued that to
+the extent that the documents themselves portrayed the information as confidential, they were, in the
+absence of other evidence to show confidentiality, necessarily being offered for the truth of that
+portrayal; otherwise the documents were not relevant to indicate that Rajaratnam received confidential
+information about Goldman finances from Loeb, and their admission could only confuse the jury.
+Likewise, as to documents in which Loeb referred to information characterized as important without
+stating that it was confidential, there was, in the absence of other evidence to establish confidentiality,
+no foundation for a finding that the documents--none of which related to information concerning
+Goldman Sachs--were relevant. (See id. at 2994-95.)
+Although Gupta argued that "[t]here [wa]s substantial evidence that supports the
+argument that Mr. Loeb could well have been the source of the alleged tips[,] if they happened[,]
+relating to Goldman Sachs" (id. at 2998-99), he proffered no evidence to show that Loeb had access
+to the confidential information about Goldman finances that triggered Rajaratnam's trading following
+the September 23 and October 23 calls. To the contrary, there was evidence that Goldman kept its
+"securities division [of] salespeople and traders that interacted with investors" physically and
+technologically separated from its equity capital markets division (id. at 1588-89); the latter division
+was "privy to a lot of confidential information" (id. at 1589) and developed the Buffett investment,
+which was "extremely confidential" because of its potential impact on Goldman's share price (id.
+at 1590; see id. at 1588-95). Loeb was in the securities division, not the equity capital markets
+division. (See id. at 2873-75 ("Loeb was an institutional salesperson," whose job it was to attempt
+to sell securities based on research done by Goldman analysts).) And although there was evidence
+43
+
+
+[Page 44 of 48]
+
+that Loeb was on Rajaratnam's list of 10 important persons (see, e.g., id. at 273-75)--Loeb was in
+charge of Galleon's securities account at Goldman (see id. at 2875)--and that he called Rajaratnam
+"a lot" (id. at 274-75), Eisenberg, Rajaratnam's assistant, testified that the man who called asking
+"urgent[ly]" to speak to Rajaratnam near the close of the market on September 23 (id. at 238-39) was
+not Loeb (see id. at 327).
+The district court concluded that the Loeb documents were replete with inadmissible
+hearsay (see Tr. 3000, 3065); that they "suffer[ed] from," inter alia, a "lack of foundation" (id.
+at 3000); and that in the absence of explanatory testimony by a witness the jury would be unable to
+understand the documents without representations by counsel or speculation, either of which would
+be improper (see id. at 3065). As Gupta insisted on relying solely on the documents themselves,
+choosing not to call a witness or to present other evidence to lay a foundation for his contention that
+the information referred to in the Loeb documents was "inside" information (Gupta brief on appeal
+at 54), we see no error in the trial court's rulings. See generally United States v. Harwood, 998 F.2d
+91, 97 (2d Cir.) (a "statement [that] is irrelevant unless it was true . . . would be hearsay[] and
+inadmissible"), cert. denied, 510 U.S. 971 (1993).
+
+3. Evidence of Proposed Charitable Giving
+During the government's case, a portion of the notes taken by Gupta's financial advisor
+during an April 2008 meeting with Gupta was admitted in evidence to show that Gupta had an
+ownership interest in Galleon International. Pursuant to the rule of completeness, see Fed. R. Evid.
+106, the court allowed Gupta to introduce other parts of those notes concerning other sources of his
+wealth. The court rejected, however, Gupta's attempt to introduce still other portions of the notes that
+44
+
+
+[Page 45 of 48]
+
+read, in part, "want to give to charity while alive" and "? 80% to charity & 20% to extended family?
+perhaps" (GX 5517) (the "wealth distribution notes"). The court ruled that, as offered by Gupta, the
+wealth distribution notes were inadmissible hearsay, that they would be unduly confusing and
+prejudicial, and that their admission was not justified under Rule 106. Gupta challenges this ruling,
+arguing that the portion of the notes that "recorded Gupta's intent to donate most of his wealth to
+charity" (1) "was not hearsay, as it went to Gupta's state of mind," and (2) in any event "should have
+been admitted to ensure a fair and impartial understanding of the admitted portion." (Gupta brief on
+appeal at 50-51.) Neither contention has merit.
+Gupta's first argument is doubly flawed. To the extent that the above text reflected
+statements by Gupta, it was plainly hearsay when offered by Gupta. It did not become nonhearsay
+even if it reflected his state of mind; if it did so reflect, it merely had the potential to fall within an
+exception to the general rule that hearsay evidence is to be excluded. More importantly, as discussed
+in Part II.B.1.a. above, the fact that a hearsay statement falls within an exception does not make the
+statement admissible. It must meet the requirements of, inter alia, relevance, and it must not be
+excludable on the grounds of undue confusion or prejudice under Rule 403. Even if the wealth
+distribution notes--which were surrounded by question marks and followed by the word "perhaps"-reflected Gupta's actual intent to give 80 percent of his wealth to charity, such intentions were
+irrelevant to whether Gupta had achieved (or was about to achieve) some of his wealth unlawfully.
+Nor were the wealth distribution notes admissible under Rule 106 for purposes of
+completeness. That Rule provides: "If a party introduces all or part of a writing or recorded
+statement, an adverse party may require the introduction, at that time, of any other part--or any other
+writing or recorded statement--that in fairness ought to be considered at the same time." Fed. R. Evid.
+45
+
+
+[Page 46 of 48]
+
+106 (emphasis added). "The completeness doctrine does not, however, require the admission of
+portions of a statement that are neither explanatory of nor relevant to the admitted passages." United
+States v. Johnson, 507 F.3d 793, 796 (2d Cir. 2007) (internal quotation marks omitted), cert. denied,
+552 U.S. 1301 (2008). We see no abuse of discretion, see, e.g., id., in the ruling that the wealth
+distribution notes were not necessary for completeness here. The notes as to Gupta's ownership
+interest in Galleon International were relevant to show that Gupta had a financial stake in the
+profitability of Galleon International; that stake was relevant to show that Rajaratnam's advising Lau
+in October 2008, just after learning that Goldman would report a quarterly loss, not to buy shares of
+Goldman was in furtherance of the conspiracy among Rajaratnam, Gupta, and others to profit and
+avoid losses by trading on the basis of inside information. Whatever thought Gupta may have had as
+to how to distribute his wealth was not relevant to whether or not he had a stake in Galleon
+International.
+
+4. Character Evidence
+At trial, Gupta called several character witnesses who testified to their opinions that
+Gupta was an honest person. Gupta also sought to have the witnesses testify to their opinions that he
+had "integrity" (Tr. 2331). The government objected to the giving of opinions on "integrity" to the
+extent that the defense wanted to elicit testimony "that [Gupta] obeys the law." (Id.) The court noted
+that there were several dictionary definitions of integrity (see id. at 2331-32) and asked what, other
+than honesty, Gupta expected the jury to understand by the word "integrity" (id. at 2333). Defense
+counsel responded with the dictionary definition that read "moral soundness, honesty, uprightness."
+(Id.) The court upheld the government's objection, concluding that moral soundness and uprightness
+46
+
+
+[Page 47 of 48]
+
+themselves were unduly ambiguous and would convey concepts not pertinent to the present case. The
+court allowed Gupta's character witnesses to give their opinions only as to Gupta's honesty--the
+relevant aspect of the dictionary definition cited by defense counsel.
+Gupta contends that the district court erred in not allowing him to question witnesses
+about his "integrity," arguing that his honesty was not at issue in the case because he was not charged
+with making any false statement. We reject his contention.
+The trial court has broad discretion in its rulings on the admissibility of character
+testimony, and such decisions "will be reversed only upon a clear showing of prejudicial abuse."
+United States v. Morgan, 554 F.2d 31, 33-34 (2d Cir. 1977). We see no abuse of discretion in the
+court's conclusion that, other than honesty itself, the aspects of the "integrity" definition cited by
+defense counsel were not pertinent to this case.
+Gupta also argues that the district court should have instructed the jury that "character
+testimony may in and of itself raise a reasonable doubt" as to a defendant's guilt of the charges against
+him (Tr. 3039). The district court declined to give such an instruction because it "artificially singles
+out one aspect of the proof and gives it sort of prominence above all others by implication," and noted
+that, although such an instruction is "commonly given," no case law required him to give it. (Id.
+at 3039-40.)
+The district court's understanding of the law of this Circuit was correct. We have held
+that an instruction that character testimony may by itself raise a reasonable doubt is not required.
+See United States v. Pujana-Mena, 949 F.2d 24, 27-28 (2d Cir. 1991) ("Pujana-Mena"). Although
+Gupta asks us to "reconsider" Pujana-Mena, arguing, in part, that it is "contrary" to two Supreme
+Court cases (Gupta brief on appeal at 60-61), we decline to do so. Both of the Supreme Court cases
+47
+
+
+[Page 48 of 48]
+
+cited by Gupta--Edgington v. United States, 164 U.S. 361 (1896), and Michelson v. United States, 335
+U.S. 469 (1948)--preceded Pujana-Mena and were cited in and distinguished by Pujana-Mena, see 949
+F.2d at 28-30. Gupta has cited no intervening change in the law suggesting that Pujana-Mena was
+wrongly decided; and even if this panel had the authority to overturn a prior panel decision in another
+case, we would see no basis for concluding that Pujana-Mena's interpretation of those Supreme Court
+precedents was incorrect.
+
+CONCLUSION
+
+We have considered all of Gupta's arguments on this appeal and have found them to
+be without merit. The judgment of the district court is affirmed.
+
+48
+

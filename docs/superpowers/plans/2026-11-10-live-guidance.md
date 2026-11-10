@@ -1428,7 +1428,7 @@ The development set may be read and fixed against. The sealed set (the Einhorn c
 
 Sources: *US v. Gupta* (2d Cir. 2014), `https://www.govinfo.gov/content/pkg/USCOURTS-ca2-12-04448/pdf/USCOURTS-ca2-12-04448-0.pdf`; FSA final notice, Kyprios, `https://www.fca.org.uk/publication/final-notices/nicholas-kyprios.pdf`; the Justice Department's release on Chu, `https://www.justice.gov/archive/usao/nys/pressreleases/November10/chudonarrestpr.pdf`. The two scanned Justice Department complaints are included only if OCR with `tesseract` gives text whose quoted passages match the page images on a ten-quote spot check; otherwise say so in `fixtures/real/README.md` and leave them out.
 
-- [ ] **Step 1: Write the failing test.**
+- [x] **Step 1: Write the failing test.**
 
 ```ts
 it.each(devCases())("%s: every transcript turn is in the source, word for word", (id) => {
@@ -1442,10 +1442,10 @@ it("no sealed material is in the repository", () => expect(readdirSync("fixtures
 
 `squash` collapses whitespace and normalises curly quotes.
 
-- [ ] **Step 2: Run it and see it fail.** Expected: FAIL, no cases.
-- [ ] **Step 3: Build the five cases.** Fetch each document with the browser tool (not a scripted download: `sec.gov` and `justice.gov` refuse those), extract its text to `source.txt`, and copy the quoted dialogue into `transcript.txt` with the speakers the document names. The company, speakers, roles and dates in the packet come only from the document; a company's fiscal year end may come from its public filings, with the URL in `source.md`. A label is added only where the authority itself says the statement conveyed inside information.
-- [ ] **Step 4: Run the tests.** Run: `pnpm test`. Expected: PASS, including the prompt-leak test, which now reads these transcripts.
-- [ ] **Step 5: Commit.**
+- [x] **Step 2: Run it and see it fail.** Expected: FAIL, no cases.
+- [x] **Step 3: Build the five cases.** Fetch each document with the browser tool (not a scripted download: `sec.gov` and `justice.gov` refuse those), extract its text to `source.txt`, and copy the quoted dialogue into `transcript.txt` with the speakers the document names. The company, speakers, roles and dates in the packet come only from the document; a company's fiscal year end may come from its public filings, with the URL in `source.md`. A label is added only where the authority itself says the statement conveyed inside information.
+- [x] **Step 4: Run the tests.** Run: `pnpm test`. Expected: PASS, including the prompt-leak test, which now reads these transcripts.
+- [x] **Step 5: Commit.**
 
 ```bash
 git add fixtures/real tests/core/real-fixtures.test.ts tests/helpers/prompt-leak.ts

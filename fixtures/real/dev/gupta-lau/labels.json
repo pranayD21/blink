@@ -1,0 +1,19 @@
+{
+  "labels": [
+    {
+      "turn": "T13",
+      "authority_says": "inside_information",
+      "cite": "US v. Gupta, slip op. p. 11 (GX 29-T; 'the confidential negative information he had received the previous day'); p. 21 ('he had nonpublic information that ... Goldman's current quarter would not be profitable', quoting this statement); p. 26 ('statements about his inside information on Goldman Sachs to Lau', quoting this statement)"
+    },
+    {
+      "turn": "T15",
+      "authority_says": "inside_information",
+      "cite": "US v. Gupta, slip op. p. 11 (the confidential information 'they don't report until December'); p. 26 (quoted among 'statements about his inside information on Goldman Sachs to Lau')"
+    },
+    {
+      "turn": "T17",
+      "authority_says": "inside_information",
+      "cite": "US v. Gupta, slip op. p. 12 (GX 29-T); pp. 26-27 (quoted among 'statements about his inside information on Goldman Sachs to Lau'; Goldman's 'yet-to-be-announced \"$2 per share\" losses')"
+    }
+  ]
+}

@@ -1,0 +1,23 @@
+{
+  "title": "Tech Company — Lee and Chu meeting, 4 August 2009",
+  "issuer": "the Tech Company",
+  "ticker": "n/a",
+  "aliases": [
+    "Tech Company"
+  ],
+  "issuer_fiscal": {
+    "fiscal_year_end_month": 12,
+    "fiscal_quarters_note": "The company is not named, so its fiscal calendar is not known; the year end and quarter below are placeholders. It announced quarterly earnings on 20 or 21 July 2009.",
+    "last_reported": {
+      "fy": 2009,
+      "q": 2,
+      "reported_on": "2009-07-21"
+    },
+    "next_report_expected": null
+  },
+  "call_date": "2009-08-04",
+  "research_questions": [
+    "In-person meeting with the Firm's liaison to consultants"
+  ],
+  "analyst_notes": "C.B. Lee worked for a hedge fund that was a client of the Firm. This was an in-person meeting, not a call. Chu's “I’m nervous.” (T2) answers a question from Lee that the release quotes only in fragments, so the question is left out."
+}
