@@ -1054,7 +1054,7 @@ git commit   # feat(release): store the blanked transcript at release and block 
 - [x] **Step 2: Run them and see them fail.**
 - [x] **Step 3: Implement.** The evidence pane shows one line under the title with `data-testid="hidden-status"`: "Hidden from the banker until you decide", "Hidden from the banker", or "Shown to the banker on release". A `live` finding is listed with the policy findings and labelled "Flagged during the call"; its passages show in place of linked quotes.
 - [x] **Step 4: Run the tests.** Run: `pnpm test && pnpm e2e`. Expected: PASS.
-- [ ] **Step 5: Commit.**
+- [x] **Step 5: Commit.**
 
 ```bash
 git add src/server/services/workspace.ts src/lib/format.ts src/components/workspace tests/services/workflow.test.ts tests/e2e/demo.spec.ts
