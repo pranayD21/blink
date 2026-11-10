@@ -71,7 +71,7 @@ export default async function QueuePage() {
         {reviewer && <Figure label="findings awaiting escalation" value={summary.awaitingEscalation === null ? "0" : String(summary.awaitingEscalation)} />}
       </div>
 
-      <div className="overflow-hidden rounded-xl border bg-card">
+      <div className="glass-surface overflow-hidden rounded-lg">
         <Table>
           <TableHeader>
             <TableRow className="hover:bg-transparent">

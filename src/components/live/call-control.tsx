@@ -5,7 +5,6 @@ import { useEffect, useRef, useState } from "react";
 import { StatusDot, type DotTone } from "@/components/app/status-dot";
 import { AgentTrace, type AgentBeat } from "@/components/live/agent-trace";
 import { Button } from "@/components/ui/button";
-import { LiquidButton } from "@/components/ui/liquid-glass-button";
 import type { PillView } from "@/core/live/client";
 import { STAGES, type Stage } from "@/core/live/health";
 import { api, errorMessage } from "@/lib/api";
@@ -173,9 +172,9 @@ export function CallControl({ banker, cases, source }: { banker: string; cases: 
                   Stop
                 </Button>
               ) : (
-                <LiquidButton className="h-8 px-3 text-xs" data-testid={`start-call-${c.id}`} disabled={busy} onClick={() => void start(c.id)}>
+                <Button className="h-8 px-3 text-xs" data-testid={`start-call-${c.id}`} disabled={busy} onClick={() => void start(c.id)}>
                   Start
-                </LiquidButton>
+                </Button>
               )}
             </div>
           ))

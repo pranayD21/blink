@@ -35,7 +35,7 @@ const NAV: Record<string, { href: string; label: string }[]> = {
   ],
 };
 
-const HEADER_CLASS = "sticky top-0 z-40 flex h-12 shrink-0 items-center gap-4 border-b bg-background px-4";
+const HEADER_CLASS = "glass-bar sticky top-0 z-40 flex h-12 shrink-0 items-center gap-4 px-4";
 const BRAND_CLASS = "flex items-center gap-2 font-semibold tracking-tight text-foreground";
 const Mark = () => <span className="grid size-6 place-items-center rounded-md bg-primary text-[13px] font-bold text-primary-foreground">B</span>;
 

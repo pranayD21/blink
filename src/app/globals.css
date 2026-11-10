@@ -162,6 +162,7 @@
 .aurora-field {
   position: absolute;
   inset: -12%;
+  z-index: 0;
   pointer-events: none;
   background-image: repeating-linear-gradient(
     104deg,
@@ -182,25 +183,57 @@
   to { background-position: 100% 60%; }
 }
 
+.aurora-fixed {
+  position: fixed;
+}
+
 .glass-button {
   border: 1px solid color-mix(in srgb, var(--foreground) 16%, transparent);
-  border-radius: 6px;
-  background: color-mix(in srgb, var(--foreground) 5%, transparent);
-  backdrop-filter: blur(10px);
+  background-color: color-mix(in srgb, var(--foreground) 6%, transparent);
+  backdrop-filter: blur(12px);
+  box-shadow:
+    inset 1px 1px 0 color-mix(in srgb, var(--foreground) 18%, transparent),
+    inset -1px -1px 0 color-mix(in srgb, var(--background) 45%, transparent);
+}
+
+.glass-button::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  backdrop-filter: url("#container-glass");
+}
+
+.glass-quiet {
+  background-color: color-mix(in srgb, var(--foreground) 3%, transparent);
+}
+
+.glass-stop {
+  color: var(--destructive);
+  border-color: color-mix(in srgb, var(--destructive) 40%, transparent);
 }
 
 .glass-button:disabled {
   opacity: 0.5;
 }
 
-.glass-button-sheen {
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  box-shadow:
-    inset 1px 1px 0 color-mix(in srgb, var(--foreground) 18%, transparent),
-    inset -1px -1px 0 color-mix(in srgb, var(--background) 40%, transparent);
-  backdrop-filter: url("#container-glass");
+.glass-field {
+  border: 1px solid color-mix(in srgb, var(--foreground) 14%, transparent);
+  background-color: color-mix(in srgb, var(--foreground) 4%, transparent);
+  backdrop-filter: blur(8px);
+}
+
+.glass-bar {
+  background: color-mix(in srgb, var(--background) 72%, transparent);
+  backdrop-filter: blur(18px);
+  border-bottom: 1px solid color-mix(in srgb, var(--foreground) 10%, transparent);
+}
+
+.glass-surface,
+.bg-card {
+  background-color: color-mix(in srgb, var(--card) 74%, transparent);
+  backdrop-filter: blur(16px);
 }
 
 .auth-field {

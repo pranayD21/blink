@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { LiquidButton } from "@/components/ui/liquid-glass-button";
+import { Button } from "@/components/ui/button";
 import { api, errorMessage } from "@/lib/api";
 
 /**
@@ -73,9 +73,9 @@ export function LoginForm({ next }: { next: string }) {
                 {error}
               </p>
             )}
-            <LiquidButton type="submit" className="mt-2 w-full" disabled={busy} data-testid={creating ? "register-submit" : "login-submit"}>
+            <Button type="submit" className="mt-2 h-11 w-full" disabled={busy} data-testid={creating ? "register-submit" : "login-submit"}>
               {busy ? "Working" : creating ? "Create account" : "Sign in"}
-            </LiquidButton>
+            </Button>
           </form>
 
           <p className="mt-6 text-sm text-muted-foreground">
