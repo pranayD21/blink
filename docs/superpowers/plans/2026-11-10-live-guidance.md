@@ -1463,11 +1463,11 @@ git commit   # test(real): add a development set of real recorded calls with the
 
 The three were chosen on 2026-11-10, before any test call was opened: Oaktree (`https://www.sec.gov/Archives/edgar/data/2042513/000119312525055591/d923205dex99p14.htm`), Sage Rock (code of ethics, exhibit 99.(P)(19), filed 2021-07-29), TCW (exhibit 19.1). If one cannot be fetched, use Ardian US, then Bardin Capital, and say so in the report.
 
-- [ ] **Step 1: Fetch the three documents** with the browser tool and save the section on inside information and expert networks, verbatim, as numbered paragraphs.
-- [ ] **Step 2: Write the script.** For each file it calls `createPolicy` and `requestCompile` as the policy owner in a scratch database, drains the jobs, and prints status, attempts, rules and unsupported clauses. It exits 0 when each policy either validates or fails with listed validator issues, and 1 on any error that is not a validator issue.
-- [ ] **Step 3: Record.** Run: `BLINK_LLM_MODE=record pnpm eval:policies`. Expected: three results. Log the spend. A policy that does not validate is reported as it is: do not edit the policy text or the prompts to make it pass.
-- [ ] **Step 4: Check replay and write the report.** Run: `BLINK_LLM_MODE=replay pnpm eval:policies`. Expected: the same output, no network.
-- [ ] **Step 5: Commit.**
+- [x] **Step 1: Fetch the three documents** with the browser tool and save the section on inside information and expert networks, verbatim, as numbered paragraphs.
+- [x] **Step 2: Write the script.** For each file it calls `createPolicy` and `requestCompile` as the policy owner in a scratch database, drains the jobs, and prints status, attempts, rules and unsupported clauses. It exits 0 when each policy either validates or fails with listed validator issues, and 1 on any error that is not a validator issue.
+- [x] **Step 3: Record.** Run: `BLINK_LLM_MODE=record pnpm eval:policies`. Expected: three results. Log the spend. A policy that does not validate is reported as it is: do not edit the policy text or the prompts to make it pass.
+- [x] **Step 4: Check replay and write the report.** Run: `BLINK_LLM_MODE=replay pnpm eval:policies`. Expected: the same output, no network.
+- [x] **Step 5: Commit.**
 
 ```bash
 git add fixtures/real/policies scripts/compile-real-policies.ts src/server/eval/real.ts docs/eval/2026-11-real-policies.md fixtures/llm-recordings package.json

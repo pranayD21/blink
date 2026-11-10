@@ -1,25 +1,25 @@
 {
   "stage": "policy_assembly",
-  "request_hash": "dce775b38c68cc00b85347c1c6f809ab9bf2c45b6a931dd362a8084c592085f6",
+  "request_hash": "0da24f58e3e63ecf59946c2e75af231ca3573bf48d0ebeff3c9860805d2510d6",
   "model": "claude-opus-5-5",
   "prompt_version": "assemble-v2",
-  "recorded_at": "2026-11-10T13:57:33.801Z",
-  "latency_ms": 20476,
+  "recorded_at": "2026-11-10T21:19:02.075Z",
+  "latency_ms": 27417,
   "request": {
     "system": "You assemble one monitor per rule for an expert-call compliance system. A monitor is a small state machine that tracks the evidence status of one rule for one statement. Code runs it; a validator first enumerates every combination of evidence and rejects any monitor that is ambiguous, ignores missing evidence, or does not do what its rule declares.\n\nMonitor states describe evidence status only: UNASSESSED, NEEDS_CONTEXT, REVIEW_REQUIRED, ESCALATION_REQUESTED, NOT_TRIGGERED. There is no \"cleared\", \"approved\", or \"released\" state or effect. Closing review is done by a person in a separate workflow, never by a monitor.\n\nEvents: CLAIM_EVALUATED (the statement was evaluated, possibly several times as the conversation reveals more) and CONTEXT_UPDATED (a reviewer added or corrected context). Each transition names an event and the guard result it applies to: \"true\", \"false\", or \"indeterminate\". guard_ref is always \"rule\": a monitor uses its rule's guard and cannot define another.\n\nEffects a transition may propose: OPEN_REVIEW_TASK, OPEN_CONTEXT_TASK, REQUEST_ESCALATION, CLOSE_CONTEXT_TASK, AUDIT_ONLY.\n\n# Conventions\n\nFor each rule, produce a monitor with monitor_id M1, M2, … matching R1, R2, …, scope \"claim\", initial_state \"UNASSESSED\", and default_event_behavior \"NO_STATE_CHANGE_AND_AUDIT\".\n\nDeclare only the states the monitor uses. Do not use ESCALATION_REQUESTED: escalation is expressed by the REQUEST_ESCALATION effect on a transition into REVIEW_REQUIRED.\n\nTransitions, for BOTH events (each event needs its own transition, since a transition names one event):\n- result \"true\" → to REVIEW_REQUIRED with OPEN_REVIEW_TASK. Add REQUEST_ESCALATION when, and only when, the rule's on_true is \"open_review_and_escalate\". Add CLOSE_CONTEXT_TASK when the monitor has a NEEDS_CONTEXT state.\n- result \"indeterminate\" → if the rule's on_indeterminate is \"open_context_task\": to NEEDS_CONTEXT with OPEN_CONTEXT_TASK. If it is \"open_review\": to REVIEW_REQUIRED with OPEN_REVIEW_TASK (such a monitor has no NEEDS_CONTEXT state).\n- result \"false\" → to NOT_TRIGGERED, with CLOSE_CONTEXT_TASK when the monitor has a NEEDS_CONTEXT state, otherwise AUDIT_ONLY.\n\nEach of these transitions lists in \"from\" every declared state EXCEPT REVIEW_REQUIRED. That includes NOT_TRIGGERED and NEEDS_CONTEXT themselves: NOT_TRIGGERED is not a clearance, and later evidence must be able to move the monitor out of it. No transition may start from REVIEW_REQUIRED: once review is required, only a person can close it, and an event the monitor does not handle leaves the state unchanged and is audited.\n\nNo two transitions may match the same (state, event, result) at the same priority. Use priority 1 throughout unless you need to break a tie. Give transitions ids like M1-T1, M1-T2, ….",
-    "user": "<rules>\n{\n  \"rule_id\": \"R1\",\n  \"intent\": \"Covered issuer operating results attributed to internal company sources\",\n  \"guard_in_english\": \"the statement is about the covered issuer AND the statement gives an operating figure for one company AND the expert credits an internal company source\",\n  \"predicates\": [\n    \"about_covered_issuer\",\n    \"company_specific_operating_metric\",\n    \"internal_source_claimed\"\n  ],\n  \"on_true\": \"open_review\",\n  \"on_indeterminate\": \"open_context_task\",\n  \"severity\": \"high\"\n}\n{\n  \"rule_id\": \"R2\",\n  \"intent\": \"Unannounced corporate event at covered issuer flagged by expert as confidential or not yet announced\",\n  \"guard_in_english\": \"the statement is about the covered issuer AND the statement describes an unannounced corporate event AND the expert marks the information as secret or unreleased\",\n  \"predicates\": [\n    \"about_covered_issuer\",\n    \"nonpublic_corporate_event\",\n    \"confidentiality_signal_present\"\n  ],\n  \"on_true\": \"open_review\",\n  \"on_indeterminate\": \"open_review\",\n  \"severity\": \"high\"\n}\n{\n  \"rule_id\": \"R3\",\n  \"intent\": \"Recent issuer employee discussing that issuer's current-period operating results without verified public source\",\n  \"guard_in_english\": \"the expert has worked at the covered issuer in the past 12 months AND the statement is about the covered issuer AND the statement covers a period the issuer has not yet reported AND the statement gives an operating figure for one company AND NOT (the information matches a verified public source)\",\n  \"predicates\": [\n    \"expert_recent_issuer_employee(months=12)\",\n    \"about_covered_issuer\",\n    \"current_or_unreported_period\",\n    \"company_specific_operating_metric\",\n    \"public_match_verified\"\n  ],\n  \"on_true\": \"open_review\",\n  \"on_indeterminate\": \"open_context_task\",\n  \"severity\": \"high\"\n}\n</rules>\n\nAssemble one monitor per rule.",
+    "user": "<rules>\n{\n  \"rule_id\": \"R1\",\n  \"intent\": \"Expert gives a company-specific operating result for the covered issuer's current or unreported period that is not found in public sources (possible MNPI received from an Expert)\",\n  \"guard_in_english\": \"the statement is about the covered issuer AND the statement gives an operating figure for one company AND the statement covers a period the issuer has not yet reported AND NOT (the information matches a verified public source)\",\n  \"predicates\": [\n    \"about_covered_issuer\",\n    \"company_specific_operating_metric\",\n    \"current_or_unreported_period\",\n    \"public_match_verified\"\n  ],\n  \"on_true\": \"open_review\",\n  \"on_indeterminate\": \"open_review\",\n  \"severity\": \"high\"\n}\n{\n  \"rule_id\": \"R2\",\n  \"intent\": \"Expert describes a non-public corporate event at the covered issuer (transaction, litigation, regulatory action, contract or leadership change) not found in public sources\",\n  \"guard_in_english\": \"the statement is about the covered issuer AND the statement describes an unannounced corporate event AND NOT (the information matches a verified public source)\",\n  \"predicates\": [\n    \"about_covered_issuer\",\n    \"nonpublic_corporate_event\",\n    \"public_match_verified\"\n  ],\n  \"on_true\": \"open_review\",\n  \"on_indeterminate\": \"open_review\",\n  \"severity\": \"high\"\n}\n{\n  \"rule_id\": \"R3\",\n  \"intent\": \"Expert's profile shows current employment at, or employment within the prior six months by, the covered (target) issuer\",\n  \"guard_in_english\": \"the expert has worked at the covered issuer in the past 6 months\",\n  \"predicates\": [\n    \"expert_recent_issuer_employee(months=6)\"\n  ],\n  \"on_true\": \"open_review\",\n  \"on_indeterminate\": \"open_review\",\n  \"severity\": \"medium\"\n}\n{\n  \"rule_id\": \"R4\",\n  \"intent\": \"Expert says non-public information about the covered issuer came from inside the company or from a former employer after leaving (possible breach of duty source)\",\n  \"guard_in_english\": \"the statement is about the covered issuer AND (the expert credits an internal company source OR the expert accessed the information after their employment ended) AND NOT (the information matches a verified public source)\",\n  \"predicates\": [\n    \"about_covered_issuer\",\n    \"internal_source_claimed\",\n    \"post_employment_access\",\n    \"public_match_verified\"\n  ],\n  \"on_true\": \"open_review\",\n  \"on_indeterminate\": \"open_review\",\n  \"severity\": \"high\"\n}\n{\n  \"rule_id\": \"R5\",\n  \"intent\": \"Expert marks information about the covered issuer as confidential or not public, and it is not found in public sources\",\n  \"guard_in_english\": \"the statement is about the covered issuer AND the expert marks the information as secret or unreleased AND NOT (the information matches a verified public source)\",\n  \"predicates\": [\n    \"about_covered_issuer\",\n    \"confidentiality_signal_present\",\n    \"public_match_verified\"\n  ],\n  \"on_true\": \"open_review\",\n  \"on_indeterminate\": \"open_review\",\n  \"severity\": \"high\"\n}\n</rules>\n\nAssemble one monitor per rule.",
     "effort": "high",
-    "max_tokens": 24000
+    "max_tokens": 32000
   },
   "response": {
-    "id": "msg_011CguN5gLE1a8xwZm7FHeBK",
+    "id": "msg_011CguwjjugFxCmtkisSBYkz",
     "model": "claude-opus-5-5",
     "stop_reason": "end_turn",
     "usage": {
-      "input_tokens": 677,
-      "output_tokens": 2997,
-      "cache_read_input_tokens": 0,
-      "cache_creation_input_tokens": 2237
+      "input_tokens": 1068,
+      "output_tokens": 4133,
+      "cache_read_input_tokens": 2237,
+      "cache_creation_input_tokens": 0
     },
     "parsed_output": {
       "monitors": [
@@ -30,7 +30,6 @@
           "initial_state": "UNASSESSED",
           "states": [
             "UNASSESSED",
-            "NEEDS_CONTEXT",
             "REVIEW_REQUIRED",
             "NOT_TRIGGERED"
           ],
@@ -39,7 +38,6 @@
               "id": "M1-T1",
               "from": [
                 "UNASSESSED",
-                "NEEDS_CONTEXT",
                 "NOT_TRIGGERED"
               ],
               "event": "CLAIM_EVALUATED",
@@ -47,8 +45,7 @@
               "result_is": "true",
               "to": "REVIEW_REQUIRED",
               "effects": [
-                "OPEN_REVIEW_TASK",
-                "CLOSE_CONTEXT_TASK"
+                "OPEN_REVIEW_TASK"
               ],
               "priority": 1
             },
@@ -56,15 +53,14 @@
               "id": "M1-T2",
               "from": [
                 "UNASSESSED",
-                "NEEDS_CONTEXT",
                 "NOT_TRIGGERED"
               ],
               "event": "CLAIM_EVALUATED",
               "guard_ref": "rule",
               "result_is": "indeterminate",
-              "to": "NEEDS_CONTEXT",
+              "to": "REVIEW_REQUIRED",
               "effects": [
-                "OPEN_CONTEXT_TASK"
+                "OPEN_REVIEW_TASK"
               ],
               "priority": 1
             },
@@ -72,7 +68,6 @@
               "id": "M1-T3",
               "from": [
                 "UNASSESSED",
-                "NEEDS_CONTEXT",
                 "NOT_TRIGGERED"
               ],
               "event": "CLAIM_EVALUATED",
@@ -80,7 +75,7 @@
               "result_is": "false",
               "to": "NOT_TRIGGERED",
               "effects": [
-                "CLOSE_CONTEXT_TASK"
+                "AUDIT_ONLY"
               ],
               "priority": 1
             },
@@ -88,7 +83,6 @@
               "id": "M1-T4",
               "from": [
                 "UNASSESSED",
-                "NEEDS_CONTEXT",
                 "NOT_TRIGGERED"
               ],
               "event": "CONTEXT_UPDATED",
@@ -96,8 +90,7 @@
               "result_is": "true",
               "to": "REVIEW_REQUIRED",
               "effects": [
-                "OPEN_REVIEW_TASK",
-                "CLOSE_CONTEXT_TASK"
+                "OPEN_REVIEW_TASK"
               ],
               "priority": 1
             },
@@ -105,15 +98,14 @@
               "id": "M1-T5",
               "from": [
                 "UNASSESSED",
-                "NEEDS_CONTEXT",
                 "NOT_TRIGGERED"
               ],
               "event": "CONTEXT_UPDATED",
               "guard_ref": "rule",
               "result_is": "indeterminate",
-              "to": "NEEDS_CONTEXT",
+              "to": "REVIEW_REQUIRED",
               "effects": [
-                "OPEN_CONTEXT_TASK"
+                "OPEN_REVIEW_TASK"
               ],
               "priority": 1
             },
@@ -121,7 +113,6 @@
               "id": "M1-T6",
               "from": [
                 "UNASSESSED",
-                "NEEDS_CONTEXT",
                 "NOT_TRIGGERED"
               ],
               "event": "CONTEXT_UPDATED",
@@ -129,7 +120,7 @@
               "result_is": "false",
               "to": "NOT_TRIGGERED",
               "effects": [
-                "CLOSE_CONTEXT_TASK"
+                "AUDIT_ONLY"
               ],
               "priority": 1
             }
@@ -247,7 +238,6 @@
           "initial_state": "UNASSESSED",
           "states": [
             "UNASSESSED",
-            "NEEDS_CONTEXT",
             "REVIEW_REQUIRED",
             "NOT_TRIGGERED"
           ],
@@ -256,7 +246,6 @@
               "id": "M3-T1",
               "from": [
                 "UNASSESSED",
-                "NEEDS_CONTEXT",
                 "NOT_TRIGGERED"
               ],
               "event": "CLAIM_EVALUATED",
@@ -264,8 +253,7 @@
               "result_is": "true",
               "to": "REVIEW_REQUIRED",
               "effects": [
-                "OPEN_REVIEW_TASK",
-                "CLOSE_CONTEXT_TASK"
+                "OPEN_REVIEW_TASK"
               ],
               "priority": 1
             },
@@ -273,15 +261,14 @@
               "id": "M3-T2",
               "from": [
                 "UNASSESSED",
-                "NEEDS_CONTEXT",
                 "NOT_TRIGGERED"
               ],
               "event": "CLAIM_EVALUATED",
               "guard_ref": "rule",
               "result_is": "indeterminate",
-              "to": "NEEDS_CONTEXT",
+              "to": "REVIEW_REQUIRED",
               "effects": [
-                "OPEN_CONTEXT_TASK"
+                "OPEN_REVIEW_TASK"
               ],
               "priority": 1
             },
@@ -289,7 +276,6 @@
               "id": "M3-T3",
               "from": [
                 "UNASSESSED",
-                "NEEDS_CONTEXT",
                 "NOT_TRIGGERED"
               ],
               "event": "CLAIM_EVALUATED",
@@ -297,7 +283,7 @@
               "result_is": "false",
               "to": "NOT_TRIGGERED",
               "effects": [
-                "CLOSE_CONTEXT_TASK"
+                "AUDIT_ONLY"
               ],
               "priority": 1
             },
@@ -305,7 +291,6 @@
               "id": "M3-T4",
               "from": [
                 "UNASSESSED",
-                "NEEDS_CONTEXT",
                 "NOT_TRIGGERED"
               ],
               "event": "CONTEXT_UPDATED",
@@ -313,8 +298,7 @@
               "result_is": "true",
               "to": "REVIEW_REQUIRED",
               "effects": [
-                "OPEN_REVIEW_TASK",
-                "CLOSE_CONTEXT_TASK"
+                "OPEN_REVIEW_TASK"
               ],
               "priority": 1
             },
@@ -322,15 +306,14 @@
               "id": "M3-T5",
               "from": [
                 "UNASSESSED",
-                "NEEDS_CONTEXT",
                 "NOT_TRIGGERED"
               ],
               "event": "CONTEXT_UPDATED",
               "guard_ref": "rule",
               "result_is": "indeterminate",
-              "to": "NEEDS_CONTEXT",
+              "to": "REVIEW_REQUIRED",
               "effects": [
-                "OPEN_CONTEXT_TASK"
+                "OPEN_REVIEW_TASK"
               ],
               "priority": 1
             },
@@ -338,7 +321,6 @@
               "id": "M3-T6",
               "from": [
                 "UNASSESSED",
-                "NEEDS_CONTEXT",
                 "NOT_TRIGGERED"
               ],
               "event": "CONTEXT_UPDATED",
@@ -346,7 +328,215 @@
               "result_is": "false",
               "to": "NOT_TRIGGERED",
               "effects": [
-                "CLOSE_CONTEXT_TASK"
+                "AUDIT_ONLY"
+              ],
+              "priority": 1
+            }
+          ],
+          "default_event_behavior": "NO_STATE_CHANGE_AND_AUDIT"
+        },
+        {
+          "monitor_id": "M4",
+          "rule_id": "R4",
+          "scope": "claim",
+          "initial_state": "UNASSESSED",
+          "states": [
+            "UNASSESSED",
+            "REVIEW_REQUIRED",
+            "NOT_TRIGGERED"
+          ],
+          "transitions": [
+            {
+              "id": "M4-T1",
+              "from": [
+                "UNASSESSED",
+                "NOT_TRIGGERED"
+              ],
+              "event": "CLAIM_EVALUATED",
+              "guard_ref": "rule",
+              "result_is": "true",
+              "to": "REVIEW_REQUIRED",
+              "effects": [
+                "OPEN_REVIEW_TASK"
+              ],
+              "priority": 1
+            },
+            {
+              "id": "M4-T2",
+              "from": [
+                "UNASSESSED",
+                "NOT_TRIGGERED"
+              ],
+              "event": "CLAIM_EVALUATED",
+              "guard_ref": "rule",
+              "result_is": "indeterminate",
+              "to": "REVIEW_REQUIRED",
+              "effects": [
+                "OPEN_REVIEW_TASK"
+              ],
+              "priority": 1
+            },
+            {
+              "id": "M4-T3",
+              "from": [
+                "UNASSESSED",
+                "NOT_TRIGGERED"
+              ],
+              "event": "CLAIM_EVALUATED",
+              "guard_ref": "rule",
+              "result_is": "false",
+              "to": "NOT_TRIGGERED",
+              "effects": [
+                "AUDIT_ONLY"
+              ],
+              "priority": 1
+            },
+            {
+              "id": "M4-T4",
+              "from": [
+                "UNASSESSED",
+                "NOT_TRIGGERED"
+              ],
+              "event": "CONTEXT_UPDATED",
+              "guard_ref": "rule",
+              "result_is": "true",
+              "to": "REVIEW_REQUIRED",
+              "effects": [
+                "OPEN_REVIEW_TASK"
+              ],
+              "priority": 1
+            },
+            {
+              "id": "M4-T5",
+              "from": [
+                "UNASSESSED",
+                "NOT_TRIGGERED"
+              ],
+              "event": "CONTEXT_UPDATED",
+              "guard_ref": "rule",
+              "result_is": "indeterminate",
+              "to": "REVIEW_REQUIRED",
+              "effects": [
+                "OPEN_REVIEW_TASK"
+              ],
+              "priority": 1
+            },
+            {
+              "id": "M4-T6",
+              "from": [
+                "UNASSESSED",
+                "NOT_TRIGGERED"
+              ],
+              "event": "CONTEXT_UPDATED",
+              "guard_ref": "rule",
+              "result_is": "false",
+              "to": "NOT_TRIGGERED",
+              "effects": [
+                "AUDIT_ONLY"
+              ],
+              "priority": 1
+            }
+          ],
+          "default_event_behavior": "NO_STATE_CHANGE_AND_AUDIT"
+        },
+        {
+          "monitor_id": "M5",
+          "rule_id": "R5",
+          "scope": "claim",
+          "initial_state": "UNASSESSED",
+          "states": [
+            "UNASSESSED",
+            "REVIEW_REQUIRED",
+            "NOT_TRIGGERED"
+          ],
+          "transitions": [
+            {
+              "id": "M5-T1",
+              "from": [
+                "UNASSESSED",
+                "NOT_TRIGGERED"
+              ],
+              "event": "CLAIM_EVALUATED",
+              "guard_ref": "rule",
+              "result_is": "true",
+              "to": "REVIEW_REQUIRED",
+              "effects": [
+                "OPEN_REVIEW_TASK"
+              ],
+              "priority": 1
+            },
+            {
+              "id": "M5-T2",
+              "from": [
+                "UNASSESSED",
+                "NOT_TRIGGERED"
+              ],
+              "event": "CLAIM_EVALUATED",
+              "guard_ref": "rule",
+              "result_is": "indeterminate",
+              "to": "REVIEW_REQUIRED",
+              "effects": [
+                "OPEN_REVIEW_TASK"
+              ],
+              "priority": 1
+            },
+            {
+              "id": "M5-T3",
+              "from": [
+                "UNASSESSED",
+                "NOT_TRIGGERED"
+              ],
+              "event": "CLAIM_EVALUATED",
+              "guard_ref": "rule",
+              "result_is": "false",
+              "to": "NOT_TRIGGERED",
+              "effects": [
+                "AUDIT_ONLY"
+              ],
+              "priority": 1
+            },
+            {
+              "id": "M5-T4",
+              "from": [
+                "UNASSESSED",
+                "NOT_TRIGGERED"
+              ],
+              "event": "CONTEXT_UPDATED",
+              "guard_ref": "rule",
+              "result_is": "true",
+              "to": "REVIEW_REQUIRED",
+              "effects": [
+                "OPEN_REVIEW_TASK"
+              ],
+              "priority": 1
+            },
+            {
+              "id": "M5-T5",
+              "from": [
+                "UNASSESSED",
+                "NOT_TRIGGERED"
+              ],
+              "event": "CONTEXT_UPDATED",
+              "guard_ref": "rule",
+              "result_is": "indeterminate",
+              "to": "REVIEW_REQUIRED",
+              "effects": [
+                "OPEN_REVIEW_TASK"
+              ],
+              "priority": 1
+            },
+            {
+              "id": "M5-T6",
+              "from": [
+                "UNASSESSED",
+                "NOT_TRIGGERED"
+              ],
+              "event": "CONTEXT_UPDATED",
+              "guard_ref": "rule",
+              "result_is": "false",
+              "to": "NOT_TRIGGERED",
+              "effects": [
+                "AUDIT_ONLY"
               ],
               "priority": 1
             }

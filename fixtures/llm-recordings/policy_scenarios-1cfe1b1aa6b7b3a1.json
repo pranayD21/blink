@@ -1,47 +1,47 @@
 {
   "stage": "policy_scenarios",
-  "request_hash": "5ad038061554daa47ef8010473a7f71ae7e8f308f76cd0d9b76a78b17db40b81",
+  "request_hash": "1cfe1b1aa6b7b3a1154d9333c1ad9152e147aef1eec6540a87dabdbd2f068024",
   "model": "claude-opus-5-5",
   "prompt_version": "scenarios-v2",
-  "recorded_at": "2026-11-10T13:59:12.177Z",
-  "latency_ms": 51742,
+  "recorded_at": "2026-11-10T21:06:45.212Z",
+  "latency_ms": 59852,
   "request": {
     "system": "You write adversarial test scenarios for compliance monitors. Each rule below has a monitor: a small state machine, assembled by another model, that tracks the evidence status of that rule for one statement an expert made on a call. You are NOT shown the monitors. You are given the rules and what a correct monitor must do, and you write scenarios stating what should happen. Code then runs each scenario through the real monitor, and any disagreement is shown to the policy owner to inspect. A separate set of scenarios written by a human reviewer is the actual acceptance gate; yours are an independent second opinion.\n\nHow evaluation works: each predicate is supported, refuted, unknown, or conflict. Under three-valued logic, \"and\" is false if any branch is false, true if all are true, otherwise indeterminate; \"or\" is true if any branch is true, false if all are false, otherwise indeterminate; \"not\" swaps true and false. Unknown and conflict both make a predicate indeterminate.\n\nWhat a correct monitor does. It starts in UNASSESSED and reacts to two events, CLAIM_EVALUATED and CONTEXT_UPDATED, in the same way:\n- guard true → state REVIEW_REQUIRED, proposing OPEN_REVIEW_TASK, plus REQUEST_ESCALATION when the rule's on_true is \"open_review_and_escalate\".\n- guard indeterminate → if the rule's on_indeterminate is \"open_context_task\": state NEEDS_CONTEXT, proposing OPEN_CONTEXT_TASK; if it is \"open_review\": state REVIEW_REQUIRED, proposing OPEN_REVIEW_TASK.\n- guard false → state NOT_TRIGGERED. This is not a clearance: a later event can move the monitor to NEEDS_CONTEXT or REVIEW_REQUIRED.\n- Once in REVIEW_REQUIRED the monitor never leaves it, whatever later events say: only a person closes review. An event it does not handle leaves the state unchanged and proposes AUDIT_ONLY.\n\nFor each rule write 5 to 8 scenarios aimed at where an assembled monitor is most likely to be wrong:\n- one predicate unknown while another is refuted (the guard is false, not indeterminate);\n- a conflict on a single predicate;\n- context arriving later that flips the result (a second step with CONTEXT_UPDATED);\n- a later evaluation that turns false after review was already required;\n- an exception inside the guard (a not(...) branch) that should prevent the rule from firing;\n- a monitor that was not triggered and then becomes triggered.\n\nEach scenario has: a name; the rule_id; a one-sentence rationale; one to three steps, each with an event and an assignment giving a state to EVERY predicate key listed for the rule (use the keys exactly as written); the final monitor state you expect; and the effects you expect the final step to propose, listing only the ones that matter to the scenario. Effects are drawn from OPEN_REVIEW_TASK, OPEN_CONTEXT_TASK, REQUEST_ESCALATION, CLOSE_CONTEXT_TASK, AUDIT_ONLY.",
-    "user": "<rules>\n{\n  \"rule_id\": \"R1\",\n  \"intent\": \"Covered-issuer operating results attributed to internal systems, documents, or current employees\",\n  \"guard_in_english\": \"the statement is about the covered issuer AND the statement gives an operating figure for one company AND the expert credits an internal company source\",\n  \"predicate_keys\": [\n    \"about_covered_issuer\",\n    \"company_specific_operating_metric\",\n    \"internal_source_claimed\"\n  ],\n  \"on_true\": \"open_review\",\n  \"on_indeterminate\": \"open_context_task\"\n}\n{\n  \"rule_id\": \"R2\",\n  \"intent\": \"Expert accessed a former employer's internal systems or documents after leaving\",\n  \"guard_in_english\": \"the expert accessed the information after their employment ended AND the expert credits an internal company source\",\n  \"predicate_keys\": [\n    \"post_employment_access\",\n    \"internal_source_claimed\"\n  ],\n  \"on_true\": \"open_review_and_escalate\",\n  \"on_indeterminate\": \"open_context_task\"\n}\n{\n  \"rule_id\": \"R3\",\n  \"intent\": \"Unannounced corporate event at a covered issuer flagged by the expert as confidential or not yet announced\",\n  \"guard_in_english\": \"the statement is about the covered issuer AND the statement describes an unannounced corporate event AND the expert marks the information as secret or unreleased\",\n  \"predicate_keys\": [\n    \"about_covered_issuer\",\n    \"nonpublic_corporate_event\",\n    \"confidentiality_signal_present\"\n  ],\n  \"on_true\": \"open_review\",\n  \"on_indeterminate\": \"open_review\"\n}\n{\n  \"rule_id\": \"R4\",\n  \"intent\": \"Recent issuer employee discussing that issuer's current-period operating results not verified as public\",\n  \"guard_in_english\": \"the expert has worked at the covered issuer in the past 12 months AND the statement is about the covered issuer AND the statement gives an operating figure for one company AND the statement covers a period the issuer has not yet reported AND NOT (the information matches a verified public source)\",\n  \"predicate_keys\": [\n    \"expert_recent_issuer_employee(months=12)\",\n    \"about_covered_issuer\",\n    \"company_specific_operating_metric\",\n    \"current_or_unreported_period\",\n    \"public_match_verified\"\n  ],\n  \"on_true\": \"open_review\",\n  \"on_indeterminate\": \"open_context_task\"\n}\n</rules>\n\nWrite the scenarios.",
+    "user": "<rules>\n{\n  \"rule_id\": \"R1\",\n  \"intent\": \"Covered issuer operating results attributed to internal company sources\",\n  \"guard_in_english\": \"the statement is about the covered issuer AND the statement gives an operating figure for one company AND the expert credits an internal company source\",\n  \"predicate_keys\": [\n    \"about_covered_issuer\",\n    \"company_specific_operating_metric\",\n    \"internal_source_claimed\"\n  ],\n  \"on_true\": \"open_review\",\n  \"on_indeterminate\": \"open_context_task\"\n}\n{\n  \"rule_id\": \"R2\",\n  \"intent\": \"Expert accessed former employer's systems or documents after leaving\",\n  \"guard_in_english\": \"the expert accessed the information after their employment ended\",\n  \"predicate_keys\": [\n    \"post_employment_access\"\n  ],\n  \"on_true\": \"open_review_and_escalate\",\n  \"on_indeterminate\": \"open_context_task\"\n}\n{\n  \"rule_id\": \"R3\",\n  \"intent\": \"Unannounced corporate event at covered issuer flagged by expert as confidential\",\n  \"guard_in_english\": \"the statement is about the covered issuer AND the statement describes an unannounced corporate event AND the expert marks the information as secret or unreleased\",\n  \"predicate_keys\": [\n    \"about_covered_issuer\",\n    \"nonpublic_corporate_event\",\n    \"confidentiality_signal_present\"\n  ],\n  \"on_true\": \"open_review\",\n  \"on_indeterminate\": \"open_review\"\n}\n{\n  \"rule_id\": \"R4\",\n  \"intent\": \"Recent issuer employee discussing issuer's current-period operating results not verified as public\",\n  \"guard_in_english\": \"the expert has worked at the covered issuer in the past 12 months AND the statement is about the covered issuer AND the statement gives an operating figure for one company AND the statement covers a period the issuer has not yet reported AND NOT (the information matches a verified public source)\",\n  \"predicate_keys\": [\n    \"expert_recent_issuer_employee(months=12)\",\n    \"about_covered_issuer\",\n    \"company_specific_operating_metric\",\n    \"current_or_unreported_period\",\n    \"public_match_verified\"\n  ],\n  \"on_true\": \"open_review\",\n  \"on_indeterminate\": \"open_context_task\"\n}\n</rules>\n\nWrite the scenarios.",
     "effort": "medium",
-    "max_tokens": 24000
+    "max_tokens": 32000
   },
   "response": {
-    "id": "msg_011CguNAdHJJP5WZCvEHfRiG",
+    "id": "msg_011Cguvm2HanPqHiNMiz5q36",
     "model": "claude-opus-5-5",
     "stop_reason": "end_turn",
     "usage": {
-      "input_tokens": 822,
-      "output_tokens": 7450,
+      "input_tokens": 778,
+      "output_tokens": 8546,
       "cache_read_input_tokens": 0,
       "cache_creation_input_tokens": 1795
     },
     "parsed_output": {
       "scenarios": [
         {
-          "name": "R1 unknown plus refuted is false",
+          "name": "R1 unknown plus refuted yields false",
           "rule_id": "R1",
-          "rationale": "A refuted conjunct makes the AND false even though another conjunct is unknown, so no context task should open.",
+          "rationale": "A refuted conjunct makes the AND false even when another conjunct is unknown, so no context task should open.",
           "steps": [
             {
               "event": "CLAIM_EVALUATED",
               "assignment": [
                 {
                   "predicate": "about_covered_issuer",
-                  "state": "unknown"
+                  "state": "supported"
                 },
                 {
                   "predicate": "company_specific_operating_metric",
-                  "state": "refuted"
+                  "state": "unknown"
                 },
                 {
                   "predicate": "internal_source_claimed",
-                  "state": "supported"
+                  "state": "refuted"
                 }
               ]
             }
@@ -50,37 +50,9 @@
           "expect_effects": []
         },
         {
-          "name": "R1 single conflict is indeterminate",
+          "name": "R1 all supported opens review",
           "rule_id": "R1",
-          "rationale": "A conflict on one predicate with the others supported makes the guard indeterminate, which should open a context task.",
-          "steps": [
-            {
-              "event": "CLAIM_EVALUATED",
-              "assignment": [
-                {
-                  "predicate": "about_covered_issuer",
-                  "state": "supported"
-                },
-                {
-                  "predicate": "company_specific_operating_metric",
-                  "state": "supported"
-                },
-                {
-                  "predicate": "internal_source_claimed",
-                  "state": "conflict"
-                }
-              ]
-            }
-          ],
-          "expect_final_state": "NEEDS_CONTEXT",
-          "expect_effects": [
-            "OPEN_CONTEXT_TASK"
-          ]
-        },
-        {
-          "name": "R1 all supported opens review without escalation",
-          "rule_id": "R1",
-          "rationale": "When every conjunct is true, R1 should open a review task and should not escalate, because on_true is open_review.",
+          "rationale": "All conjuncts true fires the rule with open_review and no escalation.",
           "steps": [
             {
               "event": "CLAIM_EVALUATED",
@@ -106,16 +78,16 @@
           ]
         },
         {
-          "name": "R1 context resolves unknown to true",
+          "name": "R1 conflict on internal source needs context",
           "rule_id": "R1",
-          "rationale": "Later context that turns an unknown predicate into supported should move the monitor from NEEDS_CONTEXT to REVIEW_REQUIRED.",
+          "rationale": "A conflict on one predicate with the others true makes the guard indeterminate, so the monitor should open a context task.",
           "steps": [
             {
               "event": "CLAIM_EVALUATED",
               "assignment": [
                 {
                   "predicate": "about_covered_issuer",
-                  "state": "unknown"
+                  "state": "supported"
                 },
                 {
                   "predicate": "company_specific_operating_metric",
@@ -123,7 +95,35 @@
                 },
                 {
                   "predicate": "internal_source_claimed",
+                  "state": "conflict"
+                }
+              ]
+            }
+          ],
+          "expect_final_state": "NEEDS_CONTEXT",
+          "expect_effects": [
+            "OPEN_CONTEXT_TASK"
+          ]
+        },
+        {
+          "name": "R1 context resolves unknown to review",
+          "rule_id": "R1",
+          "rationale": "Later context that resolves an unknown predicate to supported should move the monitor from NEEDS_CONTEXT to REVIEW_REQUIRED.",
+          "steps": [
+            {
+              "event": "CLAIM_EVALUATED",
+              "assignment": [
+                {
+                  "predicate": "about_covered_issuer",
                   "state": "supported"
+                },
+                {
+                  "predicate": "company_specific_operating_metric",
+                  "state": "supported"
+                },
+                {
+                  "predicate": "internal_source_claimed",
+                  "state": "unknown"
                 }
               ]
             },
@@ -151,9 +151,9 @@
           ]
         },
         {
-          "name": "R1 review is sticky after false",
+          "name": "R1 review sticky after later refutation",
           "rule_id": "R1",
-          "rationale": "Once review is required, a later evaluation where the guard is false must not move the monitor out of REVIEW_REQUIRED.",
+          "rationale": "Once review is required, a later false evaluation must not move the monitor out of REVIEW_REQUIRED.",
           "steps": [
             {
               "event": "CLAIM_EVALUATED",
@@ -177,11 +177,11 @@
               "assignment": [
                 {
                   "predicate": "about_covered_issuer",
-                  "state": "refuted"
+                  "state": "supported"
                 },
                 {
                   "predicate": "company_specific_operating_metric",
-                  "state": "refuted"
+                  "state": "supported"
                 },
                 {
                   "predicate": "internal_source_claimed",
@@ -194,9 +194,9 @@
           "expect_effects": []
         },
         {
-          "name": "R1 not triggered then triggered",
+          "name": "R1 not triggered then triggered by context",
           "rule_id": "R1",
-          "rationale": "NOT_TRIGGERED is not a clearance, so later context that makes the guard true should require review.",
+          "rationale": "NOT_TRIGGERED is not a clearance, so later context making the guard true must open review.",
           "steps": [
             {
               "event": "CLAIM_EVALUATED",
@@ -241,7 +241,7 @@
         {
           "name": "R1 not triggered then indeterminate",
           "rule_id": "R1",
-          "rationale": "A later conflict should move a not-triggered monitor to NEEDS_CONTEXT.",
+          "rationale": "A guard that was false and later becomes indeterminate should move the monitor to NEEDS_CONTEXT.",
           "steps": [
             {
               "event": "CLAIM_EVALUATED",
@@ -265,7 +265,7 @@
               "assignment": [
                 {
                   "predicate": "about_covered_issuer",
-                  "state": "conflict"
+                  "state": "unknown"
                 },
                 {
                   "predicate": "company_specific_operating_metric",
@@ -284,19 +284,15 @@
           ]
         },
         {
-          "name": "R2 true escalates",
+          "name": "R2 supported escalates",
           "rule_id": "R2",
-          "rationale": "When both predicates are supported, R2's on_true should open review and request escalation.",
+          "rationale": "Post-employment access fires open_review_and_escalate, so the monitor must propose both review and escalation.",
           "steps": [
             {
               "event": "CLAIM_EVALUATED",
               "assignment": [
                 {
                   "predicate": "post_employment_access",
-                  "state": "supported"
-                },
-                {
-                  "predicate": "internal_source_claimed",
                   "state": "supported"
                 }
               ]
@@ -309,31 +305,9 @@
           ]
         },
         {
-          "name": "R2 unknown plus refuted is false",
+          "name": "R2 conflict needs context",
           "rule_id": "R2",
-          "rationale": "A refuted conjunct makes the guard false despite an unknown one.",
-          "steps": [
-            {
-              "event": "CLAIM_EVALUATED",
-              "assignment": [
-                {
-                  "predicate": "post_employment_access",
-                  "state": "unknown"
-                },
-                {
-                  "predicate": "internal_source_claimed",
-                  "state": "refuted"
-                }
-              ]
-            }
-          ],
-          "expect_final_state": "NOT_TRIGGERED",
-          "expect_effects": []
-        },
-        {
-          "name": "R2 conflict needs context without escalation",
-          "rule_id": "R2",
-          "rationale": "A conflict makes the guard indeterminate, so the monitor should open a context task and should not escalate.",
+          "rationale": "A conflict on the single predicate is indeterminate, so the monitor should open a context task.",
           "steps": [
             {
               "event": "CLAIM_EVALUATED",
@@ -341,10 +315,6 @@
                 {
                   "predicate": "post_employment_access",
                   "state": "conflict"
-                },
-                {
-                  "predicate": "internal_source_claimed",
-                  "state": "supported"
                 }
               ]
             }
@@ -355,9 +325,27 @@
           ]
         },
         {
-          "name": "R2 context flips to true",
+          "name": "R2 refuted not triggered",
           "rule_id": "R2",
-          "rationale": "Later context resolving the unknown predicate to supported should require review with escalation.",
+          "rationale": "A refuted single predicate makes the guard false.",
+          "steps": [
+            {
+              "event": "CLAIM_EVALUATED",
+              "assignment": [
+                {
+                  "predicate": "post_employment_access",
+                  "state": "refuted"
+                }
+              ]
+            }
+          ],
+          "expect_final_state": "NOT_TRIGGERED",
+          "expect_effects": []
+        },
+        {
+          "name": "R2 unknown then context confirms access",
+          "rule_id": "R2",
+          "rationale": "Later context that confirms access should escalate from NEEDS_CONTEXT to review with escalation.",
           "steps": [
             {
               "event": "CLAIM_EVALUATED",
@@ -365,10 +353,6 @@
                 {
                   "predicate": "post_employment_access",
                   "state": "unknown"
-                },
-                {
-                  "predicate": "internal_source_claimed",
-                  "state": "supported"
                 }
               ]
             },
@@ -377,10 +361,6 @@
               "assignment": [
                 {
                   "predicate": "post_employment_access",
-                  "state": "supported"
-                },
-                {
-                  "predicate": "internal_source_claimed",
                   "state": "supported"
                 }
               ]
@@ -395,17 +375,13 @@
         {
           "name": "R2 review sticky after refutation",
           "rule_id": "R2",
-          "rationale": "A later false guard must not release REVIEW_REQUIRED.",
+          "rationale": "A later refutation must not move the monitor out of REVIEW_REQUIRED.",
           "steps": [
             {
               "event": "CLAIM_EVALUATED",
               "assignment": [
                 {
                   "predicate": "post_employment_access",
-                  "state": "supported"
-                },
-                {
-                  "predicate": "internal_source_claimed",
                   "state": "supported"
                 }
               ]
@@ -416,10 +392,6 @@
                 {
                   "predicate": "post_employment_access",
                   "state": "refuted"
-                },
-                {
-                  "predicate": "internal_source_claimed",
-                  "state": "supported"
                 }
               ]
             }
@@ -430,7 +402,7 @@
         {
           "name": "R2 not triggered then triggered",
           "rule_id": "R2",
-          "rationale": "A false guard followed by an all-true update should escalate.",
+          "rationale": "A false guard that later becomes true must escalate.",
           "steps": [
             {
               "event": "CLAIM_EVALUATED",
@@ -438,10 +410,6 @@
                 {
                   "predicate": "post_employment_access",
                   "state": "refuted"
-                },
-                {
-                  "predicate": "internal_source_claimed",
-                  "state": "supported"
                 }
               ]
             },
@@ -450,10 +418,6 @@
               "assignment": [
                 {
                   "predicate": "post_employment_access",
-                  "state": "supported"
-                },
-                {
-                  "predicate": "internal_source_claimed",
                   "state": "supported"
                 }
               ]
@@ -466,9 +430,36 @@
           ]
         },
         {
-          "name": "R3 indeterminate opens review",
+          "name": "R2 unknown then context refutes",
+          "rule_id": "R2",
+          "rationale": "Context that refutes an unknown predicate should move the monitor from NEEDS_CONTEXT to NOT_TRIGGERED.",
+          "steps": [
+            {
+              "event": "CLAIM_EVALUATED",
+              "assignment": [
+                {
+                  "predicate": "post_employment_access",
+                  "state": "unknown"
+                }
+              ]
+            },
+            {
+              "event": "CONTEXT_UPDATED",
+              "assignment": [
+                {
+                  "predicate": "post_employment_access",
+                  "state": "refuted"
+                }
+              ]
+            }
+          ],
+          "expect_final_state": "NOT_TRIGGERED",
+          "expect_effects": []
+        },
+        {
+          "name": "R3 unknown plus refuted is false",
           "rule_id": "R3",
-          "rationale": "R3's on_indeterminate is open_review, so an unknown predicate should give REVIEW_REQUIRED rather than NEEDS_CONTEXT.",
+          "rationale": "A refuted conjunct makes the guard false even when another conjunct is unknown, so no review should open despite on_indeterminate being open_review.",
           "steps": [
             {
               "event": "CLAIM_EVALUATED",
@@ -479,24 +470,22 @@
                 },
                 {
                   "predicate": "nonpublic_corporate_event",
-                  "state": "unknown"
+                  "state": "refuted"
                 },
                 {
                   "predicate": "confidentiality_signal_present",
-                  "state": "supported"
+                  "state": "unknown"
                 }
               ]
             }
           ],
-          "expect_final_state": "REVIEW_REQUIRED",
-          "expect_effects": [
-            "OPEN_REVIEW_TASK"
-          ]
+          "expect_final_state": "NOT_TRIGGERED",
+          "expect_effects": []
         },
         {
-          "name": "R3 conflict opens review",
+          "name": "R3 conflict opens review not context",
           "rule_id": "R3",
-          "rationale": "A conflict on a single predicate makes the guard indeterminate, which for R3 means review.",
+          "rationale": "For this rule an indeterminate guard maps to open_review, so a conflict must produce REVIEW_REQUIRED rather than NEEDS_CONTEXT.",
           "steps": [
             {
               "event": "CLAIM_EVALUATED",
@@ -522,20 +511,20 @@
           ]
         },
         {
-          "name": "R3 unknown plus refuted is false",
+          "name": "R3 all supported no escalation",
           "rule_id": "R3",
-          "rationale": "A refuted conjunct makes the guard false, so no review should open even though another predicate is unknown.",
+          "rationale": "A true guard opens review only, because on_true is open_review and not escalate.",
           "steps": [
             {
               "event": "CLAIM_EVALUATED",
               "assignment": [
                 {
                   "predicate": "about_covered_issuer",
-                  "state": "refuted"
+                  "state": "supported"
                 },
                 {
                   "predicate": "nonpublic_corporate_event",
-                  "state": "unknown"
+                  "state": "supported"
                 },
                 {
                   "predicate": "confidentiality_signal_present",
@@ -544,13 +533,15 @@
               ]
             }
           ],
-          "expect_final_state": "NOT_TRIGGERED",
-          "expect_effects": []
+          "expect_final_state": "REVIEW_REQUIRED",
+          "expect_effects": [
+            "OPEN_REVIEW_TASK"
+          ]
         },
         {
-          "name": "R3 indeterminate review sticky after false",
+          "name": "R3 indeterminate review sticky after context refutes",
           "rule_id": "R3",
-          "rationale": "Review opened on indeterminate must persist even when later context makes the guard false.",
+          "rationale": "Review opened on an indeterminate guard must persist when later context makes the guard false.",
           "steps": [
             {
               "event": "CLAIM_EVALUATED",
@@ -591,37 +582,9 @@
           "expect_effects": []
         },
         {
-          "name": "R3 all true no escalation",
+          "name": "R3 not triggered then triggered",
           "rule_id": "R3",
-          "rationale": "R3's on_true is open_review only, so it should not escalate.",
-          "steps": [
-            {
-              "event": "CLAIM_EVALUATED",
-              "assignment": [
-                {
-                  "predicate": "about_covered_issuer",
-                  "state": "supported"
-                },
-                {
-                  "predicate": "nonpublic_corporate_event",
-                  "state": "supported"
-                },
-                {
-                  "predicate": "confidentiality_signal_present",
-                  "state": "supported"
-                }
-              ]
-            }
-          ],
-          "expect_final_state": "REVIEW_REQUIRED",
-          "expect_effects": [
-            "OPEN_REVIEW_TASK"
-          ]
-        },
-        {
-          "name": "R3 not triggered then indeterminate",
-          "rule_id": "R3",
-          "rationale": "A false guard followed by an indeterminate update should open review.",
+          "rationale": "A false guard that later becomes true via context must open review.",
           "steps": [
             {
               "event": "CLAIM_EVALUATED",
@@ -653,7 +616,7 @@
                 },
                 {
                   "predicate": "confidentiality_signal_present",
-                  "state": "unknown"
+                  "state": "supported"
                 }
               ]
             }
@@ -664,9 +627,54 @@
           ]
         },
         {
-          "name": "R4 public match exception blocks firing",
+          "name": "R3 not triggered then indeterminate opens review",
+          "rule_id": "R3",
+          "rationale": "A false guard that later becomes indeterminate should open review for this rule.",
+          "steps": [
+            {
+              "event": "CLAIM_EVALUATED",
+              "assignment": [
+                {
+                  "predicate": "about_covered_issuer",
+                  "state": "refuted"
+                },
+                {
+                  "predicate": "nonpublic_corporate_event",
+                  "state": "supported"
+                },
+                {
+                  "predicate": "confidentiality_signal_present",
+                  "state": "supported"
+                }
+              ]
+            },
+            {
+              "event": "CONTEXT_UPDATED",
+              "assignment": [
+                {
+                  "predicate": "about_covered_issuer",
+                  "state": "conflict"
+                },
+                {
+                  "predicate": "nonpublic_corporate_event",
+                  "state": "supported"
+                },
+                {
+                  "predicate": "confidentiality_signal_present",
+                  "state": "supported"
+                }
+              ]
+            }
+          ],
+          "expect_final_state": "REVIEW_REQUIRED",
+          "expect_effects": [
+            "OPEN_REVIEW_TASK"
+          ]
+        },
+        {
+          "name": "R4 verified public match blocks firing",
           "rule_id": "R4",
-          "rationale": "A supported public match makes the not() branch false, so the guard is false and the rule should not fire.",
+          "rationale": "A supported public_match_verified makes the NOT branch false, so the guard is false even though every other conjunct holds.",
           "steps": [
             {
               "event": "CLAIM_EVALUATED",
@@ -698,9 +706,9 @@
           "expect_effects": []
         },
         {
-          "name": "R4 refuted public match fires",
+          "name": "R4 fires when public match refuted",
           "rule_id": "R4",
-          "rationale": "A refuted public match makes not() true, so with all other conjuncts supported the guard is true.",
+          "rationale": "All positive conjuncts true and public match refuted makes the guard true.",
           "steps": [
             {
               "event": "CLAIM_EVALUATED",
@@ -736,7 +744,7 @@
         {
           "name": "R4 unknown public match needs context",
           "rule_id": "R4",
-          "rationale": "An unknown public match makes not() indeterminate, so the guard is indeterminate and a context task should open.",
+          "rationale": "An unknown inside the NOT stays indeterminate, so the monitor should open a context task.",
           "steps": [
             {
               "event": "CLAIM_EVALUATED",
@@ -770,43 +778,9 @@
           ]
         },
         {
-          "name": "R4 unknown plus verified public match is false",
+          "name": "R4 conflict on public match needs context",
           "rule_id": "R4",
-          "rationale": "An unknown conjunct does not matter when the not() exception branch is false, so the guard is false.",
-          "steps": [
-            {
-              "event": "CLAIM_EVALUATED",
-              "assignment": [
-                {
-                  "predicate": "expert_recent_issuer_employee(months=12)",
-                  "state": "unknown"
-                },
-                {
-                  "predicate": "about_covered_issuer",
-                  "state": "supported"
-                },
-                {
-                  "predicate": "company_specific_operating_metric",
-                  "state": "supported"
-                },
-                {
-                  "predicate": "current_or_unreported_period",
-                  "state": "supported"
-                },
-                {
-                  "predicate": "public_match_verified",
-                  "state": "supported"
-                }
-              ]
-            }
-          ],
-          "expect_final_state": "NOT_TRIGGERED",
-          "expect_effects": []
-        },
-        {
-          "name": "R4 context verifies public match",
-          "rule_id": "R4",
-          "rationale": "Context that verifies a public match should move the monitor from NEEDS_CONTEXT to NOT_TRIGGERED.",
+          "rationale": "A conflict inside the NOT is indeterminate and must not be treated as true or false.",
           "steps": [
             {
               "event": "CLAIM_EVALUATED",
@@ -830,6 +804,76 @@
                 {
                   "predicate": "public_match_verified",
                   "state": "conflict"
+                }
+              ]
+            }
+          ],
+          "expect_final_state": "NEEDS_CONTEXT",
+          "expect_effects": [
+            "OPEN_CONTEXT_TASK"
+          ]
+        },
+        {
+          "name": "R4 unknown public match but not recent employee",
+          "rule_id": "R4",
+          "rationale": "A refuted employment conjunct makes the guard false regardless of the unknown public match.",
+          "steps": [
+            {
+              "event": "CLAIM_EVALUATED",
+              "assignment": [
+                {
+                  "predicate": "expert_recent_issuer_employee(months=12)",
+                  "state": "refuted"
+                },
+                {
+                  "predicate": "about_covered_issuer",
+                  "state": "supported"
+                },
+                {
+                  "predicate": "company_specific_operating_metric",
+                  "state": "supported"
+                },
+                {
+                  "predicate": "current_or_unreported_period",
+                  "state": "supported"
+                },
+                {
+                  "predicate": "public_match_verified",
+                  "state": "unknown"
+                }
+              ]
+            }
+          ],
+          "expect_final_state": "NOT_TRIGGERED",
+          "expect_effects": []
+        },
+        {
+          "name": "R4 context verifies public match",
+          "rule_id": "R4",
+          "rationale": "Later context verifying a public match makes the exception apply, so the monitor should move from NEEDS_CONTEXT to NOT_TRIGGERED.",
+          "steps": [
+            {
+              "event": "CLAIM_EVALUATED",
+              "assignment": [
+                {
+                  "predicate": "expert_recent_issuer_employee(months=12)",
+                  "state": "supported"
+                },
+                {
+                  "predicate": "about_covered_issuer",
+                  "state": "supported"
+                },
+                {
+                  "predicate": "company_specific_operating_metric",
+                  "state": "supported"
+                },
+                {
+                  "predicate": "current_or_unreported_period",
+                  "state": "supported"
+                },
+                {
+                  "predicate": "public_match_verified",
+                  "state": "unknown"
                 }
               ]
             },
@@ -863,9 +907,9 @@
           "expect_effects": []
         },
         {
-          "name": "R4 review sticky after later public match",
+          "name": "R4 review sticky after public match verified",
           "rule_id": "R4",
-          "rationale": "A later public match must not release REVIEW_REQUIRED.",
+          "rationale": "Once review is required, a later evaluation that verifies a public match must not move the monitor out of REVIEW_REQUIRED.",
           "steps": [
             {
               "event": "CLAIM_EVALUATED",
@@ -893,7 +937,7 @@
               ]
             },
             {
-              "event": "CONTEXT_UPDATED",
+              "event": "CLAIM_EVALUATED",
               "assignment": [
                 {
                   "predicate": "expert_recent_issuer_employee(months=12)",
@@ -922,9 +966,9 @@
           "expect_effects": []
         },
         {
-          "name": "R4 not triggered then triggered",
+          "name": "R4 exception withdrawn by later context",
           "rule_id": "R4",
-          "rationale": "A false guard followed by context confirming an unreported period with no public match should require review.",
+          "rationale": "A NOT_TRIGGERED state caused by a public match must open review when later context refutes that match.",
           "steps": [
             {
               "event": "CLAIM_EVALUATED",
@@ -943,11 +987,11 @@
                 },
                 {
                   "predicate": "current_or_unreported_period",
-                  "state": "refuted"
+                  "state": "supported"
                 },
                 {
                   "predicate": "public_match_verified",
-                  "state": "unknown"
+                  "state": "supported"
                 }
               ]
             },

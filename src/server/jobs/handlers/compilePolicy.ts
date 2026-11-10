@@ -44,19 +44,19 @@ export function llmCompileSteps(policyVersionId: string): CompileSteps {
   };
   return {
     async passA({ paragraphs }) {
-      const r = await structuredCall({ stage: PASS_A_STAGE, promptVersion: PASS_A_PROMPT_VERSION, schema: LlmInventorySchema, system: PASS_A_SYSTEM, user: buildPassAUser(paragraphs), effort: "high", maxTokens: 16000, ref });
+      const r = await structuredCall({ stage: PASS_A_STAGE, promptVersion: PASS_A_PROMPT_VERSION, schema: LlmInventorySchema, system: PASS_A_SYSTEM, user: buildPassAUser(paragraphs), effort: "high", maxTokens: 32000, ref });
       return { inventory: reparse(PASS_A_STAGE, () => InventorySchema.parse(r.data)), callId: r.callId };
     },
     async passB({ paragraphs, inventory, feedback }) {
-      const r = await structuredCall({ stage: PASS_B_STAGE, promptVersion: PASS_B_PROMPT_VERSION, schema: LlmRulesSchema, system: PASS_B_SYSTEM, user: buildPassBUser({ paragraphs, inventory, feedback }), effort: "high", maxTokens: 24000, ref });
+      const r = await structuredCall({ stage: PASS_B_STAGE, promptVersion: PASS_B_PROMPT_VERSION, schema: LlmRulesSchema, system: PASS_B_SYSTEM, user: buildPassBUser({ paragraphs, inventory, feedback }), effort: "high", maxTokens: 32000, ref });
       return { rulesDoc: reparse(PASS_B_STAGE, () => RulesDocSchema.parse(llmRulesToDoc(r.data))), callId: r.callId };
     },
     async assemble({ rulesDoc, feedback }) {
-      const r = await structuredCall({ stage: ASSEMBLY_STAGE, promptVersion: ASSEMBLY_PROMPT_VERSION, schema: LlmMonitorsSchema, system: ASSEMBLY_SYSTEM, user: buildAssemblyUser({ rulesDoc, feedback }), effort: "high", maxTokens: 24000, ref });
+      const r = await structuredCall({ stage: ASSEMBLY_STAGE, promptVersion: ASSEMBLY_PROMPT_VERSION, schema: LlmMonitorsSchema, system: ASSEMBLY_SYSTEM, user: buildAssemblyUser({ rulesDoc, feedback }), effort: "high", maxTokens: 32000, ref });
       return { monitors: reparse(ASSEMBLY_STAGE, () => MonitorsDocSchema.parse(r.data).monitors), callId: r.callId };
     },
     async proposeScenarios({ rulesDoc }) {
-      const r = await structuredCall({ stage: SCENARIOS_STAGE, promptVersion: SCENARIOS_PROMPT_VERSION, schema: LlmScenariosSchema, system: SCENARIOS_SYSTEM, user: buildScenariosUser(rulesDoc), effort: "medium", maxTokens: 24000, ref });
+      const r = await structuredCall({ stage: SCENARIOS_STAGE, promptVersion: SCENARIOS_PROMPT_VERSION, schema: LlmScenariosSchema, system: SCENARIOS_SYSTEM, user: buildScenariosUser(rulesDoc), effort: "medium", maxTokens: 32000, ref });
       return { scenarios: llmScenariosToScenarios(r.data), callId: r.callId };
     },
   };

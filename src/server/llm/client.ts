@@ -239,6 +239,10 @@ export async function structuredCall<T extends z.ZodType>(opts: StructuredCallOp
 
   const started = nowMs();
   let message;
+  // The latest snapshot the stream has built. The SDK parses the structured output when the message stops, and a
+  // cut-off answer fails that parse before `finalMessage()` returns, so the snapshot is the only place its stop
+  // reason and usage can be read.
+  let snapshot: { id: string; model: string; stop_reason: string | null; usage: { input_tokens: number; output_tokens: number; cache_read_input_tokens?: number | null; cache_creation_input_tokens?: number | null } } | undefined;
   // The SDK's own `timeout` stops counting once the response headers arrive, and a streamed answer sends them
   // at once. So the limit is also enforced here, as a deadline over the whole stream.
   const deadline = new AbortController();
@@ -266,9 +270,18 @@ export async function structuredCall<T extends z.ZodType>(opts: StructuredCallOp
       // call that names its own model sends neither field.
       ...(opts.model ? {} : { betas: ["server-side-fallback-2026-07-01"], fallbacks: "default" as const }),
     }, requestOptions);
+    stream.on("streamEvent", (_event, current) => {
+      if (current) snapshot = current;
+    });
     message = await stream.finalMessage();
   } catch (err) {
     if (err instanceof LlmError) throw err;
+    if (snapshot?.stop_reason === "max_tokens" && !(err instanceof Anthropic.APIError)) {
+      // Stopped at the token limit: the output is incomplete, so the SDK could not parse it. Logged like any truncation.
+      const usage: LlmUsage = { input_tokens: snapshot.usage.input_tokens, output_tokens: snapshot.usage.output_tokens, cache_read_input_tokens: snapshot.usage.cache_read_input_tokens ?? 0, cache_creation_input_tokens: snapshot.usage.cache_creation_input_tokens ?? 0 };
+      log({ id: snapshot.id, model: snapshot.model, stop_reason: "max_tokens", usage, parsed_output: null }, nowMs() - started, false, null);
+      throw new LlmTruncated(opts.stage);
+    }
     if (timedOut || err instanceof Anthropic.APIConnectionTimeoutError) throw new LlmTimeout(opts.stage, opts.timeoutMs);
     // The SDK has already retried 429 and 5xx twice by the time we get here.
     if (err instanceof Anthropic.RateLimitError) throw new LlmApiError(opts.stage, "rate limited (429)", true);

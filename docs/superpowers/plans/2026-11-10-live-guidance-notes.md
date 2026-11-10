@@ -97,6 +97,9 @@ When the owner has reported, the next step is to fill in the answers here, write
 | 2026-11-10 | 5 | Anthropic: re-recorded every fixture after the prompt cleanup, one round. `pnpm record` made 19 live `claude-opus-5-5` calls ($1.19, as the script reports); `BLINK_LLM_MODE=record pnpm eval` added 8 extraction calls (about $0.32). Total from the 27 recordings' token counts priced by `costUsd` | $1.51 |
 | 2026-11-10 | 5 (fix round 1) | Anthropic: re-recorded only the stages whose request text changed: 10 live `claude-opus-5-5` calls (6 docfacts, 3 assembly, 1 scenarios), as `pnpm record` reports; the eval reused every recording | $0.43 |
 | 2026-11-10 | 17 | Anthropic: `pnpm record:live`, two runs. Run 1 (2.5 s limit): 11 `claude-haiku-5-5` reads completed and 11 timed out (aborted; their partial cost is not reported), plus 1 `claude-opus-5-5` after-call extraction, $0.200 as the script reports. Run 2 (record-mode limit 30 s): 19 Haiku reads, $0.007; the extraction and 3 reads were reused. 8 recordings left orphaned by run 1 were deleted | about $0.21 |
+| 2026-11-10 | 36 | Anthropic: `BLINK_LLM_MODE=record pnpm eval:policies`, two runs. Run 1: 5 logged `claude-opus-5-5` calls for Sage Rock (pass A, two pass B, two assemblies), $1.00 as the script reports; plus 2 pass-A calls (Oaktree, TCW) that failed in the SDK's structured-output parse and were never logged, so their cost is not in `llm_calls`. Run 2 (retry): Sage Rock replayed; the same 2 pass-A calls failed again, also unlogged. The 4 unlogged calls most likely ran to the 16,000-token cap: estimated at most about $1.35 (16k output plus about 4k input each). The console has the exact figure | $1.00 logged + about $1.35 estimated |
+| 2026-11-10 | 36 (controller ruling) | Anthropic: every policy compile stage raised to 32,000 output tokens, so the demo policy stages changed hash. `pnpm record` made 9 live `claude-opus-5-5` calls ($0.76, as the script reports) and reused the other 10; `pnpm eval` was not affected | $0.76 |
+| 2026-11-10 | 36 | Anthropic: `BLINK_LLM_MODE=record pnpm eval:policies` with the new cap: 15 live `claude-opus-5-5` calls for the three policies, $3.28 as the script reports. Plan total so far about $8.6 (the earlier unlogged estimate included), under the $25 cap | $3.28 |
 
 ## Waiting on the owner
 
@@ -302,3 +305,14 @@ Step 1 is done: `pnpm live:prepare` (`scripts/prepare-live-call.sh`) resets `dat
 - **Ticker:** where a company has no ticker, the packets use `n/a`. The app has no empty-ticker sentinel: the schema needs 1 to 10 characters.
 - **Not done: the scanned Galleon complaints.** The plan names no documents or URLs for them; they were not fetched or OCR'd.
 - **No prompt edits, no spend.** The prompt-leak test passes with every real transcript, public and private.
+
+## Task 36: three real policies
+
+- **Fetched:** Oaktree (EX-99.(P)(14), N-1A/A, 2025-03-17), Sage Rock (EX-99.(P)(19), 485BPOS, 2021-07-29) and TCW (EX-19.1, 10-K of TCW Direct Lending VII LLC, 2026-04-03). All three were fetched in the browser. Each `fixtures/real/policies/<name>.md` has a header naming the filing URL, company, exhibit and date, and saying exactly which subsections were kept.
+- **Deviation: excerpts, not whole sections.** The full sections are 19k to 31k characters, so before any compile ran they were cut, by one rule given in each header, to 12k to 15k characters. Text inside the kept subsections is verbatim. Reasons are in `docs/eval/2026-11-real-policies.md`.
+- **Required paragraphs:** chosen before any compile, by the rule in `src/server/eval/real.ts`.
+- **First two record runs (old cap):** pass A ran out of tokens for Oaktree and TCW at the 16,000-token cap, both times. The SDK then failed to parse the cut-off output, so the client raised `LLM_API_ERROR` and wrote no `llm_calls` row.
+- **Controller rulings (applied in this task's commit):**
+  - Every policy compile stage now has a 32,000-token cap. The demo was re-recorded: the broken policy still ends COMPILE_FAILED with CLAUSE_DROPPED (now also SCENARIO_FAILED), and v1 is VALIDATED with 8/8 reviewer scenarios. `recordings.test.ts`, `demo:check` and `live:check` pass. The 9 demo recordings left unused were deleted.
+  - `structuredCall` now raises `LlmTruncated` when a stream stops at `max_tokens` and the SDK's parse fails. It logs the call with the usage the stream's last snapshot reports, which the SDK does expose.
+- **Result:** all three compile, and none validates. Oaktree has 10 `CLAUSE_DROPPED`, Sage Rock 7, TCW 10. In every case a required paragraph has a clause the ten predicates cannot express, and no other issue blocks. `loadRealPolicy` refuses all three by name, so Task 37 has no validated real policy to run under. Replay matches the record run byte for byte.

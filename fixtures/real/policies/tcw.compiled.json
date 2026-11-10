@@ -1,0 +1,1362 @@
+{
+  "name": "tcw",
+  "title": "TCW: Insider Trading and Market Manipulation Policy, insider trading (excerpt)",
+  "sourceTextHash": "61c85b4d046e40334d6295f3458d517a821b9dcaabd82fe7d509ddf8c9ef1a28",
+  "requiredParagraphs": [
+    "P2",
+    "P7",
+    "P8",
+    "P17",
+    "P21",
+    "P23",
+    "P24"
+  ],
+  "status": "COMPILE_FAILED",
+  "bundleHash": "cd1e8c5e635bf8c40e2ff91fe0065ac3de2f309f18406b7d6f8ccb9cbf1fc56c",
+  "attempts": [
+    {
+      "stage": "pass_a",
+      "attemptNo": 1,
+      "issues": []
+    },
+    {
+      "stage": "pass_b",
+      "attemptNo": 1,
+      "issues": [
+        "CLAUSE_DROPPED",
+        "CLAUSE_DROPPED",
+        "CLAUSE_DROPPED",
+        "CLAUSE_DROPPED",
+        "CLAUSE_DROPPED",
+        "CLAUSE_DROPPED",
+        "CLAUSE_DROPPED",
+        "CLAUSE_DROPPED",
+        "CLAUSE_DROPPED",
+        "CLAUSE_DROPPED",
+        "CLAUSE_DROPPED",
+        "CLAUSE_DROPPED"
+      ]
+    },
+    {
+      "stage": "assembly",
+      "attemptNo": 1,
+      "issues": [
+        "CLAUSE_DROPPED",
+        "CLAUSE_DROPPED",
+        "CLAUSE_DROPPED",
+        "CLAUSE_DROPPED",
+        "CLAUSE_DROPPED",
+        "CLAUSE_DROPPED",
+        "CLAUSE_DROPPED",
+        "CLAUSE_DROPPED",
+        "CLAUSE_DROPPED",
+        "CLAUSE_DROPPED",
+        "CLAUSE_DROPPED",
+        "CLAUSE_DROPPED"
+      ]
+    },
+    {
+      "stage": "pass_b",
+      "attemptNo": 2,
+      "issues": [
+        "CLAUSE_DROPPED",
+        "CLAUSE_DROPPED",
+        "CLAUSE_DROPPED",
+        "CLAUSE_DROPPED",
+        "CLAUSE_DROPPED",
+        "CLAUSE_DROPPED",
+        "CLAUSE_DROPPED",
+        "CLAUSE_DROPPED",
+        "CLAUSE_DROPPED",
+        "CLAUSE_DROPPED"
+      ]
+    },
+    {
+      "stage": "assembly",
+      "attemptNo": 2,
+      "issues": [
+        "CLAUSE_DROPPED",
+        "CLAUSE_DROPPED",
+        "CLAUSE_DROPPED",
+        "CLAUSE_DROPPED",
+        "CLAUSE_DROPPED",
+        "CLAUSE_DROPPED",
+        "CLAUSE_DROPPED",
+        "CLAUSE_DROPPED",
+        "CLAUSE_DROPPED",
+        "CLAUSE_DROPPED"
+      ]
+    }
+  ],
+  "compileError": null,
+  "issues": [
+    {
+      "code": "CLAUSE_DROPPED",
+      "clause_id": "C6",
+      "paragraph": "P2",
+      "message": "clause C6 is from required paragraph P2 but was left unsupported: the policy owner marked P2 as must-be-automated",
+      "severity": "blocking"
+    },
+    {
+      "code": "CLAUSE_DROPPED",
+      "clause_id": "C8",
+      "paragraph": "P2",
+      "message": "clause C8 is from required paragraph P2 but was left unsupported: the policy owner marked P2 as must-be-automated",
+      "severity": "blocking"
+    },
+    {
+      "code": "CLAUSE_DROPPED",
+      "clause_id": "C17",
+      "paragraph": "P7",
+      "message": "clause C17 is from required paragraph P7 but was left unsupported: the policy owner marked P7 as must-be-automated",
+      "severity": "blocking"
+    },
+    {
+      "code": "CLAUSE_DROPPED",
+      "clause_id": "C18",
+      "paragraph": "P7",
+      "message": "clause C18 is from required paragraph P7 but was left unsupported: the policy owner marked P7 as must-be-automated",
+      "severity": "blocking"
+    },
+    {
+      "code": "CLAUSE_DROPPED",
+      "clause_id": "C20",
+      "paragraph": "P8",
+      "message": "clause C20 is from required paragraph P8 but was left unsupported: the policy owner marked P8 as must-be-automated",
+      "severity": "blocking"
+    },
+    {
+      "code": "CLAUSE_DROPPED",
+      "clause_id": "C34",
+      "paragraph": "P17",
+      "message": "clause C34 is from required paragraph P17 but was left unsupported: the policy owner marked P17 as must-be-automated",
+      "severity": "blocking"
+    },
+    {
+      "code": "CLAUSE_DROPPED",
+      "clause_id": "C40",
+      "paragraph": "P21",
+      "message": "clause C40 is from required paragraph P21 but was left unsupported: the policy owner marked P21 as must-be-automated",
+      "severity": "blocking"
+    },
+    {
+      "code": "CLAUSE_DROPPED",
+      "clause_id": "C43",
+      "paragraph": "P23",
+      "message": "clause C43 is from required paragraph P23 but was left unsupported: the policy owner marked P23 as must-be-automated",
+      "severity": "blocking"
+    },
+    {
+      "code": "CLAUSE_DROPPED",
+      "clause_id": "C44",
+      "paragraph": "P23",
+      "message": "clause C44 is from required paragraph P23 but was left unsupported: the policy owner marked P23 as must-be-automated",
+      "severity": "blocking"
+    },
+    {
+      "code": "CLAUSE_DROPPED",
+      "clause_id": "C45",
+      "paragraph": "P24",
+      "message": "clause C45 is from required paragraph P24 but was left unsupported: the policy owner marked P24 as must-be-automated",
+      "severity": "blocking"
+    }
+  ],
+  "inventory": {
+    "clauses": [
+      {
+        "clause_id": "C1",
+        "paragraph": "P1",
+        "verbatim": "No Access Person of the Firm, either for themselves or on behalf of clients or others, may buy or sell a security (i.e., stock, bonds, convertibles, options, warrants or derivatives tied to a company’s securities) while in possession of material, non-public information about the company or certain related companies1",
+        "kind": "out_of_scope",
+        "plain_meaning": "Access Persons may not trade any security of a company, for themselves or anyone else, while holding material non-public information about that company or certain related companies.",
+        "cross_refs": [],
+        "ambiguity": "This governs trading conduct, which cannot be observed in a call transcript. 'Certain related companies' points to a footnote (marker '1') that is not in the supplied text."
+      },
+      {
+        "clause_id": "C2",
+        "paragraph": "P1",
+        "verbatim": "(except as listed in Deal- Specific Information below)",
+        "kind": "exception",
+        "plain_meaning": "The trading prohibition is subject to exceptions described in a 'Deal-Specific Information' section.",
+        "cross_refs": [],
+        "ambiguity": "The referenced 'Deal-Specific Information' section is not in the supplied policy, so the scope of the exception is unknown."
+      },
+      {
+        "clause_id": "C3",
+        "paragraph": "P1",
+        "verbatim": "This applies in the case of both publicly traded and private companies.",
+        "kind": "definition",
+        "plain_meaning": "The prohibition covers both public and private companies.",
+        "cross_refs": [],
+        "ambiguity": null
+      },
+      {
+        "clause_id": "C4",
+        "paragraph": "P1",
+        "verbatim": "This means that you may not buy or sell such securities for yourself or anyone, including your spouse, domestic partner, relative, friend, or client",
+        "kind": "out_of_scope",
+        "plain_meaning": "You may not trade such securities for yourself or for anyone else, including family, friends or clients.",
+        "cross_refs": [],
+        "ambiguity": "This is a trading restriction and cannot be observed in a call transcript."
+      },
+      {
+        "clause_id": "C5",
+        "paragraph": "P1",
+        "verbatim": "you may not recommend that anyone else buy or sell a security of a company on the basis of inside information regarding that company.",
+        "kind": "prohibition",
+        "plain_meaning": "You may not recommend that anyone trade a company's securities based on inside information about that company.",
+        "cross_refs": [],
+        "ambiguity": "A recommendation may be audible on a call, but whether it was made 'on the basis of' inside information depends on what the speaker knew, which a transcript may not show."
+      },
+      {
+        "clause_id": "C6",
+        "paragraph": "P2",
+        "verbatim": "If you believe you have received oral or written material, non-public information, you should not discuss the information with anyone except an SVP or MD member in the Firm’s legal Department (“the Legal Department”)",
+        "kind": "prohibition",
+        "plain_meaning": "If you think you have received material non-public information, you must not discuss it with anyone other than an SVP or MD in the Legal Department.",
+        "cross_refs": [],
+        "ambiguity": "The trigger is the employee's subjective belief. It is unclear whether this also bars continuing the conversation with the source on the call itself."
+      },
+      {
+        "clause_id": "C7",
+        "paragraph": "P2",
+        "verbatim": "and should contact the Legal Department immediately.",
+        "kind": "escalation",
+        "plain_meaning": "Anyone who believes they have received material non-public information must contact the Legal Department right away.",
+        "cross_refs": [
+          "P8"
+        ],
+        "ambiguity": "P8 requires notice to the Administrator of the Code of Ethics for similar information, so it is unclear which recipient comes first or whether both must be notified."
+      },
+      {
+        "clause_id": "C8",
+        "paragraph": "P2",
+        "verbatim": "Do not discuss the information with your supervisor, department head or any other individual who is on your team.",
+        "kind": "prohibition",
+        "plain_meaning": "Do not share suspected material non-public information with your supervisor, department head or teammates.",
+        "cross_refs": [],
+        "ambiguity": "This may conflict with P4's allowance for need-to-know sharing within the Firm."
+      },
+      {
+        "clause_id": "C9",
+        "paragraph": "P3",
+        "verbatim": "No Access Person may communicate material, non-public information about a company to others who have no official need to know, regardless of whether the company is on the Restricted List.",
+        "kind": "prohibition",
+        "plain_meaning": "Access Persons may not pass material non-public information to anyone without an official need to know, whether or not the company is on the Restricted List.",
+        "cross_refs": [],
+        "ambiguity": "Whether a recipient has an 'official need to know' cannot usually be determined from a call transcript."
+      },
+      {
+        "clause_id": "C10",
+        "paragraph": "P3",
+        "verbatim": "This is known as “tipping,” which also is a violation of the insider trading laws, even if you as the “tipper” did not personally benefit.",
+        "kind": "definition",
+        "plain_meaning": "Passing on such information is called 'tipping' and is illegal even if the tipper gains nothing personally.",
+        "cross_refs": [],
+        "ambiguity": null
+      },
+      {
+        "clause_id": "C11",
+        "paragraph": "P4",
+        "verbatim": "Therefore, you should not discuss such information acquired on the job with your spouse, domestic partner or with friends, relatives, clients, or anyone else inside or outside of the Firm",
+        "kind": "prohibition",
+        "plain_meaning": "You must not discuss material non-public information obtained at work with family, friends, clients or anyone else inside or outside the Firm.",
+        "cross_refs": [
+          "P3"
+        ],
+        "ambiguity": null
+      },
+      {
+        "clause_id": "C12",
+        "paragraph": "P4",
+        "verbatim": "except on a need-to-know basis relative to your duties at the Firm.",
+        "kind": "exception",
+        "plain_meaning": "Such information may be shared when the recipient needs it for the employee's Firm duties.",
+        "cross_refs": [
+          "P3"
+        ],
+        "ambiguity": "'Need-to-know' is not defined and cannot be verified from a transcript. This allowance may conflict with P2's narrower rule allowing discussion only with Legal SVPs or MDs."
+      },
+      {
+        "clause_id": "C13",
+        "paragraph": "P5",
+        "verbatim": "Remember that TCW Funds, Inc., Metropolitan West Funds, TCW ETF Trust, each of their series, and any other proprietary and registered closed-end investment companies (including TPAY and TSI)), exchange-traded funds (ETFs) and open-end investment companies (mutual funds) advised (or sub-advised) by TAMCO, TIMCO, TABF, or MetWest, respectively (such closed-end investment companies, ETFs and mutual funds, collectively, the “TCW Registered Funds”) are publicly traded entities and you may be privy to material non-public information regarding those entities.",
+        "kind": "definition",
+        "plain_meaning": "The TCW Registered Funds are publicly traded, and employees may hold material non-public information about them.",
+        "cross_refs": [],
+        "ambiguity": null
+      },
+      {
+        "clause_id": "C14",
+        "paragraph": "P5",
+        "verbatim": "Communicating such information in violation of the Firm’s policies is illegal.",
+        "kind": "prohibition",
+        "plain_meaning": "Employees must not communicate material non-public information about the TCW Registered Funds in breach of Firm policy.",
+        "cross_refs": [
+          "P3",
+          "P4"
+        ],
+        "ambiguity": null
+      },
+      {
+        "clause_id": "C15",
+        "paragraph": "P6",
+        "verbatim": "The prohibition on sharing material, non-public information extends to affiliates such as the Carlyle and Nippon Life entities.",
+        "kind": "definition",
+        "plain_meaning": "The ban on sharing material non-public information also covers sharing with affiliates such as the Carlyle and Nippon Life entities.",
+        "cross_refs": [
+          "P3",
+          "P4"
+        ],
+        "ambiguity": "'Such as' leaves the full list of covered affiliates open."
+      },
+      {
+        "clause_id": "C16",
+        "paragraph": "P6",
+        "verbatim": "Please refer to the policies and procedures describing the relevant information barrier to these entities.",
+        "kind": "out_of_scope",
+        "plain_meaning": "Separate information-barrier policies govern dealings with these affiliates.",
+        "cross_refs": [],
+        "ambiguity": "The referenced information-barrier policies are not in the supplied text."
+      },
+      {
+        "clause_id": "C17",
+        "paragraph": "P7",
+        "verbatim": "If Firm personnel are presented with the opportunity to learn non-public information to assist in the analysis of any security or other instrument prior to signing any confidentiality letter, a definitive agreement pertaining to an investment, or any other agreement relating to the receipt of confidential information, such personnel must obtain the approval of the Legal Department prior to entering into any such confidentiality letter or agreement.",
+        "kind": "out_of_scope",
+        "plain_meaning": "Before signing any confidentiality letter or similar agreement to receive non-public information, personnel must get Legal Department approval.",
+        "cross_refs": [],
+        "ambiguity": "This concerns approval of agreements rather than call content. It could become relevant if an expert proposes a confidentiality arrangement during a call."
+      },
+      {
+        "clause_id": "C18",
+        "paragraph": "P7",
+        "verbatim": "Firm personnel may not knowingly accept any material, non-public information relating to a company prior to the Administrator of the Code of Ethics placing such issuer on the Restricted Securities List.",
+        "kind": "prohibition",
+        "plain_meaning": "Personnel must not knowingly accept material non-public information about a company unless the company is already on the Restricted Securities List.",
+        "cross_refs": [
+          "P8"
+        ],
+        "ambiguity": "'Knowingly' and Restricted List status cannot be observed in a transcript. P8 contemplates restriction after information has been received, which sits uneasily with this rule."
+      },
+      {
+        "clause_id": "C19",
+        "paragraph": "P8",
+        "verbatim": "If Firm personnel obtain information about a company that may be material, non-public information, including, among other things, as a result of a contractual agreement, through an expert or expert network, or by virtue of a Firm representative or observer on a company’s board of directors or creditor’s committee, you must immediately notify the Administrator of the Code of Ethics of the information.",
+        "kind": "escalation",
+        "plain_meaning": "Anyone who obtains possibly material non-public information, including through an expert or expert network, must immediately notify the Administrator of the Code of Ethics.",
+        "cross_refs": [],
+        "ambiguity": "'Immediately' is not quantified. P2 directs such reports to the Legal Department instead, so the required recipient is unclear."
+      },
+      {
+        "clause_id": "C20",
+        "paragraph": "P8",
+        "verbatim": "If the Administrator of the Code of Ethics, in coordination with the Legal Department, determines that the information constitutes material, non- public information that might expose the Firm or any of its affiliates to liability for “insider trading,” the company to which the information relates and, in certain circumstances, related companies will generally be placed on the Restricted Securities List.",
+        "kind": "duty",
+        "plain_meaning": "If the Administrator and Legal determine the information is material non-public information creating insider-trading risk, the company, and sometimes related companies, will normally be added to the Restricted Securities List.",
+        "cross_refs": [],
+        "ambiguity": "'Generally' and 'in certain circumstances' leave it unclear when restriction is mandatory and when related companies are included."
+      },
+      {
+        "clause_id": "C21",
+        "paragraph": "P9",
+        "verbatim": "You may contact the Administrator of the Code of Ethics at extension 0467 or ace@tcw.com.",
+        "kind": "out_of_scope",
+        "plain_meaning": "Gives contact details for the Administrator of the Code of Ethics.",
+        "cross_refs": [
+          "P8"
+        ],
+        "ambiguity": null
+      },
+      {
+        "clause_id": "C22",
+        "paragraph": "P10",
+        "verbatim": "Information (whether positive or negative) is material:\n• When there is a substantial likelihood that a reasonable investor would consider it important in making an investment decision and/or\n• When it could reasonably be expected to have an effect on the price of a company’s securities.\n• The information need not be so important that it would have changed the investor’s decision to buy or sell a security.",
+        "kind": "definition",
+        "plain_meaning": "Information is material if a reasonable investor would likely consider it important to an investment decision or if it could reasonably be expected to move the security's price, even if it would not have changed the decision.",
+        "cross_refs": [],
+        "ambiguity": "'And/or' leaves unclear whether one test is enough or both must be met. Both tests require judgment beyond the transcript."
+      },
+      {
+        "clause_id": "C23",
+        "paragraph": "P11",
+        "verbatim": "Some examples of Material Information are:\n• Earnings results, changes in previously released earnings estimates, liquidity problems, dividend changes, defaults;\n• Projections, major capital investment plans;\n• Significant labor disputes or supply chain disruptions;\n• Significant merger, tender offers, secondary offerings, rights offerings, spin-off, joint venture, stock buy backs, stock splits or acquisition proposals or agreements;\n• New product releases, services, contracts, price changes, schedule changes;\n• Significant accounting changes, credit rating changes, write-offs or charges;\n• Major technological discoveries, breakthroughs or failures;\n• Major contract awards or cancellations, significant regulatory developments (e.g. FDA approvals);\n• Other events or circumstances affecting the market for a company’s securities;\n• Governmental investigations, major litigation or disposition of significant investigation or litigation matters; or\n• Significant management developments or changes.",
+        "kind": "definition",
+        "plain_meaning": "Lists example topics that are typically material, such as earnings, projections, M&A, product news, regulatory developments, litigation and management changes.",
+        "cross_refs": [
+          "P10"
+        ],
+        "ambiguity": "Many items depend on undefined qualifiers such as 'significant' and 'major'."
+      },
+      {
+        "clause_id": "C24",
+        "paragraph": "P12",
+        "verbatim": "This list is not exhaustive and no clear or “bright line” definition of what is material exists. Due to this, assessments sometimes require a fact- specific inquiry.",
+        "kind": "discretion",
+        "plain_meaning": "The examples are not complete, and deciding whether information is material can require case-by-case judgment.",
+        "cross_refs": [
+          "P10",
+          "P11"
+        ],
+        "ambiguity": "Does not say who makes the fact-specific assessment or when one is needed."
+      },
+      {
+        "clause_id": "C25",
+        "paragraph": "P12",
+        "verbatim": "If you have questions about whether information is material, direct the questions to the Legal Department.",
+        "kind": "escalation",
+        "plain_meaning": "Anyone unsure whether information is material must ask the Legal Department.",
+        "cross_refs": [
+          "P10",
+          "P11"
+        ],
+        "ambiguity": "Triggered by the employee having a question, which cannot be observed in a transcript."
+      },
+      {
+        "clause_id": "C26",
+        "paragraph": "P13",
+        "verbatim": "Non-public information is information that:\n• Has not been disseminated broadly to investors in the marketplace, such as a press release or publication in The Wall Street Journal or other generally circulated publication; or\n• Has not become available to the general public through a public filing with the SEC or some other governmental agency, Bloomberg, or release by Standard & Poor’s or Reuters; and\n• The market as a whole has not had adequate time to respond to the information.",
+        "kind": "definition",
+        "plain_meaning": "Information is non-public if it has not been broadly disseminated or publicly filed or released, or if the market has not yet had adequate time to absorb it.",
+        "cross_refs": [],
+        "ambiguity": "The mix of 'or' and 'and' makes the logical structure unclear, and 'adequate time' is undefined. Deciding public status requires checking outside sources, not just the transcript."
+      },
+      {
+        "clause_id": "C27",
+        "paragraph": "P14",
+        "verbatim": "Firm personnel must be wary of material, non-public information disclosed in breach of a corporate insider’s duty of trust or confidence that the corporate insider may owe to his or her corporation and/or such corporation’s shareholders.",
+        "kind": "duty",
+        "plain_meaning": "Personnel must be alert to material non-public information that an insider discloses in breach of a duty to the company or its shareholders.",
+        "cross_refs": [],
+        "ambiguity": "'Be wary' is a state of mind and cannot be observed in a transcript."
+      },
+      {
+        "clause_id": "C28",
+        "paragraph": "P14",
+        "verbatim": "Even when there is no expectation of confidentiality, Firm personnel may become an “insider” upon receiving material, non-public information in circumstances in which a person knows, or should know, that a corporate insider is disclosing information in breach of a duty of trust and confidence that he or she owes the corporation and its shareholders.",
+        "kind": "definition",
+        "plain_meaning": "Personnel can become insiders by receiving material non-public information when they know or should know the insider is breaching a duty, even without a confidentiality expectation.",
+        "cross_refs": [],
+        "ambiguity": "'Should know' requires judgment about what the recipient could infer, which a transcript may only partly show."
+      },
+      {
+        "clause_id": "C29",
+        "paragraph": "P14",
+        "verbatim": "Whether the disclosure is an improper “tip” depends on whether the corporate insider expects to benefit include, for example, a reputational benefit or an expectation of a “quid pro quo.”",
+        "kind": "evidence_requirement",
+        "plain_meaning": "To conclude a disclosure is an improper tip, one must establish whether the insider expected a benefit, such as reputational gain or a quid pro quo.",
+        "cross_refs": [],
+        "ambiguity": "The sentence is grammatically garbled ('expects to benefit include'). The insider's expectation of benefit is rarely observable in a call transcript."
+      },
+      {
+        "clause_id": "C30",
+        "paragraph": "P14",
+        "verbatim": "It is also possible for a person to become an “insider” or “tippee” upon obtaining material, non-public information inadvertently, including information derived from social situations, business gatherings, overheard conversations, and misplaced documents.",
+        "kind": "definition",
+        "plain_meaning": "A person can become an insider or tippee even by receiving material non-public information accidentally, for example socially or through overheard conversations or misplaced documents.",
+        "cross_refs": [],
+        "ambiguity": null
+      },
+      {
+        "clause_id": "C31",
+        "paragraph": "P14",
+        "verbatim": "It should be assumed that a duty of trust or confidence exists whenever:\n• A confidentiality agreement is entered into;\n• An oral agreement is made or a reasonable expectation exists based on the manner in which the information was transmitted that you will maintain the information as confidential; or\n• There is a pattern or practice of sharing confidences so that the recipient knows or reasonably should know that the provider expects the information to be kept confidential.",
+        "kind": "definition",
+        "plain_meaning": "A duty of trust or confidence is presumed when there is a confidentiality agreement, an oral agreement or reasonable expectation of confidentiality, or a pattern of sharing confidences.",
+        "cross_refs": [],
+        "ambiguity": "A 'pattern or practice' of sharing confidences cannot be seen in a single call transcript."
+      },
+      {
+        "clause_id": "C32",
+        "paragraph": "P15",
+        "verbatim": "There is a presumed duty of trust and confidence when a person receives material non-public information from his or her spouse, parent, child, or sibling.",
+        "kind": "definition",
+        "plain_meaning": "A duty of trust and confidence is presumed when material non-public information comes from a spouse, parent, child or sibling.",
+        "cross_refs": [
+          "P14"
+        ],
+        "ambiguity": null
+      },
+      {
+        "clause_id": "C33",
+        "paragraph": "P16",
+        "verbatim": "Portfolio Managers:\n• Sitting on Boards of public companies in connection with an equity or fixed income position that they manage;\n• Having the intent to control or work with others to attempt to influence or control a company; or\n• Working with expert network consultants who were recent employees of a company involving a major transaction.",
+        "kind": "definition",
+        "plain_meaning": "Portfolio managers may obtain inside information by sitting on public company boards, seeking to influence or control a company, or working with expert network consultants who recently worked at a company involved in a major transaction.",
+        "cross_refs": [
+          "P17"
+        ],
+        "ambiguity": "'Recent employees' and 'major transaction' are undefined."
+      },
+      {
+        "clause_id": "C34",
+        "paragraph": "P17",
+        "verbatim": "The Legal Department should be consulted in these situations.",
+        "kind": "escalation",
+        "plain_meaning": "In the situations listed in P16, including calls with experts who recently worked at a company in a major transaction, the Legal Department should be consulted.",
+        "cross_refs": [
+          "P16"
+        ],
+        "ambiguity": "It does not say whether consultation must happen before the call or only after information is received, and 'should' may be advisory rather than mandatory."
+      },
+      {
+        "clause_id": "C35",
+        "paragraph": "P18",
+        "verbatim": "Contacts with public companies are an important part of the Firm’s research efforts coupled with publicly available information. Difficult legal issues arise when an employee becomes aware of material, non-public information through a company contact. This could happen, for example, if a company’s Chief Financial Officer prematurely discloses quarterly results, or if an investor-relations representative makes a selective disclosure of adverse news to a handful of investors.",
+        "kind": "definition",
+        "plain_meaning": "Company contacts are a legitimate research source but can expose employees to material non-public information, for example early disclosure of results or selective disclosure of bad news.",
+        "cross_refs": [],
+        "ambiguity": null
+      },
+      {
+        "clause_id": "C36",
+        "paragraph": "P18",
+        "verbatim": "In such situations, the Firm must make a judgment regarding its further trading conduct.",
+        "kind": "out_of_scope",
+        "plain_meaning": "When this happens, the Firm must decide how to handle its further trading.",
+        "cross_refs": [],
+        "ambiguity": "This concerns trading decisions, not call content, and gives no criteria for the judgment."
+      },
+      {
+        "clause_id": "C37",
+        "paragraph": "P19",
+        "verbatim": "If an issue arises in this area, a research analyst’s notes could become subject to scrutiny. Research analyst’s notes have become increasingly the target of plaintiffs’ attorneys in securities class actions.",
+        "kind": "out_of_scope",
+        "plain_meaning": "Warns that analysts' notes may be scrutinized in litigation if problems arise.",
+        "cross_refs": [
+          "P18"
+        ],
+        "ambiguity": null
+      },
+      {
+        "clause_id": "C38",
+        "paragraph": "P20",
+        "verbatim": "The SEC has declared publicly that they will take strict action against what they see as “selective disclosures” by corporate insiders to securities analysts, even when the corporate insider was getting no personal benefit and was trying to correct market misinformation.",
+        "kind": "out_of_scope",
+        "plain_meaning": "Notes that the SEC pursues selective disclosures by insiders to analysts, even without personal benefit.",
+        "cross_refs": [],
+        "ambiguity": null
+      },
+      {
+        "clause_id": "C39",
+        "paragraph": "P20",
+        "verbatim": "Analysts and portfolio managers who have private discussions with management of a company should be clear about whether they desire to obtain inside information and become restricted or not receive such information.",
+        "kind": "duty",
+        "plain_meaning": "Analysts and portfolio managers in private discussions with company management must be clear whether they want to receive inside information and be restricted, or not receive it.",
+        "cross_refs": [],
+        "ambiguity": "It is unclear whether 'be clear' means deciding internally or stating the position to management on the call; only the latter can be seen in a transcript."
+      },
+      {
+        "clause_id": "C40",
+        "paragraph": "P21",
+        "verbatim": "If an analyst or portfolio manager receives what he or she believes is inside information and if you feel you received it in violation of a corporate insider’s fiduciary duty or for his or her personal benefit, you should not trade",
+        "kind": "out_of_scope",
+        "plain_meaning": "An analyst or portfolio manager who believes they received inside information improperly disclosed by an insider must not trade.",
+        "cross_refs": [],
+        "ambiguity": "This is a trading restriction triggered by subjective belief, so it cannot be observed in a call transcript."
+      },
+      {
+        "clause_id": "C41",
+        "paragraph": "P21",
+        "verbatim": "and should discuss the situation with the Legal Department.",
+        "kind": "escalation",
+        "plain_meaning": "In that situation, the analyst or portfolio manager must discuss it with the Legal Department.",
+        "cross_refs": [
+          "P2",
+          "P8"
+        ],
+        "ambiguity": "The trigger (belief that an insider breached a duty) is narrower than P2 and P8, which require reporting any suspected material non-public information."
+      },
+      {
+        "clause_id": "C42",
+        "paragraph": "P22",
+        "verbatim": "TCW Private Funds may accept investments from so-called “value-added” investors. Although the term value- added investor is not defined in the Investment Advisers Act of 1940, as amended, or elsewhere, it is generally understood to refer to an investor who may provide some benefit to the adviser (such as industry expertise or access to individuals in the investor’s network) beyond just the amount of their commitment. Examples of such investors may include, without limitation, executive-level officers or directors of a company or personnel who are affiliated with other investment advisers and/or private funds.",
+        "kind": "definition",
+        "plain_meaning": "Defines a value-added investor as one who offers benefits beyond capital, such as expertise or network access, for example company executives or directors or personnel of other advisers or funds.",
+        "cross_refs": [],
+        "ambiguity": "The definition is loose ('generally understood', 'without limitation'), and whether a call participant is a value-added investor may not be determinable from the transcript."
+      },
+      {
+        "clause_id": "C43",
+        "paragraph": "P23",
+        "verbatim": "Due to the nature of their position, such investors may possess material nonpublic information. Therefore, employees of the Firm should always remain alert to the possibility that they could inadvertently come into possession of material, non-public information when communicating with such investors.",
+        "kind": "duty",
+        "plain_meaning": "Because value-added investors may hold material non-public information, employees must stay alert to inadvertently receiving it when talking with them.",
+        "cross_refs": [
+          "P22"
+        ],
+        "ambiguity": "'Remain alert' is a state of mind and cannot be observed in a transcript."
+      },
+      {
+        "clause_id": "C44",
+        "paragraph": "P23",
+        "verbatim": "Firm personnel should refrain from discussing potentially sensitive topics (e.g., specific information about the investor’s employer) with a known value-added investor.",
+        "kind": "prohibition",
+        "plain_meaning": "Personnel must not discuss potentially sensitive topics, such as specifics about the investor's employer, with a known value-added investor.",
+        "cross_refs": [
+          "P22"
+        ],
+        "ambiguity": "'Potentially sensitive topics' is open-ended, and 'known' depends on facts outside the transcript."
+      },
+      {
+        "clause_id": "C45",
+        "paragraph": "P24",
+        "verbatim": "If there is any question as to whether information received from an investor could be material, non-public information, you are expected discuss it with the Legal Department immediately, and otherwise to act in accordance with the procedures in this Policy.",
+        "kind": "escalation",
+        "plain_meaning": "If there is any doubt whether information from an investor is material non-public information, you must raise it with the Legal Department immediately and otherwise follow this Policy's procedures.",
+        "cross_refs": [
+          "P22",
+          "P23"
+        ],
+        "ambiguity": "'Act in accordance with the procedures in this Policy' does not say which procedures apply."
+      },
+      {
+        "clause_id": "C46",
+        "paragraph": "P25",
+        "verbatim": "The Firm may, from time to time, execute agreements with companies that provide access to a group of professionals, specialized information or research services (“Expert Networks”). In such circumstances, Expert Networks are engaged to provide authorized TCW employees with information that may be helpful in TCW understanding an industry, legislative initiatives, and many other important topical areas. However, TCW is mindful of the fact that Expert Networks present significant legal, compliance and regulatory risks concerning the receipt and transmission of materially non-public information.",
+        "kind": "definition",
+        "plain_meaning": "Defines Expert Networks as firms providing access to professionals or research, used by authorized employees to understand industries and topics, and notes they carry significant MNPI risk.",
+        "cross_refs": [],
+        "ambiguity": null
+      },
+      {
+        "clause_id": "C47",
+        "paragraph": "P26",
+        "verbatim": "Given this inherent risk, TCW requires that, in addition to the requisite approval from our vendor management team, the compliance policies of each Expert Network are reviewed and approved by the Firm’s compliance department (the “Compliance Department”) prior to entering into an agreement for services. In the course of the review, the Compliance Department may rely on certifications and affirmations made by the Expert Networks as to the underlying processes.",
+        "kind": "out_of_scope",
+        "plain_meaning": "Before contracting with an Expert Network, vendor management must approve it and Compliance must review and approve its compliance policies, relying on the network's certifications if it chooses.",
+        "cross_refs": [
+          "P25"
+        ],
+        "ambiguity": null
+      },
+      {
+        "clause_id": "C48",
+        "paragraph": "P26",
+        "verbatim": "Furthermore, the Firm requires that each employee who wishes to participate in an Expert Network read and confirm their understanding of the Firm Expert Network Guidelines, as well as complete an Insider Trading training module to ensure that they understand the Firm policies regarding material non-public information and insider trading.",
+        "kind": "out_of_scope",
+        "plain_meaning": "Employees must read and acknowledge the Expert Network Guidelines and complete insider trading training before participating in an Expert Network.",
+        "cross_refs": [],
+        "ambiguity": "The Firm Expert Network Guidelines are not in the supplied text. Completion is checkable from training records, not from a transcript."
+      },
+      {
+        "clause_id": "C49",
+        "paragraph": "P26",
+        "verbatim": "A TCW employee that participates in a meeting with an Expert Network, regardless of the medium through which the meeting is conducted (i.e. phone, video call, or any other means by which such meeting may occur), should be assigned the task of creating notes during or contemporaneously with the meeting (“Notes”).",
+        "kind": "duty",
+        "plain_meaning": "For every Expert Network meeting, in any medium, a participating TCW employee must be assigned to take notes during or right after the meeting.",
+        "cross_refs": [],
+        "ambiguity": "The passive 'should be assigned' does not say who assigns the task, and 'should' could be read as advisory rather than mandatory."
+      },
+      {
+        "clause_id": "C50",
+        "paragraph": "P26",
+        "verbatim": "These Notes should be delivered to the Compliance Department within seven (7) days of the meeting.",
+        "kind": "duty",
+        "plain_meaning": "The meeting Notes must be delivered to Compliance within seven days of the meeting.",
+        "cross_refs": [],
+        "ambiguity": "It does not say whether the seven days are calendar or business days."
+      },
+      {
+        "clause_id": "C51",
+        "paragraph": "P26",
+        "verbatim": "In conjunction with the appropriate departments, the Compliance Department will maintain a log of all Expert Network calls.",
+        "kind": "duty",
+        "plain_meaning": "Compliance, working with the relevant departments, must keep a log of all Expert Network calls.",
+        "cross_refs": [],
+        "ambiguity": "The required contents of the log are not specified."
+      },
+      {
+        "clause_id": "C52",
+        "paragraph": "P27",
+        "verbatim": "The Compliance Department may chaperone Expert Network calls on a sampling basis, or periodically sample and conduct a review of calls by inspecting the Notes, and/or any written or audio recording of the call that may be available.",
+        "kind": "discretion",
+        "plain_meaning": "Compliance may chaperone a sample of Expert Network calls, or periodically review sampled calls by inspecting Notes and any available recordings.",
+        "cross_refs": [
+          "P26"
+        ],
+        "ambiguity": "No sampling rate, frequency or selection method is given."
+      },
+      {
+        "clause_id": "C53",
+        "paragraph": "P27",
+        "verbatim": "If, based upon this review, the Compliance Department determines that material non-public information may have been disclosed during a call, they will immediately notify the General Counsel and the Chief Compliance Officer.",
+        "kind": "escalation",
+        "plain_meaning": "If Compliance's review finds that material non-public information may have been disclosed on a call, it must immediately notify the General Counsel and the Chief Compliance Officer.",
+        "cross_refs": [],
+        "ambiguity": "'May have been disclosed' sets a low and undefined threshold, and 'immediately' is not quantified."
+      },
+      {
+        "clause_id": "C54",
+        "paragraph": "P27",
+        "verbatim": "A review to determine if material non-public information was received, and any actions to be taken, will be conducted in accordance with TCW’s policies and procedures regarding material non-public information.",
+        "kind": "duty",
+        "plain_meaning": "A follow-up review must determine whether material non-public information was actually received and what to do about it, under TCW's MNPI policies and procedures.",
+        "cross_refs": [],
+        "ambiguity": "The governing 'policies and procedures' are not identified; this may refer to the P8 process or to separate documents."
+      },
+      {
+        "clause_id": "C55",
+        "paragraph": "P27",
+        "verbatim": "Additionally, the Compliance Department will sample personal trading activity by employees in the securities of publicly traded companies in similar industries as those discussed during the calls.",
+        "kind": "out_of_scope",
+        "plain_meaning": "Compliance must sample employees' personal trading in public companies in industries similar to those discussed on Expert Network calls.",
+        "cross_refs": [],
+        "ambiguity": "This is trading surveillance rather than call review; 'similar industries' is undefined, though the industries discussed would come from the call record."
+      }
+    ]
+  },
+  "rulesDoc": {
+    "rules": [
+      {
+        "rule_id": "R1",
+        "source_clause_ids": [
+          "C7",
+          "C19"
+        ],
+        "intent": "Possible MNPI received from an expert: a company-specific operating result for the covered issuer's unreported period that has not been verified as public",
+        "guard": {
+          "root": "n1",
+          "nodes": [
+            {
+              "id": "n1",
+              "op": "and",
+              "children": [
+                "n2",
+                "n3",
+                "n4",
+                "n5"
+              ]
+            },
+            {
+              "id": "n2",
+              "op": "pred",
+              "name": "about_covered_issuer"
+            },
+            {
+              "id": "n3",
+              "op": "pred",
+              "name": "company_specific_operating_metric"
+            },
+            {
+              "id": "n4",
+              "op": "pred",
+              "name": "current_or_unreported_period"
+            },
+            {
+              "id": "n5",
+              "op": "not",
+              "children": [
+                "n6"
+              ]
+            },
+            {
+              "id": "n6",
+              "op": "pred",
+              "name": "public_match_verified"
+            }
+          ]
+        },
+        "on_true": "open_review_and_escalate",
+        "on_indeterminate": "open_review",
+        "severity": "high",
+        "exception_clause_ids": []
+      },
+      {
+        "rule_id": "R2",
+        "source_clause_ids": [
+          "C7",
+          "C19"
+        ],
+        "intent": "Possible MNPI received from an expert: a corporate event at the covered issuer that the expert indicated is not public and that has not been verified as public",
+        "guard": {
+          "root": "n1",
+          "nodes": [
+            {
+              "id": "n1",
+              "op": "and",
+              "children": [
+                "n2",
+                "n3",
+                "n4"
+              ]
+            },
+            {
+              "id": "n2",
+              "op": "pred",
+              "name": "about_covered_issuer"
+            },
+            {
+              "id": "n3",
+              "op": "pred",
+              "name": "nonpublic_corporate_event"
+            },
+            {
+              "id": "n4",
+              "op": "not",
+              "children": [
+                "n5"
+              ]
+            },
+            {
+              "id": "n5",
+              "op": "pred",
+              "name": "public_match_verified"
+            }
+          ]
+        },
+        "on_true": "open_review_and_escalate",
+        "on_indeterminate": "open_review",
+        "severity": "high",
+        "exception_clause_ids": []
+      },
+      {
+        "rule_id": "R3",
+        "source_clause_ids": [
+          "C41"
+        ],
+        "intent": "Inside information about the covered issuer apparently disclosed in breach of a duty of trust or confidence: internally sourced, taken from a former employer after leaving, or marked confidential",
+        "guard": {
+          "root": "n1",
+          "nodes": [
+            {
+              "id": "n1",
+              "op": "and",
+              "children": [
+                "n2",
+                "n3",
+                "n4",
+                "n5"
+              ]
+            },
+            {
+              "id": "n2",
+              "op": "pred",
+              "name": "about_covered_issuer"
+            },
+            {
+              "id": "n3",
+              "op": "or",
+              "children": [
+                "n6",
+                "n7"
+              ]
+            },
+            {
+              "id": "n4",
+              "op": "or",
+              "children": [
+                "n8",
+                "n9",
+                "n10"
+              ]
+            },
+            {
+              "id": "n5",
+              "op": "not",
+              "children": [
+                "n11"
+              ]
+            },
+            {
+              "id": "n6",
+              "op": "pred",
+              "name": "company_specific_operating_metric"
+            },
+            {
+              "id": "n7",
+              "op": "pred",
+              "name": "nonpublic_corporate_event"
+            },
+            {
+              "id": "n8",
+              "op": "pred",
+              "name": "internal_source_claimed"
+            },
+            {
+              "id": "n9",
+              "op": "pred",
+              "name": "post_employment_access"
+            },
+            {
+              "id": "n10",
+              "op": "pred",
+              "name": "confidentiality_signal_present"
+            },
+            {
+              "id": "n11",
+              "op": "pred",
+              "name": "public_match_verified"
+            }
+          ]
+        },
+        "on_true": "open_review_and_escalate",
+        "on_indeterminate": "open_review",
+        "severity": "high",
+        "exception_clause_ids": []
+      }
+    ],
+    "unsupported_clauses": [
+      {
+        "clause_id": "C1",
+        "reason": "This prohibits trading securities, which a single expert statement on a call cannot show, and 'certain related companies' refers to a footnote that was not supplied."
+      },
+      {
+        "clause_id": "C2",
+        "reason": "This exception points to a 'Deal-Specific Information' section that is not in the supplied policy, and it qualifies a trading prohibition no predicate observes."
+      },
+      {
+        "clause_id": "C4",
+        "reason": "This restricts trading for oneself or others, which no predicate over an expert's statement observes."
+      },
+      {
+        "clause_id": "C5",
+        "reason": "A Firm employee's recommendation to trade, and whether it rests on inside information, is not observed by any predicate, because the predicates evaluate the expert's statement."
+      },
+      {
+        "clause_id": "C6",
+        "reason": "Although the owner marked P2 must-be-automated, this restricts whom the employee later discusses the information with, which no predicate over an expert's statement observes; its reporting half (C7) is carried out by R1 and R2."
+      },
+      {
+        "clause_id": "C8",
+        "reason": "Although the owner marked P2 must-be-automated, whether the employee discusses the information with a supervisor or teammates happens after the call and no predicate observes it."
+      },
+      {
+        "clause_id": "C9",
+        "reason": "This governs an Access Person passing MNPI to people without a need to know, and no predicate observes the employee's onward communications or the recipient's need to know."
+      },
+      {
+        "clause_id": "C11",
+        "reason": "Whether an employee discusses the information with family, friends, clients or others is not observed by any predicate over the expert's statement."
+      },
+      {
+        "clause_id": "C12",
+        "reason": "The need-to-know carve-out qualifies an unsupported prohibition (C11), and no predicate measures a recipient's need to know."
+      },
+      {
+        "clause_id": "C14",
+        "reason": "Employees communicating MNPI about TCW Registered Funds is onward conduct, and no predicate identifies those funds or the employee's communications."
+      },
+      {
+        "clause_id": "C15",
+        "reason": "This extends the sharing prohibition to affiliates such as Carlyle and Nippon Life, but no predicate observes sharing with affiliates, and the information-barrier policies are not supplied."
+      },
+      {
+        "clause_id": "C16",
+        "reason": "This refers to separate information-barrier policies that are not in the supplied text."
+      },
+      {
+        "clause_id": "C17",
+        "reason": "Although the owner marked P7 must-be-automated, Legal approval before signing a confidentiality letter or agreement concerns contracting, which no predicate observes, and stretching confidentiality_signal_present to cover it would misstate what that predicate measures."
+      },
+      {
+        "clause_id": "C18",
+        "reason": "Although the owner marked P7 must-be-automated, the clause turns on whether the issuer was already on the Restricted Securities List and whether acceptance was knowing, and no predicate observes either."
+      },
+      {
+        "clause_id": "C20",
+        "reason": "Although the owner marked P8 must-be-automated, placing a company on the Restricted Securities List follows a determination by the Administrator and Legal, which is a human decision and an action rules cannot take."
+      },
+      {
+        "clause_id": "C24",
+        "reason": "This grants case-by-case judgment on materiality, which is discretion for people rather than a condition a rule can evaluate."
+      },
+      {
+        "clause_id": "C25",
+        "reason": "It is triggered by an employee having a question about materiality, which no predicate observes, and it requires routing that question to Legal."
+      },
+      {
+        "clause_id": "C27",
+        "reason": "Being wary is a state of mind that no predicate observes; the observable breach-of-duty case is handled by R3 under C41."
+      },
+      {
+        "clause_id": "C29",
+        "reason": "This is a legal test for an improper tip, not a clarification requirement, and the corporate insider's expected benefit (reputational or quid pro quo) is not observed by any predicate."
+      },
+      {
+        "clause_id": "C34",
+        "reason": "Although the owner marked P17 must-be-automated, no predicate observes whether the expert's former company is involved in a 'major transaction', and the policy gives no window for 'recent' to set the months parameter of expert_recent_issuer_employee, so automating it would mean inventing both conditions."
+      },
+      {
+        "clause_id": "C36",
+        "reason": "This calls for a Firm judgment about further trading conduct, which is human discretion over trading rather than call content."
+      },
+      {
+        "clause_id": "C39",
+        "reason": "This concerns analysts' private discussions with company management and their own stated intentions, which are not observed by predicates over an expert-call statement."
+      },
+      {
+        "clause_id": "C40",
+        "reason": "Although the owner marked P21 must-be-automated, this is a prohibition on trading triggered by the employee's belief, and no predicate observes trading or belief; the escalation half (C41) is carried out by R3."
+      },
+      {
+        "clause_id": "C43",
+        "reason": "Although the owner marked P23 must-be-automated, remaining alert is a state of mind, and no predicate identifies a value-added investor."
+      },
+      {
+        "clause_id": "C44",
+        "reason": "Although the owner marked P23 must-be-automated, no predicate identifies a known value-added investor or an employee raising sensitive topics with one."
+      },
+      {
+        "clause_id": "C45",
+        "reason": "Although the owner marked P24 must-be-automated, it applies to information received from an investor, and no predicate identifies an investor as the source; it also requires the employee to raise the question with Legal."
+      },
+      {
+        "clause_id": "C47",
+        "reason": "Vendor and Compliance approval of an Expert Network before contracting is an onboarding control, not something visible in a call statement."
+      },
+      {
+        "clause_id": "C48",
+        "reason": "Guideline acknowledgment and training completion are checked from training records, which no predicate observes."
+      },
+      {
+        "clause_id": "C49",
+        "reason": "Assigning a note-taker for each Expert Network meeting is an administrative duty that no statement-level predicate observes."
+      },
+      {
+        "clause_id": "C50",
+        "reason": "Whether Notes reach Compliance within seven days is a delivery deadline that no predicate observes."
+      },
+      {
+        "clause_id": "C51",
+        "reason": "Keeping a log of all Expert Network calls is a recordkeeping duty for Compliance, not a condition on a statement."
+      },
+      {
+        "clause_id": "C52",
+        "reason": "This grants Compliance discretion over chaperoning and sampling calls, which is not a rule condition."
+      },
+      {
+        "clause_id": "C53",
+        "reason": "This escalation is triggered by Compliance's own determination after its review, a human judgment that rules cannot make or stand in for."
+      },
+      {
+        "clause_id": "C54",
+        "reason": "Determining whether MNPI was received, and what actions to take, is a human review under policies that are not identified in the supplied text."
+      },
+      {
+        "clause_id": "C55",
+        "reason": "Sampling employees' personal trading is trading surveillance, which no predicate over a call statement observes."
+      }
+    ]
+  },
+  "monitors": [
+    {
+      "monitor_id": "M1",
+      "rule_id": "R1",
+      "scope": "claim",
+      "initial_state": "UNASSESSED",
+      "states": [
+        "UNASSESSED",
+        "REVIEW_REQUIRED",
+        "NOT_TRIGGERED"
+      ],
+      "transitions": [
+        {
+          "id": "M1-T1",
+          "from": [
+            "UNASSESSED",
+            "NOT_TRIGGERED"
+          ],
+          "event": "CLAIM_EVALUATED",
+          "guard_ref": "rule",
+          "result_is": "true",
+          "to": "REVIEW_REQUIRED",
+          "effects": [
+            "OPEN_REVIEW_TASK",
+            "REQUEST_ESCALATION"
+          ],
+          "priority": 1
+        },
+        {
+          "id": "M1-T2",
+          "from": [
+            "UNASSESSED",
+            "NOT_TRIGGERED"
+          ],
+          "event": "CLAIM_EVALUATED",
+          "guard_ref": "rule",
+          "result_is": "indeterminate",
+          "to": "REVIEW_REQUIRED",
+          "effects": [
+            "OPEN_REVIEW_TASK"
+          ],
+          "priority": 1
+        },
+        {
+          "id": "M1-T3",
+          "from": [
+            "UNASSESSED",
+            "NOT_TRIGGERED"
+          ],
+          "event": "CLAIM_EVALUATED",
+          "guard_ref": "rule",
+          "result_is": "false",
+          "to": "NOT_TRIGGERED",
+          "effects": [
+            "AUDIT_ONLY"
+          ],
+          "priority": 1
+        },
+        {
+          "id": "M1-T4",
+          "from": [
+            "UNASSESSED",
+            "NOT_TRIGGERED"
+          ],
+          "event": "CONTEXT_UPDATED",
+          "guard_ref": "rule",
+          "result_is": "true",
+          "to": "REVIEW_REQUIRED",
+          "effects": [
+            "OPEN_REVIEW_TASK",
+            "REQUEST_ESCALATION"
+          ],
+          "priority": 1
+        },
+        {
+          "id": "M1-T5",
+          "from": [
+            "UNASSESSED",
+            "NOT_TRIGGERED"
+          ],
+          "event": "CONTEXT_UPDATED",
+          "guard_ref": "rule",
+          "result_is": "indeterminate",
+          "to": "REVIEW_REQUIRED",
+          "effects": [
+            "OPEN_REVIEW_TASK"
+          ],
+          "priority": 1
+        },
+        {
+          "id": "M1-T6",
+          "from": [
+            "UNASSESSED",
+            "NOT_TRIGGERED"
+          ],
+          "event": "CONTEXT_UPDATED",
+          "guard_ref": "rule",
+          "result_is": "false",
+          "to": "NOT_TRIGGERED",
+          "effects": [
+            "AUDIT_ONLY"
+          ],
+          "priority": 1
+        }
+      ],
+      "default_event_behavior": "NO_STATE_CHANGE_AND_AUDIT"
+    },
+    {
+      "monitor_id": "M2",
+      "rule_id": "R2",
+      "scope": "claim",
+      "initial_state": "UNASSESSED",
+      "states": [
+        "UNASSESSED",
+        "REVIEW_REQUIRED",
+        "NOT_TRIGGERED"
+      ],
+      "transitions": [
+        {
+          "id": "M2-T1",
+          "from": [
+            "UNASSESSED",
+            "NOT_TRIGGERED"
+          ],
+          "event": "CLAIM_EVALUATED",
+          "guard_ref": "rule",
+          "result_is": "true",
+          "to": "REVIEW_REQUIRED",
+          "effects": [
+            "OPEN_REVIEW_TASK",
+            "REQUEST_ESCALATION"
+          ],
+          "priority": 1
+        },
+        {
+          "id": "M2-T2",
+          "from": [
+            "UNASSESSED",
+            "NOT_TRIGGERED"
+          ],
+          "event": "CLAIM_EVALUATED",
+          "guard_ref": "rule",
+          "result_is": "indeterminate",
+          "to": "REVIEW_REQUIRED",
+          "effects": [
+            "OPEN_REVIEW_TASK"
+          ],
+          "priority": 1
+        },
+        {
+          "id": "M2-T3",
+          "from": [
+            "UNASSESSED",
+            "NOT_TRIGGERED"
+          ],
+          "event": "CLAIM_EVALUATED",
+          "guard_ref": "rule",
+          "result_is": "false",
+          "to": "NOT_TRIGGERED",
+          "effects": [
+            "AUDIT_ONLY"
+          ],
+          "priority": 1
+        },
+        {
+          "id": "M2-T4",
+          "from": [
+            "UNASSESSED",
+            "NOT_TRIGGERED"
+          ],
+          "event": "CONTEXT_UPDATED",
+          "guard_ref": "rule",
+          "result_is": "true",
+          "to": "REVIEW_REQUIRED",
+          "effects": [
+            "OPEN_REVIEW_TASK",
+            "REQUEST_ESCALATION"
+          ],
+          "priority": 1
+        },
+        {
+          "id": "M2-T5",
+          "from": [
+            "UNASSESSED",
+            "NOT_TRIGGERED"
+          ],
+          "event": "CONTEXT_UPDATED",
+          "guard_ref": "rule",
+          "result_is": "indeterminate",
+          "to": "REVIEW_REQUIRED",
+          "effects": [
+            "OPEN_REVIEW_TASK"
+          ],
+          "priority": 1
+        },
+        {
+          "id": "M2-T6",
+          "from": [
+            "UNASSESSED",
+            "NOT_TRIGGERED"
+          ],
+          "event": "CONTEXT_UPDATED",
+          "guard_ref": "rule",
+          "result_is": "false",
+          "to": "NOT_TRIGGERED",
+          "effects": [
+            "AUDIT_ONLY"
+          ],
+          "priority": 1
+        }
+      ],
+      "default_event_behavior": "NO_STATE_CHANGE_AND_AUDIT"
+    },
+    {
+      "monitor_id": "M3",
+      "rule_id": "R3",
+      "scope": "claim",
+      "initial_state": "UNASSESSED",
+      "states": [
+        "UNASSESSED",
+        "REVIEW_REQUIRED",
+        "NOT_TRIGGERED"
+      ],
+      "transitions": [
+        {
+          "id": "M3-T1",
+          "from": [
+            "UNASSESSED",
+            "NOT_TRIGGERED"
+          ],
+          "event": "CLAIM_EVALUATED",
+          "guard_ref": "rule",
+          "result_is": "true",
+          "to": "REVIEW_REQUIRED",
+          "effects": [
+            "OPEN_REVIEW_TASK",
+            "REQUEST_ESCALATION"
+          ],
+          "priority": 1
+        },
+        {
+          "id": "M3-T2",
+          "from": [
+            "UNASSESSED",
+            "NOT_TRIGGERED"
+          ],
+          "event": "CLAIM_EVALUATED",
+          "guard_ref": "rule",
+          "result_is": "indeterminate",
+          "to": "REVIEW_REQUIRED",
+          "effects": [
+            "OPEN_REVIEW_TASK"
+          ],
+          "priority": 1
+        },
+        {
+          "id": "M3-T3",
+          "from": [
+            "UNASSESSED",
+            "NOT_TRIGGERED"
+          ],
+          "event": "CLAIM_EVALUATED",
+          "guard_ref": "rule",
+          "result_is": "false",
+          "to": "NOT_TRIGGERED",
+          "effects": [
+            "AUDIT_ONLY"
+          ],
+          "priority": 1
+        },
+        {
+          "id": "M3-T4",
+          "from": [
+            "UNASSESSED",
+            "NOT_TRIGGERED"
+          ],
+          "event": "CONTEXT_UPDATED",
+          "guard_ref": "rule",
+          "result_is": "true",
+          "to": "REVIEW_REQUIRED",
+          "effects": [
+            "OPEN_REVIEW_TASK",
+            "REQUEST_ESCALATION"
+          ],
+          "priority": 1
+        },
+        {
+          "id": "M3-T5",
+          "from": [
+            "UNASSESSED",
+            "NOT_TRIGGERED"
+          ],
+          "event": "CONTEXT_UPDATED",
+          "guard_ref": "rule",
+          "result_is": "indeterminate",
+          "to": "REVIEW_REQUIRED",
+          "effects": [
+            "OPEN_REVIEW_TASK"
+          ],
+          "priority": 1
+        },
+        {
+          "id": "M3-T6",
+          "from": [
+            "UNASSESSED",
+            "NOT_TRIGGERED"
+          ],
+          "event": "CONTEXT_UPDATED",
+          "guard_ref": "rule",
+          "result_is": "false",
+          "to": "NOT_TRIGGERED",
+          "effects": [
+            "AUDIT_ONLY"
+          ],
+          "priority": 1
+        }
+      ],
+      "default_event_behavior": "NO_STATE_CHANGE_AND_AUDIT"
+    }
+  ]
+}

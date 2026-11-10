@@ -7,7 +7,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { z } from "zod";
-import { resetDbForTests } from "@/server/db/client";
+import { getDb, resetDbForTests } from "@/server/db/client";
+import { llmCalls } from "@/server/db/schema";
 import { costUsd, LlmError, LlmTimeout, priceFor, recordingFile, requestHashFor, structuredCall } from "@/server/llm/client";
 
 const RECORDINGS = join(process.cwd(), "fixtures/llm-recordings");
@@ -131,5 +132,40 @@ describe("a live call with a time limit", () => {
     expect(seen.body?.thinking).toEqual({ type: "disabled" });
     expect(seen.body).not.toHaveProperty("fallbacks");
     expect(seen.headers?.get("anthropic-beta") ?? "").not.toContain("server-side-fallback");
+  });
+});
+
+describe("a live call cut off at the token limit", () => {
+  afterEach(() => vi.unstubAllGlobals().unstubAllEnvs());
+
+  /** A server that streams half a JSON object and then stops at max_tokens, as a long structured answer does. */
+  const truncatingServer = () =>
+    vi.fn(async () => {
+      const events: [string, unknown][] = [
+        ["message_start", { type: "message_start", message: { id: "msg_cut", type: "message", role: "assistant", model: "claude-opus-5-5", content: [], stop_reason: null, stop_sequence: null, usage: { input_tokens: 1200, output_tokens: 1, cache_read_input_tokens: 300, cache_creation_input_tokens: 0 } } }],
+        ["content_block_start", { type: "content_block_start", index: 0, content_block: { type: "text", text: "" } }],
+        ["content_block_delta", { type: "content_block_delta", index: 0, delta: { type: "text_delta", text: '{"ok": tr' } }],
+        ["content_block_stop", { type: "content_block_stop", index: 0 }],
+        ["message_delta", { type: "message_delta", delta: { stop_reason: "max_tokens", stop_sequence: null }, usage: { output_tokens: 16000 } }],
+        ["message_stop", { type: "message_stop" }],
+      ];
+      const text = events.map(([name, data]) => `event: ${name}\ndata: ${JSON.stringify(data)}\n\n`).join("");
+      return new Response(text, { status: 200, headers: { "content-type": "text/event-stream" } });
+    });
+
+  it("raises LlmTruncated, not an API error, and logs the call with the usage the stream reported", async () => {
+    resetDbForTests();
+    vi.stubEnv("BLINK_LLM_MODE", "live");
+    vi.stubEnv("ANTHROPIC_API_KEY", "test-key-not-real");
+    vi.stubGlobal("fetch", truncatingServer());
+    // The SDK client keeps the fetch it was built with, so load a fresh client module that picks up this stub.
+    vi.resetModules();
+    const { structuredCall, LlmTruncated } = await import("@/server/llm/client");
+    const err = await structuredCall({ stage: "policy_pass_a", promptVersion: "v1", schema: z.object({ ok: z.boolean() }), system: "s", user: "u", effort: "high", maxTokens: 16000, maxRetries: 0 }).catch((e) => e);
+    expect(err).toBeInstanceOf(LlmTruncated);
+    expect((err as { code: string }).code).toBe("LLM_TRUNCATED");
+    const rows = getDb().select().from(llmCalls).all();
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({ stage: "policy_pass_a", stopReason: "max_tokens", inputTokens: 1200, outputTokens: 16000, cacheReadTokens: 300, replayed: false });
   });
 });
