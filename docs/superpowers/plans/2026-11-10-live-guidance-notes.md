@@ -101,6 +101,7 @@ When the owner has reported, the next step is to fill in the answers here, write
 | 2026-11-10 | 36 (controller ruling) | Anthropic: every policy compile stage raised to 32,000 output tokens, so the demo policy stages changed hash. `pnpm record` made 9 live `claude-opus-5-5` calls ($0.76, as the script reports) and reused the other 10; `pnpm eval` was not affected | $0.76 |
 | 2026-11-10 | 36 | Anthropic: `BLINK_LLM_MODE=record pnpm eval:policies` with the new cap: 15 live `claude-opus-5-5` calls for the three policies, $3.28 as the script reports. Plan total so far about $8.6 (the earlier unlogged estimate included), under the $25 cap | $3.28 |
 | 2026-11-10 | 43 | Anthropic: the deployment's first start ran the 6 queued document-facts jobs live (`claude-opus-5-5`, 6 calls), as `/api/metrics` on the deployment reports. Plan total so far about $8.66 | $0.06 |
+| 2026-11-10 | 37 | Anthropic, all `claude-opus-5-5`, all live (no real-material recording): `pnpm eval:real`, a one-call probe ($0.24), the development set under four policies (public $1.15, private $0.11), fix round 1 reruns (private $0.37, public $1.10) and the repeat runs (15 calls, $0.53), as `llm_calls` reports; plus the round-1 re-recording (`pnpm record` $0.37, `pnpm record:live` $0.18, `BLINK_LLM_MODE=record pnpm eval` about $0.31 from its recordings' token counts). Plan total so far about $13.02 | $4.36 |
 
 ## Waiting on the owner
 
@@ -339,3 +340,19 @@ Step 1 is done: `pnpm live:prepare` (`scripts/prepare-live-call.sh`) resets `dat
 - **First start:** migrations ran, the database was empty, so the seed ran in full. That queued 6 document-facts jobs, and the worker (`LLM mode: live`) finished them for $0.06. The health check passed on the first poll.
 - **Smoke:** `pnpm smoke --url https://blink-production.up.railway.app` passed every check: health, the redirect to sign-in, all four sign-ins, the banker refused `/api/calls` (403) and `act-as` (404), an unknown case (404), and sign-out.
 - **Build warning:** Next's file tracer warns that a `process.cwd()` path in the server code makes it trace the whole project into the output. That makes the build slower and bigger, but nothing fails. Left as is.
+
+## Task 37: the real development set, scored
+
+- **Run order:** after Tasks 42 and 43, at the owner's request.
+- **How a call is scored:** `pnpm eval:real` makes a case per (call, policy) in a scratch database, uploads the transcript, and runs the `analyze_transcript` job. A labelled turn is "hidden" when a claim quotes it and that claim's monitors end in `REVIEW_REQUIRED`, `ESCALATION_REQUESTED` or `NEEDS_CONTEXT`. A guard conflict counts as review, as in the app. AI-suggested concerns are not counted.
+- **Each policy gets its own extraction.** The extraction request does not depend on the policy, so the policies differ partly by extraction variance. That is the brief's "after-call pipeline under each policy", taken literally.
+- **Policies:**
+  - Real policies are loaded with `allowCoverageGaps` (oaktree 10, sage-rock 7 and tcw 10 blocking coverage issues) and stored through `finalizeCompile`, so they end `COMPILE_FAILED`. They are never approved; the case's `active_policy_version_id` is set directly.
+  - `demo` is the hand-written fallback (`manual-monitors-v1.json`), for comparison only.
+  - The scratch database has no documents, so every "already public" check is unknown.
+- **Two sets:** `--set` repeats. Private calls were always run with `--counts-only`. Score files (counts and turn labels only) are in the git-ignored `data/real-eval/`. Record mode is refused while `BLINK_RECORDINGS_DIR` is under `fixtures/`.
+- **Result (after fix round 1):** all 5 labelled turns hidden under every policy (3 of 5 before the fix). `chu` comes back with nothing flagged under every policy, so the bar "no faulted call comes back with nothing flagged" is not met. The stay-quiet bar is not measurable. Repeat runs: 5/5, 5/5 and 4/5. Details are in `docs/eval/2026-11-real-dev.md`.
+- **Fix round 1 (`extract-v3`):** the extraction prompt now treats a fact the expert conveys without stating it (confirming, denying or correcting what the analyst put forward, or hinting at what is coming) as a claim. Both private labelled turns were `not_extracted` before it. The demo was re-recorded; `demo:check`, `live:check`, `pnpm eval` (10 of 10, 0 extra) and the leak test pass. 13 orphaned recordings were deleted: 11 extractions and 2 briefs.
+- **No second round.** No labelled turn is still missed. `chu` states no company fact, and flagging talk about evading regulators or records would need a new kind of claim or predicate.
+- **Step 5 wrote no coverage file:** no turn was extracted but not flagged, in any run.
+
