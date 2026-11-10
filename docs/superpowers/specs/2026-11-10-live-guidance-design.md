@@ -40,15 +40,16 @@ The owner's words, kept verbatim because they carry the intent:
 3. **Compliance review with context.** Compliance sees the hidden text, why it was hidden, and decides.
 4. **Observability.** Every step Blink takes on a call is recorded and shown plainly.
 5. **A quiet, minimal interface** across the whole app.
-6. **Real services.** The app runs deployed, with live speech-to-text and live model calls.
+6. **Real services, all on free plans** (owner: "everything free"). The app runs deployed, with live speech-to-text and live model calls.
 7. **An honest test** on real material nobody on this project wrote.
+8. **Secure access** (owner). A banker reads a call only after compliance has fully approved it, and can never reach hidden text or anyone else's data.
 
 **Non-goals**
 
 - Suggesting what the banker should ask (owner).
 - Training a custom classifier model ([section 6](#6-how-the-live-path-works) explains why).
 - Moving the database to Postgres, Supabase or Turso.
-- Real sign-in or SSO. A Windows version of the banker's app. Languages other than English.
+- Single sign-on through a company directory. A Windows version of the banker's app. Languages other than English.
 - Recording-consent handling, trade surveillance, or any statement that a call "is compliant". The spec's limits on what Blink may claim still hold.
 - Signing or distributing the Mac app. It runs from source on the presenter's Mac.
 
@@ -100,11 +101,26 @@ Speed target (my call, to be confirmed by measurement on day one): the warning i
 
 The count on the "Call ended" pill, and the pass bars in [section 11](#11-honest-testing), count the first two rows.
 
-**What the banker can read after the call (awaiting the owner's answer).** Today a banker can read no transcript text at all: `loadWorkspace` in `src/server/services/workspace.ts` is for reviewers only, `analystCaseView` in `src/server/services/cases.ts` returns no turn text, and a banker sees only a released brief. The owner said "by default, everything is hidden", which can be read two ways. This document proposes the following, and it is unconfirmed:
+**What the banker can read after the call (owner).** "After the call the banker should be able to read the full transcript plus a release summary, but only after it's fully approved by the compliance team."
 
-- While the after-call read is running, about a minute, the banker sees nothing. Otherwise anything the live path missed, timed out on, or lost in an outage would be readable.
-- Once it finishes, the banker sees the transcript with the hidden passages blanked out. This is a new page and a new server response that does the blanking.
-- If the owner instead means the whole transcript stays hidden until compliance acts, that is already how the app behaves, and the banker's transcript page is not built.
+- Until compliance has fully approved the call, the banker can read nothing from it. That is how the app behaves today: `loadWorkspace` in `src/server/services/workspace.ts` is for reviewers only, and `analystCaseView` in `src/server/services/cases.ts` returns no turn text.
+- "Fully approved" means every hidden passage has a decision, the whole call is attested, and the summary's exact text is approved. This is the existing release check, extended to cover the transcript.
+- On release the banker gets two things together: the summary, and the transcript. Both are new to the banker's side of the app; the transcript page does not exist yet.
+- This document reads "the full transcript" as the whole call with the passages compliance kept hidden still blanked out. Passages compliance chose to unhide are shown. This reading is unconfirmed, and it is the cautious one.
+- If a corrected transcript arrives after release, the existing staleness rules apply: the released transcript and summary are marked as under re-review until compliance approves again.
+
+### Keeping it secure
+
+The owner: "The transcript and summary should be secured so that they can't hack into other data or see it, and the summary shouldn't have any confidential information leaked into it."
+
+How that is met is my call:
+
+- **Real sign-in on the deployed app.** Each person signs in with their own account, and the role comes from the account. The role switcher is what makes the app insecure today: anyone can become a reviewer. It stays available only in local development and tests.
+- **Every request is checked on the server.** A banker can open only their own cases. A request for another case, or for anything meant for compliance, is refused. Nothing relies on an id being hard to guess.
+- **Hidden text never leaves the server for a banker.** It is removed before the response is built: not in a page, not in an API response, not in the summary, not in an error message or a log the banker can reach.
+- **The summary cannot leak.** As today, the model that drafts it is never given a restricted statement. In addition, before release, code compares the summary with every hidden passage and blocks the release if a quote, a figure or a named detail from one appears in it. Compliance then approves the exact text.
+- **Break-in tests.** A set of tests acts as a banker and tries to read another banker's case, a reviewer's view, and hidden text by every route the app exposes. They must all be refused, and they run with the rest of the tests.
+- Keys for outside services exist only on the server.
 
 ## 6. How the live path works
 
@@ -125,7 +141,7 @@ Mac app                                    Blink server                    Mac a
 
 **On using a small model as a classifier (owner asked).** This is that, in the form that keeps Blink explainable. The model classifies each turn into fixed categories; code turns the categories into "nothing", "steer away" or "move on". A model trained to output "move on" directly was considered and rejected for now, for three reasons: there is no real labeled data to train it on ([section 11](#11-honest-testing)); it would bake in one firm's policy, and policies differ per firm; and it could not say why it fired, which breaks the observability goal. Once real calls accumulate, the recorded decisions are training data for exactly such a model, used as a first-pass filter. That is future work.
 
-**Model choice.** Measured on day one, not assumed. Candidates: `claude-haiku-5-5` with thinking off, low effort and the fixed part of the prompt cached; and one open model on a fast host (Cerebras `gpt-oss-120b`). Pick by measured 95th-percentile time and by agreement with the after-call reader on the development test calls. If nothing is measured, use Haiku 5.5, since the key already exists. The after-call reader stays on `claude-opus-5-5`.
+**Model choice.** Measured on day one, not assumed. Candidates: `claude-haiku-5-5` with thinking off, low effort and the fixed part of the prompt cached; and, if the owner approves one, an open model on a fast host that has a free plan ([section 10](#10-services)). Pick by measured 95th-percentile time and by agreement with the after-call reader on the development test calls. If nothing is measured, use Haiku 5.5, since the key already exists. The after-call reader stays on `claude-opus-5-5`.
 
 **When something goes wrong.** A turn the reader cannot finish in 2.5 seconds is recorded as "not read live" and is covered by the after-call read. A model refusal is treated the same way. A dropped transcription connection reconnects; the gap is recorded with its start, end and cause, the pill shows "Blink can't hear the call" while it lasts, and the missed audio is not silently skipped in the record.
 
@@ -167,17 +183,19 @@ This applies to every existing screen: case queue, review workspace, brief, audi
 
 ## 10. Services
 
-Named here for approval. **Nothing is provisioned until the owner says yes.** Keys are collected through the secure secret prompt, never in chat or in git.
+The owner approved Deepgram and Railway on 2026-11-10, with one condition: **everything free**. No service is used that needs a card. Keys are never written in chat or committed to git.
 
-| Need | Service | Notes |
-|---|---|---|
-| Live speech-to-text | Deepgram, Flux model | Built for detecting the end of a turn; about a quarter of a second by its own figure. $200 free credit. Compare once against Soniox on day one. Groq was checked: its speech-to-text takes uploaded files only, not a live stream. |
-| Models | Anthropic API | Existing key. Haiku 5.5 live, Opus 5.5 after the call. |
-| Fast model host | Cerebras | Only if it wins the day-one measurement. Has a free tier. |
-| Hosting | Railway | One service running the web app and the worker together, with one persistent disk. |
-| Database | SQLite on that disk | Owner: "if SQLite is already on Railway, I guess it works." Supabase would mean rewriting every database call for no visible change. |
+| Need | Service | What is free | Notes |
+|---|---|---|---|
+| Live speech-to-text | Deepgram, Flux model | $200 credit, no card, no expiry. About 430 hours of Flux. | Built for detecting the end of a turn; about a quarter of a second by its own figure. Groq was checked: its speech-to-text takes uploaded files only, not a live stream. |
+| Hosting | Railway | A 30-day trial with $5 of credit and no card. 1 GB of memory, a 0.5 GB disk. | One service running the web app and the worker together, with one persistent disk. The trial covers the finals. Afterwards the free plan gives $1 a month, which will not keep the app running. Deploy late and keep memory low: a service holding 1 GB all month would use the $5 in about 15 days. |
+| Database | SQLite on that disk | Included | Owner: "if SQLite is already on Railway, I guess it works." Supabase would mean rewriting every database call for no visible change. |
+| Models | Anthropic API | **Not free.** | The one paid item, on the owner's existing key. Haiku 5.5 live, Opus 5.5 after the call. A few cents for the live path of a call; under fifty cents for the after-call read. |
+| Fast model host | Not chosen | Cerebras gives its credit only with a payment method on file, so it is out. | The day-one comparison uses a host with a free plan and no card, such as Groq, or is skipped. Not approved by the owner yet. |
 
-The deployed site sits in front of paid APIs, so it gets one shared passcode (my call). The role switcher stays as it is.
+A new Railway account that Railway has not verified gets a limited trial with restricted outbound network access, which would block the calls to Deepgram and Anthropic. Verification is automatic and usually follows from connecting GitHub. If the account stays limited, hosting has to be reconsidered.
+
+The deployed app is protected by real sign-in, described under [Keeping it secure](#keeping-it-secure).
 
 ## 11. Honest testing
 
@@ -227,14 +245,15 @@ Without In Practise's permission there is no fair real "should stay quiet" set, 
 Then, in order:
 
 1. The live path end to end, recording every step from the first turn.
-2. Hiding at call end, and the compliance decision.
-3. The three observability screens.
-4. The redesign of the existing screens.
-5. The real-material tests, and fixing what they show.
-6. Deploy to Railway; a full live run on the deployed app.
-7. Rehearse, and record the backup video, by 2026-11-18.
+2. Hiding at call end, the compliance decision, and release of the transcript and summary to the banker.
+3. Sign-in, the server-side access checks, the summary leak check, and the break-in tests.
+4. The three observability screens.
+5. The redesign of the existing screens.
+6. The real-material tests, and fixing what they show.
+7. Deploy to Railway; a full live run on the deployed app.
+8. Rehearse, and record the backup video, by 2026-11-18.
 
-If time runs short, cut from the bottom of this list (my call): the all-calls overview, then the redesign of the policy and documents pages, then the size of the sealed test. The live pill, the hiding, and the one-call record are the last things to go.
+If time runs short, cut in this order (my call): the all-calls overview, then the redesign of the policy and documents pages, then the size of the sealed test. The live pill, the hiding, the security work, and the one-call record are the last things to go. The app is not deployed to a public address without step 3.
 
 The demo on the 19th is a real call between two people, with Blink running live. It depends on the venue's network, so the recorded video is the backup, and a phone hotspot is the first fallback.
 
@@ -244,16 +263,23 @@ The demo on the 19th is a real call between two people, with Blink running live.
 - **"Humans decide":** still true for unhiding and for releasing a brief. Hiding now happens automatically, before any person decides.
 - **D19, hosting:** Railway, not the presenter's laptop.
 - **D4, model:** a second, smaller model is used on the live path.
+- **D13, sign-in:** the role switcher is replaced by real sign-in on the deployed app. Section 1.4 still excludes single sign-on.
+- **The banker's view:** a banker now reads the released transcript as well as the summary.
 - **Section 15, design language:** replaced by [section 9](#9-the-look).
 - **Section 19, demo script:** to be rewritten around a live call once the live path works.
 
 ## 14. Left to the builder
 
-Table and column names; endpoint shapes; how the Mac app and the server talk (one request per finished turn, answered with the pill state, is the simplest thing that meets the speed target); whether to start reading before the speaker has fully finished; the pill's animation; how the banker picks a case in the Mac app; how the passcode is checked; test layout; the exact attribute names in the per-turn record (follow OpenTelemetry's generative-AI names where they exist).
+Table and column names; endpoint shapes; how the Mac app and the server talk (one request per finished turn, answered with the pill state, is the simplest thing that meets the speed target); whether to start reading before the speaker has fully finished; the pill's animation; how the banker picks a case in the Mac app and signs in from it; how accounts and passwords are stored; how the leak check matches figures and names; test layout; the exact attribute names in the per-turn record (follow OpenTelemetry's generative-AI names where they exist).
 
 ## 15. Open items for the owner
 
-1. **What the banker can read after the call, and when.** [Section 5](#5-after-the-call) gives the proposal and the alternative. The answer decides whether a banker-facing transcript page is built at all.
-2. **Approve the services** in [section 10](#10-services), create the Deepgram and Railway accounts, and say when a few minutes at the Mac are possible for the day-one spike. Nothing can be provisioned, and the spike cannot run, without this.
-3. Decide whether to ask In Practise for permission. A request can be drafted for the owner to send.
-4. Confirm or change the pass bars in [section 11](#11-honest-testing).
+Answered on 2026-11-10: what the banker can read after a call ([section 5](#5-after-the-call)), and the services ([section 10](#10-services)).
+
+Still open:
+
+1. **Approve this document**, so that a build plan can be written from it.
+2. Say when a few minutes at the Mac are possible for the day-one spike.
+3. Confirm that "the full transcript" means the whole call with the passages compliance kept hidden still blanked out.
+4. Decide whether to ask In Practise for permission. A request can be drafted for the owner to send.
+5. Confirm or change the pass bars in [section 11](#11-honest-testing).
