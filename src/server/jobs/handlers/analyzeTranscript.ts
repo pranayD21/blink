@@ -15,6 +15,7 @@ import { analysisRuns, transcriptVersions } from "../../db/schema";
 import { LlmError, LlmSchemaError, llmModel, structuredCall } from "../../llm/client";
 import { EXTRACT_PROMPT_VERSION, EXTRACT_STAGE, EXTRACT_SYSTEM, buildExtractUser } from "../../llm/prompts/extract";
 import { persistAnalysis, recordAnalysisFailure, setRunStage, startRun } from "../../services/analysis";
+import { reconcileLiveFlags } from "../../services/live";
 import { loadCaseBundle, loadDocumentSet, turnsOfVersion } from "../../services/loaders";
 import { type JobRow, setJobStage } from "../queue";
 import { extractFactsForDocument } from "./extractDocFacts";
@@ -107,8 +108,13 @@ export async function analyzeTranscript(job: JobRow): Promise<Record<string, unk
   setJobStage(job.id, "Comparing public evidence", 70);
   transact((tx) => setRunStage(tx, run.id, "Comparing public evidence"));
   setJobStage(job.id, "Evaluating policy", 85);
-  // Persistence, comparison, evaluation, staleness, and status change are one transaction.
-  const report = transact((tx) => persistAnalysis(tx, { caseId: payload.caseId, runId: run.id, transcript, grounding, llmCallId }));
+  // Persistence, comparison, evaluation, staleness, status change, and keeping what a live call
+  // flagged but this read did not are one transaction.
+  const report = transact((tx) => {
+    const persisted = persistAnalysis(tx, { caseId: payload.caseId, runId: run.id, transcript, grounding, llmCallId });
+    reconcileLiveFlags(tx, transcript.id);
+    return persisted;
+  });
   runByJob.delete(job.id);
   return { runId: run.id, runNo: run.runNo, claims: report.claims, findingsOpened: report.findingsOpened, quotes: report.stats, stale: report.stale };
 }
@@ -123,4 +129,6 @@ export function analyzeTranscriptFailed(job: JobRow, error: unknown): void {
   const runId = runByJob.get(job.id) ?? getDb().select().from(analysisRuns).where(eq(analysisRuns.caseId, payload.caseId)).all().filter((r) => r.status === "running").at(-1)?.id ?? null;
   runByJob.delete(job.id);
   transact((tx) => recordAnalysisFailure(tx, { caseId: payload.caseId, runId, code, message }));
+  // Fail closed: with no after-call read, every passage a live call flagged becomes a finding.
+  if (payload.transcriptVersionId) transact((tx) => reconcileLiveFlags(tx, payload.transcriptVersionId));
 }

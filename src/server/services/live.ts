@@ -11,9 +11,12 @@ import { and, asc, desc, eq } from "drizzle-orm";
 import { z } from "zod";
 import { turnHash } from "@/core/deps/hash";
 import { compareClaim, isComparable, toPublicMatchFact } from "@/core/evidence/compare";
-import type { GroundedClaim, GroundingTurn } from "@/core/extraction/ground";
-import { type MonitorMove, PILL_TEXT, type PillLevel, decidePill } from "@/core/live/pill";
+import type { GroundedClaim, GroundingIssue, GroundingTurn } from "@/core/extraction/ground";
+import type { LlmQuestionWire } from "@/core/extraction/schema";
+import { STAGES, type Stage } from "@/core/live/health";
+import { type MonitorMove, PILL_TEXT, type PillLevel, decidePill, endedText } from "@/core/live/pill";
 import { probeRuleIds } from "@/core/live/probe";
+import { liveTranscriptText } from "@/core/live/transcript";
 import type { PublicMatchFact } from "@/core/predicates/registry";
 import { type CompiledPolicy, evaluateClaim } from "@/core/runtime/evaluateClaim";
 import type { ClaimRecord } from "@/core/types";
@@ -21,12 +24,16 @@ import { appendAudit } from "../audit/log";
 import { type Actor, requireRole } from "../auth/actor";
 import { nowIso, nowMs } from "../clock";
 import { type DbOrTx, fromJson, getDb, toJson, transact } from "../db/client";
-import { callClaims, callTurns, calls, cases } from "../db/schema";
-import { conflict, notFound, unprocessable } from "../errors";
+import { callClaims, callOutages, callTurns, calls, cases, findingPassages, findings, processingIssues } from "../db/schema";
+import { badRequest, conflict, notFound, unprocessable } from "../errors";
 import { newId } from "../ids";
 import { LIVE_MODEL, type LiveReader, type ReadTurnResult, readTurn } from "../live/reader";
 import { LIVE_PROMPT_VERSION } from "../llm/prompts/live";
-import { activePolicyVersion, currentTranscript, getCase, loadCaseBundle, loadDocumentSet, loadPolicy } from "./loaders";
+import { latestRun } from "./analysis";
+import { syncCaseStatus } from "./caseStatus";
+import { createFinding, findingLabel, openTask } from "./findingsCore";
+import { activePolicyVersion, currentTranscript, getCase, loadCaseBundle, loadCurrentClaims, loadDocumentSet, loadPolicy, turnsOfVersion } from "./loaders";
+import { uploadTranscript } from "./transcripts";
 
 export type CallRow = typeof calls.$inferSelect;
 type CallTurnRow = typeof callTurns.$inferSelect;
@@ -137,9 +144,9 @@ export interface TurnEvaluations {
     monitors: { monitorId: string; ruleId: string; prevState: string; nextState: string; result: string; transitionId: string | null; conflictFlag: boolean; guardTrace: unknown }[];
   }[];
   /** The question an analyst turn asks, and the rules whose topic it touches. Null when not probed. */
-  probe: { question: unknown; ruleIds: string[] } | null;
+  probe: { question: LlmQuestionWire; ruleIds: string[] } | null;
   /** Grounding and linking issues from the read: nothing the reader dropped is lost. */
-  issues: unknown[];
+  issues: GroundingIssue[];
 }
 
 const label = (seq: number) => `T${seq}`;
@@ -227,6 +234,8 @@ async function processTurn(callId: string, raw: z.infer<typeof TurnSchema>, acto
 
   const compiled: CompiledPolicy = { rules: policy.rules, monitors: policy.monitors };
   return transact((tx) => {
+    // The call may have been ended while this turn was being read: it is then not part of the call.
+    if (tx.select({ status: calls.status }).from(calls).where(eq(calls.id, callId)).get()?.status !== "live") throw conflict("This call has ended; it takes no more turns.", "CALL_NOT_LIVE");
     const rulesStarted = nowMs();
     const moves: MonitorMove[] = [];
     const evaluations: TurnEvaluations = { policyVersionId: policy.version.id, claims: [], probe: null, issues: read.status === "read" ? read.issues : [] };
@@ -320,4 +329,192 @@ async function processTurn(callId: string, raw: z.infer<typeof TurnSchema>, acto
     tx.insert(callTurns).values(row).run();
     return decisionOf(row);
   });
+}
+
+/** Resolves once every turn already posted to the call has been stored or refused. */
+export function turnsSettled(callId: string): Promise<void> {
+  return (chains.get(callId) ?? Promise.resolve()).then(() => undefined);
+}
+
+// ── Acknowledgements and outages ────────────────────────────────────────────
+
+export const AckSchema = z.strictObject({ seq: z.number().int().min(1), responseReceivedAt: z.string(), shownAt: z.string() });
+
+/**
+ * The Mac app says when the decision for a turn arrived and when the pill showed it. The first
+ * acknowledgement stands: a re-sent one changes nothing.
+ */
+export function ackTurn(tx: DbOrTx, callId: string, raw: z.infer<typeof AckSchema>, actor: Actor): void {
+  const input = AckSchema.parse(raw);
+  getCallForActor(tx, callId, actor);
+  const turn = tx.select().from(callTurns).where(and(eq(callTurns.callId, callId), eq(callTurns.seq, input.seq))).get();
+  if (!turn) throw notFound(`turn ${input.seq}`);
+  if (turn.shownAt) return;
+  tx.update(callTurns).set({ responseReceivedAt: input.responseReceivedAt, shownAt: input.shownAt }).where(eq(callTurns.id, turn.id)).run();
+}
+
+export const OutageSchema = z.strictObject({ stage: z.enum(STAGES), startedAt: z.string(), endedAt: z.string().nullable(), cause: z.string().trim().min(1), shownToBanker: z.boolean() });
+
+/** A stage of the live path that was down. An outage still open when the call ends lasts until the end. */
+export function recordOutage(tx: DbOrTx, callId: string, raw: z.infer<typeof OutageSchema>, actor: Actor): { outageId: string } {
+  const input = OutageSchema.parse(raw);
+  const call = getCallForActor(tx, callId, actor);
+  if (call.status !== "live") throw conflict("This call has ended; it takes no more outages.", "CALL_NOT_LIVE");
+  const started = Date.parse(input.startedAt);
+  const ended = input.endedAt === null ? null : Date.parse(input.endedAt);
+  if (!Number.isFinite(started) || (ended !== null && !Number.isFinite(ended))) throw badRequest("an outage needs ISO times");
+  if (ended !== null && ended < started) throw badRequest("an outage cannot end before it starts");
+  const outageId = newId("out");
+  tx.insert(callOutages).values({ id: outageId, callId, stage: input.stage, startedAt: input.startedAt, endedAt: input.endedAt, cause: input.cause, shownToBanker: input.shownToBanker }).run();
+  return { outageId };
+}
+
+// ── Ending a call ───────────────────────────────────────────────────────────
+
+/** What an outage of each stage cost the call, for the warning on the case. */
+const GAP_WORDING: Record<Stage, { what: string; lost: string }> = {
+  hearing: { what: "Blink could not hear the call", lost: "Speech in this gap is not in the transcript." },
+  transcribing: { what: "Blink could not transcribe the call", lost: "Speech in this gap may be missing from the transcript." },
+  reading: { what: "Blink could not read the turns", lost: "Turns in this gap were not checked during the call." },
+  rules: { what: "Blink could not check the rules", lost: "Turns in this gap were not checked during the call." },
+  screen: { what: "The banker's pill could not be updated", lost: "Warnings in this gap may not have reached the banker." },
+};
+
+/** A name as the transcript line can carry it: no brackets, colons or line breaks. */
+const lineName = (name: string): string => name.replace(/[():\r\n]+/g, " ").replace(/\s+/g, " ").trim().slice(0, 60);
+
+/** The turns that go into the transcript, in order. Turn n of the transcript is the nth of these. */
+const spokenTurns = (rows: readonly CallTurnRow[]): CallTurnRow[] => [...rows].sort((a, b) => a.seq - b.seq).filter((t) => t.text.trim().length > 0);
+
+/**
+ * Ends the banker's live call. A call where the expert never spoke is abandoned: nothing is
+ * uploaded and nothing was hidden. Otherwise the turns become the case's first transcript, the
+ * after-call read is queued, every outage becomes a warning on the case, and the pill reports
+ * how many passages were hidden: one per claim the call flagged.
+ */
+export function endCall(tx: DbOrTx, callId: string, actor: Actor, options: { source?: "ai" | "gold" } = {}): { hiddenCount: number; pillText: string; jobId: string | null; transcriptVersionId: string | null } {
+  const call = getCallForActor(tx, callId, actor);
+  if (call.status !== "live") throw conflict("This call has already ended.", "CALL_NOT_LIVE");
+  const endedAt = nowIso();
+  const turns = spokenTurns(tx.select().from(callTurns).where(eq(callTurns.callId, callId)).all());
+  const outages = tx.select().from(callOutages).where(eq(callOutages.callId, callId)).all();
+
+  if (!turns.some((t) => t.speaker === "expert")) {
+    tx.update(calls).set({ status: "abandoned", endedAt, hiddenCount: 0, version: call.version + 1 }).where(eq(calls.id, callId)).run();
+    appendAudit(tx, { actorId: actor.id, type: "CALL_ENDED", entityType: "call", entityId: callId, caseId: call.caseId, payload: { status: "abandoned", turns: turns.length, outages: outages.length, hidden_count: 0 } });
+    return { hiddenCount: 0, pillText: endedText(0), jobId: null, transcriptVersionId: null };
+  }
+
+  const { expert } = loadCaseBundle(tx, call.caseId);
+  const text = liveTranscriptText(turns, { analyst: lineName(actor.name), expert: lineName(expert.name) });
+  const upload = uploadTranscript(tx, call.caseId, { text, filename: "live-call.txt", sourceLabel: "Live call", source: options.source ?? "ai" }, actor);
+  const hiddenCount = tx.select().from(callClaims).where(eq(callClaims.callId, callId)).all().filter((c) => c.flagged !== "none").length;
+  tx.update(calls)
+    .set({ status: "ended", endedAt, transcriptVersionId: upload.transcriptVersionId, analysisJobId: upload.jobId, hiddenCount, version: call.version + 1 })
+    .where(eq(calls.id, callId))
+    .run();
+
+  for (const outage of outages) {
+    const seconds = Math.max(0, Math.round((Date.parse(outage.endedAt ?? endedAt) - Date.parse(outage.startedAt)) / 1000));
+    const wording = GAP_WORDING[outage.stage];
+    tx.insert(processingIssues)
+      .values({
+        id: newId("iss"),
+        caseId: call.caseId,
+        runId: null,
+        severity: "warning",
+        code: "CALL_GAP",
+        message: `${wording.what} for ${seconds} ${seconds === 1 ? "second" : "seconds"} (${outage.cause}). ${wording.lost}`,
+        refJson: toJson({ callId, outageId: outage.id, stage: outage.stage, startedAt: outage.startedAt, endedAt: outage.endedAt ?? endedAt }),
+        resolved: false,
+        createdAt: endedAt,
+      })
+      .run();
+  }
+
+  appendAudit(tx, {
+    actorId: actor.id,
+    type: "CALL_ENDED",
+    entityType: "call",
+    entityId: callId,
+    caseId: call.caseId,
+    payload: { status: "ended", turns: turns.length, outages: outages.length, hidden_count: hiddenCount, transcript_version: upload.transcriptVersionId, job: upload.jobId },
+  });
+  return { hiddenCount, pillText: endedText(hiddenCount), jobId: upload.jobId, transcriptVersionId: upload.transcriptVersionId };
+}
+
+// ── Reconciling live flags with the after-call read ─────────────────────────
+
+const joinAnd = (items: readonly string[]): string => (items.length <= 1 ? (items[0] ?? "") : `${items.slice(0, -1).join(", ")} and ${items.at(-1)}`);
+
+/**
+ * Fails closed (spec section 5): every claim the call flagged keeps its turns hidden. A flag is
+ * covered when a policy finding of the after-call read quotes any of its turns; otherwise it
+ * becomes a `live` finding for compliance, with each of its turns as a hidden passage. Runs after
+ * the after-call read, whether it succeeded or failed. A no-op when no call owns the transcript.
+ */
+export function reconcileLiveFlags(tx: DbOrTx, transcriptVersionId: string): { created: string[] } {
+  const call = tx.select().from(calls).where(eq(calls.transcriptVersionId, transcriptVersionId)).get();
+  if (!call) return { created: [] };
+  const flagged = tx.select().from(callClaims).where(eq(callClaims.callId, call.id)).all().filter((c) => c.flagged !== "none");
+  if (flagged.length === 0) return { created: [] };
+
+  // Call turn T<seq> is transcript turn T<n>, n its place among the spoken turns.
+  const toTranscriptLabel = new Map(spokenTurns(tx.select().from(callTurns).where(eq(callTurns.callId, call.id)).all()).map((t, i) => [label(t.seq), `T${i + 1}`]));
+  const transcriptTurns = new Map(turnsOfVersion(tx, transcriptVersionId).map((t) => [t.label, t]));
+  const claimTurns = new Map(loadCurrentClaims(tx, call.caseId).map((c) => [c.row.logicalKey, c.turnLabels]));
+  const covered = new Set(
+    tx
+      .select()
+      .from(findings)
+      .where(and(eq(findings.caseId, call.caseId), eq(findings.origin, "policy")))
+      .all()
+      .flatMap((f) => (f.claimLogicalKey ? (claimTurns.get(f.claimLogicalKey) ?? []) : [])),
+  );
+  const readFinished = latestRun(tx, call.caseId)?.status === "succeeded";
+
+  const created: string[] = [];
+  for (const row of flagged) {
+    const record = fromJson<ClaimRecord | null>(row.recordJson, null);
+    const labels = [...new Set((record?.quotes ?? []).map((q) => toTranscriptLabel.get(q.turnLabel) ?? q.turnLabel))];
+    if (labels.some((l) => covered.has(l))) continue;
+
+    const ruleIds = fromJson<string[]>(row.ruleIdsJson, []);
+    const rules = ruleIds.length > 0 ? joinAnd(ruleIds.map((r) => `rule ${r}`)) : "a rule";
+    const where = `the expert's ${labels.length === 1 ? "statement" : "statements"} in ${joinAnd(labels)}`;
+    const what = row.flagged === "review_required" ? `Live guidance flagged ${where}: it met ${rules} during the call.` : `Live guidance flagged ${where}: it could not rule out ${rules} by the end of the call.`;
+    const one = labels.length === 1;
+    const after = readFinished ? `The after-call read raised no policy finding on ${one ? "this turn" : "these turns"}` : "The after-call read did not finish";
+    const { finding, created: isNew } = createFinding(tx, {
+      caseId: call.caseId,
+      claimLogicalKey: null,
+      origin: "live",
+      title: "Flagged during the call",
+      severity: "high",
+      state: "REVIEW_REQUIRED",
+      reasonCodes: ["LIVE_ONLY", ...ruleIds, ...labels.map((l) => `TURN:${l}`)],
+      explanation: `${what} ${after}, so ${one ? "it stays" : "they stay"} hidden from the banker until compliance decides.`,
+      dedupeKey: `live:${call.caseId}:${row.id}`,
+      createdBy: "system",
+      auditPayload: { call: call.id, call_claim: row.id, flagged: row.flagged, turns: labels, rules: ruleIds },
+    });
+    if (!isNew) continue;
+    created.push(finding.id);
+    for (const l of labels) {
+      const turn = transcriptTurns.get(l);
+      if (turn) tx.insert(findingPassages).values({ id: newId("fp"), findingId: finding.id, turnId: turn.id, startChar: 0, endChar: turn.text.length }).run();
+    }
+    openTask(tx, {
+      caseId: call.caseId,
+      findingId: finding.id,
+      kind: "review",
+      question: `Review ${findingLabel(finding)}: live guidance flagged ${joinAnd(labels)} during the call, and the after-call read did not confirm it.`,
+      assignedRole: "reviewer",
+      dedupeKey: `live-review:${finding.id}`,
+      meta: { live: true, callId: call.id, turns: labels, ruleIds },
+      actorId: "system",
+    });
+  }
+  if (created.length > 0) syncCaseStatus(tx, call.caseId, { actorId: "system", cause: "live flag kept for compliance" });
+  return { created };
 }

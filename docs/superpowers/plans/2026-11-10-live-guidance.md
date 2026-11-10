@@ -641,7 +641,7 @@ export function endCall(tx: DbOrTx, callId: string, actor: Actor, options?: { so
 export function reconcileLiveFlags(tx: DbOrTx, transcriptVersionId: string): { created: string[] };   // ids of findings it opened
 ```
 
-- [ ] **Step 1: Write the failing tests.**
+- [x] **Step 1: Write the failing tests.**
 
 ```ts
 it("ending uploads the turns as transcript v1, queues the after-call read, and counts what was flagged", async () => {
@@ -669,13 +669,13 @@ it("an outage becomes a warning on the case", async () => { /* recordOutage 19 s
 it("an acknowledgement stores when the pill was shown", () => { /* ackTurn → call_turns.shown_at set */ });
 ```
 
-- [ ] **Step 2: Run it and see it fail.** Run: `pnpm exec vitest run tests/services/live-end.test.ts`. Expected: FAIL, `endCall` is not exported.
-- [ ] **Step 3: Implement.**
+- [x] **Step 2: Run it and see it fail.** Run: `pnpm exec vitest run tests/services/live-end.test.ts`. Expected: FAIL, `endCall` is not exported.
+- [x] **Step 3: Implement.**
   - `endCall`: refuse unless the call is live. With no expert turn, mark the call `abandoned` and return zeros. Otherwise build the text with `liveTranscriptText(turns, { analyst: actor.name, expert: <expert name from the packet> })`, call `uploadTranscript(tx, caseId, { text, filename: "live-call.txt", sourceLabel: "Live call", source: "ai" }, actor)`, store the version and job ids, set `hidden_count` to the number of `call_claims` rows not flagged `none`, add one `CALL_GAP` warning per outage, and append a `CALL_ENDED` audit event.
   - `reconcileLiveFlags`: find the call by transcript version; for each flagged `call_claims` row, take the turn labels of its quotes; it is covered when a `policy` finding's claim quotes any of those turns. If not covered, `createFinding` with `origin: "live"`, `claimLogicalKey: null`, `title: "Flagged during the call"`, `severity: "high"`, `state: "REVIEW_REQUIRED"`, `reasonCodes: ["LIVE_ONLY", ...ruleIds, ...labels.map((l) => "TURN:" + l)]`, `dedupeKey: "live:<caseId>:<callClaimId>"`, `createdBy: "system"`, and an explanation naming the turns and rules, worded "met rule R1 during the call" for a `review_required` flag and "could not rule out rule R1 by the end of the call" for a `needs_context` one; insert one `finding_passages` row per turn covering its whole text; open a review task; `syncCaseStatus`.
   - Call `reconcileLiveFlags` in `analyzeTranscript` inside the transaction that runs `persistAnalysis`, and in `analyzeTranscriptFailed`.
-- [ ] **Step 4: Run the tests.** Run: `pnpm test`. Expected: PASS.
-- [ ] **Step 5: Commit.**
+- [x] **Step 4: Run the tests.** Run: `pnpm test`. Expected: PASS.
+- [x] **Step 5: Commit.**
 
 ```bash
 git add src/server/services/live.ts src/server/jobs/handlers/analyzeTranscript.ts src/server/services/findingsCore.ts tests/services/live-end.test.ts

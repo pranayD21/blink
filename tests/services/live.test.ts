@@ -93,7 +93,7 @@ describe("ingesting a turn", () => {
     expect(evaluations.policyVersionId).toBe(call.policyVersionId);
     const r1 = evaluations.claims.find((c) => c.logicalKey === "C1")!.monitors.find((m) => m.ruleId === "R1")!;
     expect(r1).toMatchObject({ nextState: "REVIEW_REQUIRED", result: "true" });
-    expect(r1.prevState).not.toBe("REVIEW_REQUIRED");
+    expect(r1.prevState).toBe("NEEDS_CONTEXT"); // carried from T5, not re-derived from scratch
     expect(r1.guardTrace).toBeTruthy();
     expect(t11).toMatchObject({ speaker: "expert", readStatus: "read", llmCallId: "gold", suppressed: false, error: null });
 
@@ -103,6 +103,18 @@ describe("ingesting a turn", () => {
     expect(input11.turns.map((t) => t.label)).toEqual(Array.from({ length: 11 }, (_, i) => `T${i + 1}`));
     expect(input11.claimsSoFar.map((c) => c.logicalKey)).toContain("C1");
     expect(input11.ref).toEqual({ caseId: CASE, callId: call.id });
+  });
+
+  it("a claim heard again after it went red raises no second red", async () => {
+    const gold = goldReader();
+    // From T12 on, the reader keeps returning C1 as it stood at T11.
+    const repeating: LiveReader = (input) => (input.newTurnLabel === "T12" || input.newTurnLabel === "T13" ? gold({ ...input, newTurnLabel: "T11" }) : gold(input));
+    const d = await feed(13, repeating);
+    expect(d[10].pill.level).toBe("red");
+    expect(fromJson<{ claims: { logicalKey: string }[] }>(turnRow(12).evaluationsJson, { claims: [] }).claims.map((c) => c.logicalKey)).toEqual(["C1"]);
+    expect(d[11].pill).toEqual({ level: "listening", text: "Listening" });
+    expect(d[12].pill).toEqual({ level: "listening", text: "Listening" });
+    expect(claimRow("C1")).toMatchObject({ flagged: "review_required", firstFlaggedSeq: 5 });
   });
 
   it("a question a rule restricts is amber, then held back for thirty seconds", async () => {

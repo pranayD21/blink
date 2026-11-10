@@ -124,3 +124,14 @@ The SDK's per-request `timeout` stops counting once the response headers arrive,
 - A re-sent seq whose words differ from the stored turn is refused with 409 `TURN_CONFLICT`. A re-send with the same words returns the stored decision, even after the call has ended. A new turn on a call that is no longer live is refused with 409 `CALL_NOT_LIVE`.
 - `startCall` also pins the case to the policy version when the case has none, which the after-call read would otherwise do. Live and after-call reads then use the same version even if another is activated during the call.
 - A correction (`is_correction_of`) is stored as its own `call_claims` row. The claim it corrects keeps its row and flag. Task 13 decides what a corrected live flag means for compliance.
+
+## Task 13: ending a call and keeping what it flagged
+
+- A corrected claim keeps its own flag: each flagged `call_claims` row is one hidden passage group, so `hidden_count` counts a claim and its correction separately when both are flagged.
+- A live flag is covered when any `policy` finding's claim quotes any of the flag's turns, whatever that finding's state. Covered flags open nothing. An uncovered flag becomes a `live` finding with one `finding_passages` row per turn (the whole turn text) and a review task. The explanation names turns and rules only, never the turn text, and says whether the after-call read finished.
+- `reconcileLiveFlags` runs in the same transaction as `persistAnalysis`, and after `recordAnalysisFailure` in its own transaction when the after-call read fails for good. Findings are deduplicated by `live:<caseId>:<callClaimId>`, so a re-run opens nothing twice.
+- A call with no expert turn is marked `abandoned`. Nothing is uploaded, and its outages do not become case warnings, because there is no transcript for them to describe. Its `CALL_ENDED` audit event has `status: "abandoned"`.
+- Call turn `T<seq>` maps to transcript turn `T<n>`, where n is the turn's place among the turns with text. Today these are the same, since an empty turn is refused when it is posted.
+- `ingestTurn` checks the call is still live again inside its write transaction. A turn whose read was in flight when the call ended is refused with 409 `CALL_NOT_LIVE`, so it is never stored after the transcript was cut. `turnsSettled(callId)` resolves once every posted turn has settled, and the end route (Task 14) can await it before calling `endCall`.
+- `ackTurn` keeps the first acknowledgement. `recordOutage` refuses a call that is no longer live, and refuses times that do not parse or an end before the start. An outage still open at the end lasts until `ended_at`.
+- `findingsCore.ts` needed no change: `origin` already comes from the schema enum, which Task 9 extended with `live`.
