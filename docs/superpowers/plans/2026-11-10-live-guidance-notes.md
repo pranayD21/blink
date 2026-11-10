@@ -108,3 +108,9 @@ When the owner has reported, the next step is to fill in the answers here, write
 ## Task 10: the time limit is enforced twice
 
 The SDK's per-request `timeout` stops counting once the response headers arrive, and a streamed answer sends them at once, so on its own it would not bound a stalled stream. `structuredCall` therefore passes `timeout` to the SDK and also runs its own deadline (an `AbortController` fired after `timeoutMs`) over the whole stream; either one raises `LlmTimeout`. A test stalls a stubbed stream after the headers and checks this.
+
+## Task 11: what the live reader returns
+
+- `rejected` lists more than claims with an invented quote. A claim that grounds on its earlier quotes but has no valid quote from the newest turn is also listed, with a reason: "its quote from the newest turn was not found" when the model gave a quote from the newest turn that failed grounding (an invented quote on a re-emitted claim, which is Review Focus 4), or "no quote from the newest turn" when the model only repeated an old claim. Each entry carries its reason, so Task 12 can store `rejected_json` as it is.
+- Corrections of earlier claims are carried over. Grounding sees only one turn's output, so it drops any link or `is_correction_of` that points at a claim read on an earlier turn. `readTurn` rebuilds them from the model's output and accepts a target that is either a claim returned in this read or a key in `claimsSoFar`. A target that is neither is dropped and reported as a `LINK_TARGET_MISSING` issue with `ref: { claim, target }`. The read result has an `issues` list (grounding issues plus these), so Task 12 can store them.
+- A refused read has `llmCallId: null`. `structuredCall` writes an `llm_calls` row for the refusal, but the `LlmRefusal` it raises does not carry that row's id. Timeouts and errors also have `llmCallId: null`.

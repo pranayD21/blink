@@ -6,7 +6,7 @@
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { turnHash } from "@/core/deps/hash";
 import type { GroundingTurn } from "@/core/extraction/ground";
 import type { LlmClaimWire, LlmLiveReadWire } from "@/core/extraction/schema";
@@ -16,6 +16,19 @@ import { LIVE_MODEL, READ_TIMEOUT_MS, type ReadTurnInput, readTurn } from "@/ser
 import { recordingFile, requestHashFor, systemBlocks } from "@/server/llm/client";
 import { LIVE_PROMPT_VERSION, LIVE_STAGE, LIVE_SYSTEM, buildLiveContext, buildLiveUser } from "@/server/llm/prompts/live";
 import { goldReader, halvorsenLiveTurns, scriptedReader } from "../helpers/live";
+
+/** Every option `readTurn` hands the model client; the call still goes through to the real client. */
+const sent = vi.hoisted(() => [] as Record<string, unknown>[]);
+vi.mock("@/server/llm/client", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/server/llm/client")>();
+  return {
+    ...actual,
+    structuredCall: (opts: Parameters<typeof actual.structuredCall>[0]) => {
+      sent.push(opts as unknown as Record<string, unknown>);
+      return actual.structuredCall(opts);
+    },
+  };
+});
 
 const ctx: CaseContext = {
   issuer: "Orchard Lane Creamery, Inc.",
@@ -158,9 +171,64 @@ describe("readTurn", () => {
     expect(result.llmCallId).toBeNull();
   });
 
-  it("calls the fast model with thinking off and the turn's time limit", () => {
-    expect(LIVE_MODEL()).toBe(process.env.BLINK_LIVE_MODEL || "claude-haiku-5-5");
+  it("calls the fast model with thinking off and the turn's time limit", async () => {
+    sent.length = 0;
+    await readTurn(input());
     expect(READ_TIMEOUT_MS).toBe(2500);
+    expect(sent).toHaveLength(1);
+    expect(sent[0]).toMatchObject({
+      stage: LIVE_STAGE,
+      promptVersion: LIVE_PROMPT_VERSION,
+      system: [LIVE_SYSTEM, buildLiveContext(input())],
+      user: buildLiveUser(input()),
+      model: LIVE_MODEL(),
+      thinking: "disabled",
+      effort: "low",
+      maxTokens: 2000,
+      timeoutMs: 2500,
+      maxRetries: 0,
+      ref: { caseId: "case_x", callId: "call_x" },
+    });
+  });
+
+  const T3 = turn(3, "analyst", "Is that across the whole country?");
+  const T4 = turn(4, "expert", "No, sorry, I misspoke. Grocery orders are flat; it was the pint line that grew ten percent.");
+  const correctionInput = () => input({ turns: [T1, T2, T3, T4], newTurnLabel: "T4", claimsSoFar: [{ logicalKey: "C1", summary: "Grocery orders are up about ten percent year over year." }] });
+  const correction = (to: string): LlmClaimWire => ({
+    ...wireClaim("No, sorry, I misspoke."),
+    logical_key: "C2",
+    summary: "Grocery orders are flat; the pint line grew ten percent.",
+    value_direction: "flat",
+    quotes: [{ turn_id: "T4", quote: "Grocery orders are flat; it was the pint line that grew ten percent.", role: "primary", supports_fields: ["metric", "value"] }],
+    links: [{ to, kind: "corrects" }],
+    is_correction_of: to,
+  });
+
+  it("a correction of a claim read on an earlier turn keeps its link", async () => {
+    record(correctionInput(), { claims: [correction("C1")], question: neutralQuestion });
+    const result = await readTurn(correctionInput());
+    if (result.status !== "read") throw new Error(`expected a read, got ${result.status}`);
+    expect(result.claims.map((c) => c.logicalKey)).toEqual(["C2"]);
+    expect(result.claims[0].fields.is_correction_of).toBe("C1");
+    expect(result.claims[0].links).toEqual([{ to: "C1", kind: "corrects" }]);
+    expect(result.issues.filter((i) => i.code === "LINK_TARGET_MISSING")).toEqual([]);
+  });
+
+  it("a correction of a claim that was never read is dropped and reported", async () => {
+    record(correctionInput(), { claims: [{ ...correction("C9"), links: [] }], question: neutralQuestion });
+    const result = await readTurn(correctionInput());
+    if (result.status !== "read") throw new Error(`expected a read, got ${result.status}`);
+    expect(result.claims[0].fields.is_correction_of).toBeNull();
+    expect(result.issues).toContainEqual(expect.objectContaining({ code: "LINK_TARGET_MISSING", ref: { claim: "C2", target: "C9" } }));
+  });
+
+  it("a link to a claim that was never read is dropped and reported", async () => {
+    record(correctionInput(), { claims: [{ ...correction("C9"), is_correction_of: "" }], question: neutralQuestion });
+    const result = await readTurn(correctionInput());
+    if (result.status !== "read") throw new Error(`expected a read, got ${result.status}`);
+    expect(result.claims[0].links).toEqual([]);
+    expect(result.claims[0].fields.is_correction_of).toBeNull();
+    expect(result.issues.filter((i) => i.code === "LINK_TARGET_MISSING")).toEqual([expect.objectContaining({ ref: { claim: "C2", target: "C9" } })]);
   });
 });
 
@@ -222,14 +290,14 @@ describe("test readers", () => {
     expect(at11.claims[0].fields.access_timing).toBe("after_employment");
 
     const at2 = await reader(liveInput(2));
-    expect(at2).toMatchObject({ status: "read", claims: [], rejected: [], llmCallId: "gold", readMs: 0 });
+    expect(at2).toMatchObject({ status: "read", claims: [], rejected: [], issues: [], llmCallId: "gold", readMs: 0 });
   });
 
   it("scriptedReader fills a partial read and passes a full result through", async () => {
     const reader = scriptedReader({ T2: { status: "timeout", message: "slow", llmCallId: null, readMs: 2500 }, T3: { question: { ...neutralQuestion, asks_for_fact: true } } });
     expect((await reader(liveInput(2))).status).toBe("timeout");
     const at3 = await reader(liveInput(3));
-    expect(at3).toMatchObject({ status: "read", claims: [], rejected: [], question: { asks_for_fact: true } });
+    expect(at3).toMatchObject({ status: "read", claims: [], rejected: [], issues: [], question: { asks_for_fact: true } });
     expect(await reader(liveInput(4))).toMatchObject({ status: "read", claims: [], question: neutralQuestion });
   });
 });

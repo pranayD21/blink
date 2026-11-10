@@ -2,7 +2,7 @@
  * Readers and turns for live-call tests. No network: the gold reader replays the hand-labeled
  * Halvorsen extraction one turn at a time, and the scripted reader returns what a test asks for.
  */
-import { type GroundingTurn, groundExtraction, resetField } from "@/core/extraction/ground";
+import { groundExtraction, resetField } from "@/core/extraction/ground";
 import { type LlmExtraction, type LlmQuestionWire, LlmExtractionSchema } from "@/core/extraction/schema";
 import type { LiveTurn } from "@/core/live/transcript";
 import { parseTranscript } from "@/core/transcript/parse";
@@ -70,13 +70,14 @@ export function goldReader(): LiveReader {
     }
     // Ground every claim heard so far, so links between them survive, then keep those this turn adds to.
     const quotesNewest = new Set(claims.filter((c) => c.quotes.some((q) => q.turn_id === input.newTurnLabel)).map((c) => c.logical_key));
-    const grounding = groundExtraction({ claims, suggested_concerns: [], missing_context_questions: [], call_summary: "" }, input.turns as GroundingTurn[]);
+    const grounding = groundExtraction({ claims, suggested_concerns: [], missing_context_questions: [], call_summary: "" }, input.turns);
     return {
       status: "read",
       claims: grounding.claims
         .filter((c) => quotesNewest.has(c.logicalKey))
         .map((c) => ({ ...c, fields: (laterOnly.get(c.logicalKey) ?? []).reduce(resetField, c.fields) })),
       rejected: grounding.rejected.filter((r) => quotesNewest.has(r.logicalKey)),
+      issues: grounding.issues.filter((i) => quotesNewest.has(i.ref.claim)),
       question: NEUTRAL_QUESTION,
       llmCallId: "gold",
       readMs: 0,
@@ -88,13 +89,13 @@ type ReadResult = Extract<ReadTurnResult, { status: "read" }>;
 
 /**
  * A reader that returns, for the newest turn's label, the result a test gives: a full result as
- * it is, or a partial read filled in with no claims, no rejections and a neutral question. A turn
+ * it is, or a partial read filled in with no claims, no rejections, no issues and a neutral question. A turn
  * with no entry reads as nothing said.
  */
 export function scriptedReader(byLabel: Record<string, Partial<ReadResult> | ReadTurnResult>): LiveReader {
   return async (input) => {
     const entry = Object.hasOwn(byLabel, input.newTurnLabel) ? byLabel[input.newTurnLabel] : {};
     if (entry.status !== undefined && entry.status !== "read") return entry as ReadTurnResult;
-    return { claims: [], rejected: [], question: NEUTRAL_QUESTION, llmCallId: "scripted", readMs: 0, ...(entry as Partial<ReadResult>), status: "read" };
+    return { claims: [], rejected: [], issues: [], question: NEUTRAL_QUESTION, llmCallId: "scripted", readMs: 0, ...(entry as Partial<ReadResult>), status: "read" };
   };
 }

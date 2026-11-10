@@ -6,7 +6,7 @@
  * It never throws for a model failure: a turn it cannot read in time, or at all, comes back as
  * a typed result the caller records, so a slow or failed read is visible and never blocks the call.
  */
-import { type GroundedClaim, type GroundingResult, type GroundingTurn, groundExtraction } from "@/core/extraction/ground";
+import { type GroundedClaim, type GroundingIssue, type GroundingResult, type GroundingTurn, groundExtraction } from "@/core/extraction/ground";
 import { type LlmExtraction, type LlmQuestionWire, LlmLiveReadWireSchema, claimFromWire } from "@/core/extraction/schema";
 import type { CaseContext, ExpertProfile } from "@/core/types";
 import { nowMs } from "../clock";
@@ -30,7 +30,7 @@ export interface ReadTurnInput {
 }
 
 export type ReadTurnResult =
-  | { status: "read"; claims: GroundedClaim[]; rejected: GroundingResult["rejected"]; question: LlmQuestionWire; llmCallId: string; readMs: number }
+  | { status: "read"; claims: GroundedClaim[]; rejected: GroundingResult["rejected"]; issues: GroundingIssue[]; question: LlmQuestionWire; llmCallId: string; readMs: number }
   | { status: "timeout" | "refused" | "error"; message: string; llmCallId: string | null; readMs: number };
 
 export type LiveReader = (input: ReadTurnInput) => Promise<ReadTurnResult>;
@@ -74,5 +74,40 @@ export const readTurn: LiveReader = async (input) => {
     const proposedNew = call.data.claims.some((c) => c.logical_key.trim() === claim.logicalKey && c.quotes.some((q) => q.turn_id.trim() === input.newTurnLabel));
     rejected.push({ logicalKey: claim.logicalKey, summary: claim.fields.summary, reason: proposedNew ? "its quote from the newest turn was not found" : "no quote from the newest turn" });
   }
-  return { status: "read", claims, rejected, question: call.data.question, llmCallId: call.callId, readMs: nowMs() - started };
+  const issues = relinkToEarlierClaims(claims, extraction, input.claimsSoFar, grounding.issues);
+  return { status: "read", claims, rejected, issues, question: call.data.question, llmCallId: call.callId, readMs: nowMs() - started };
 };
+
+/**
+ * Grounding sees only this turn's output, so it drops every link and correction that points at a claim
+ * read on an earlier turn. Rebuilds them from the model's output: a target is valid when it is a claim
+ * returned now or one of the claims so far. A target that is neither is reported as an issue, never
+ * dropped silently. Returns the grounding issues with the link issues replaced by these.
+ */
+function relinkToEarlierClaims(claims: GroundedClaim[], extraction: LlmExtraction, claimsSoFar: ReadTurnInput["claimsSoFar"], groundingIssues: GroundingIssue[]): GroundingIssue[] {
+  const valid = new Set([...claims.map((c) => c.logicalKey), ...claimsSoFar.map((c) => c.logicalKey)]);
+  const raw = new Map<string, LlmExtraction["claims"][number]>();
+  // The first claim under a key is the one grounding kept.
+  for (const c of extraction.claims) if (!raw.has(c.logical_key.trim())) raw.set(c.logical_key.trim(), c);
+  const kept = new Set(claims.map((c) => c.logicalKey));
+  const issues = groundingIssues.filter((i) => !(i.code === "LINK_TARGET_MISSING" && kept.has(i.ref.claim)));
+
+  for (const claim of claims) {
+    const source = raw.get(claim.logicalKey);
+    if (!source) continue;
+    const key = claim.logicalKey;
+    const reachable = (to: string) => to !== key && valid.has(to);
+    claim.links = [];
+    for (const link of source.links) {
+      const to = link.to.trim();
+      if (reachable(to)) claim.links.push({ to, kind: link.kind });
+      else issues.push({ severity: "warning", code: "LINK_TARGET_MISSING", message: `claim ${key}: link to ${to} dropped (no such claim in this read or earlier)`, ref: { claim: key, target: to } });
+    }
+    const corrects = claim.links.find((l) => l.kind === "corrects")?.to;
+    const stated = source.fields.is_correction_of?.trim() || null;
+    const target = corrects ?? (stated && reachable(stated) ? stated : null);
+    if (!corrects && stated && !target) issues.push({ severity: "warning", code: "LINK_TARGET_MISSING", message: `claim ${key}: correction of ${stated} dropped (no such claim in this read or earlier)`, ref: { claim: key, target: stated } });
+    claim.fields = { ...claim.fields, is_correction_of: target };
+  }
+  return issues;
+}
