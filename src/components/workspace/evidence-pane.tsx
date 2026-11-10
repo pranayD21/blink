@@ -120,7 +120,7 @@ function Decisions({ finding, payload }: { finding: FindingView; payload: Worksp
 }
 
 const HISTORY_TEXT: Record<string, (p: Record<string, unknown>) => string> = {
-  FINDING_CREATED: (p) => `Opened in ${p.state ?? "review"}${p.at_turn ? ` at ${p.at_turn}` : ""}`,
+  FINDING_OPENED: (p) => `Opened in ${p.state ? humanize(String(p.state)) : "review"}${p.at_turn ? ` at ${p.at_turn}` : ""}`,
   FINDING_STATE_CHANGED: (p) => `${humanize(String(p.from))} → ${humanize(String(p.to))}${p.cause ? ` (${p.cause})` : ""}`,
   FINDING_ESCALATED: () => "Escalated to a senior compliance officer",
   FINDING_DISPOSITIONED: (p) => `Dispositioned: ${OUTCOME_LABEL[String(p.outcome)] ?? p.outcome}`,

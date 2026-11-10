@@ -262,7 +262,7 @@ export function BriefWorkspace({ payload, draftJob, llmMode }: { payload: Payloa
                 <div className="mb-4 rounded-lg border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-foreground" data-testid="brief-stale">
                   <StatusDot tone="stop" className="items-start whitespace-normal [&>span:first-child]:mt-1.5">
                     <span>
-                      <span className="font-medium">Stale.</span> {brief.staleReason ?? "The evidence changed after this brief was approved."} Redraft or edit it, then approve the new hash.
+                      <span className="font-medium">Stale.</span> {(brief.staleReason ?? "The evidence changed after this brief was approved").replace(/[.\s]+$/, "")}. Redraft or edit it, then approve the new hash.
                     </span>
                   </StatusDot>
                 </div>

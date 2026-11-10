@@ -31,7 +31,7 @@ function summarize(e: AuditEventView): string {
   switch (e.type) {
     case "CASE_STATUS_CHANGED":
       return `${state(p.from)} → ${state(p.to)} (${p.cause})`;
-    case "FINDING_CREATED":
+    case "FINDING_OPENED":
       return `${p.label ?? ""} opened: ${p.title ?? ""}`;
     case "FINDING_STATE_CHANGED":
       return `${p.label ?? ""} ${state(p.from)} → ${state(p.to)}${p.cause ? ` (${p.cause})` : ""}`;
@@ -73,7 +73,7 @@ function summarize(e: AuditEventView): string {
       return Object.entries(p)
         .filter(([, v]) => typeof v === "string" || typeof v === "number")
         .slice(0, 4)
-        .map(([k, v]) => `${k.replaceAll("_", " ")}: ${v}`)
+        .map(([k, v]) => `${k.replaceAll("_", " ")}: ${k === "state" ? state(v) : v}`)
         .join(" · ");
   }
 }
@@ -122,10 +122,11 @@ export function AuditTimeline({ events, users, scope }: { events: AuditEventView
           <li key={e.id} className={cn("flex items-baseline gap-3 px-4 py-2", result && !result.ok && result.brokenSeq === e.seq && "bg-destructive/10 ring-2 ring-destructive ring-inset")} data-type={e.type}>
             <span className="w-40 shrink-0 text-xs text-muted-foreground tabular-nums">{formatDateTime(e.ts)}</span>
             <span className="w-36 shrink-0 truncate text-xs text-muted-foreground">{e.actorId === "system" ? "Blink (system)" : (users[e.actorId] ?? e.actorId)}</span>
-            <span className="min-w-0 flex-1 text-foreground">
-              <StatusDot tone={DOT[e.type] ?? "none"} className="mr-2 align-baseline" />
-              <span className="font-medium">{humanize(e.type)}</span> <span className="text-muted-foreground">{summarize(e)}</span>
-            </span>
+            <StatusDot tone={DOT[e.type] ?? "none"} className="min-w-0 flex-1 items-start whitespace-normal text-foreground [&>span:first-child]:mt-1.5">
+              <span>
+                <span className="font-medium">{humanize(e.type)}</span> <span className="text-muted-foreground">{summarize(e)}</span>
+              </span>
+            </StatusDot>
             <span className="shrink-0 font-mono text-xs text-muted-foreground" title={`#${e.seq}\nhash ${e.hash}\nprev ${e.prevHash}`}>
               {shortHash(e.hash, 8)}
             </span>
