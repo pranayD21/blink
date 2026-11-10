@@ -4,6 +4,8 @@ data/
 desktop/
 spike/
 test-results/
+# Not needed to run, and some import desktop/, which next build would then fail to type-check.
+tests/
 playwright-report/
 blob-report/
 .next/

@@ -11,7 +11,7 @@ import { resolve } from "node:path";
 import { eq } from "drizzle-orm";
 import type { LiveTurn } from "@/core/live/transcript";
 import { parseTranscript } from "@/core/transcript/parse";
-import { DEMO_USERS, loadActor } from "../auth/actor";
+import { DEMO_USERS, demoEmail, loadActor } from "../auth/actor";
 import { hashPassword } from "../auth/password";
 import { appendAudit } from "../audit/log";
 import { type Tx, transact } from "../db/client";
@@ -77,9 +77,6 @@ export function fixturePolicyInput(file: "blink-demo-policy-v1.md" | "blink-demo
   const title = /^#\s+(.+)$/m.exec(text)?.[1] ?? file;
   return { title, text, requiredParagraphs: FIXTURE_REQUIRED_PARAGRAPHS, scenarios: readFixtureJson("policy", "scenarios-v1.json") };
 }
-
-/** `priya@blink.demo` for Priya Raman. */
-const demoEmail = (name: string): string => `${name.split(" ")[0].toLowerCase()}@blink.demo`;
 
 /**
  * Passwords for the demo accounts come from `BLINK_SEED_PASSWORDS`, a JSON object keyed by user id.

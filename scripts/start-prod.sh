@@ -10,6 +10,23 @@
 # Expects `pnpm build` to have run. PORT defaults to 3000. Never prints BLINK_SEED_PASSWORDS.
 set -eu
 
+# A stop during migrate or seed ends that step and exits at once. sh runs a trap only after a
+# foreground command returns, so each step runs in the background and is waited for. (As PID 1 in
+# the container, sh would otherwise ignore the platform's TERM entirely.)
+CHILD=""
+stop() {
+  echo "[start] stopped during startup" >&2
+  if [ -n "$CHILD" ]; then kill "$CHILD" 2>/dev/null || true; fi
+  exit "$1"
+}
+trap 'stop 143' TERM
+trap 'stop 130' INT
+run() {
+  "$@" &
+  CHILD=$!
+  wait "$CHILD"
+}
+
 cd "$(dirname "$0")/.."
 export PATH="$PWD/node_modules/.bin:$PATH"
 
@@ -23,10 +40,14 @@ if [ -z "${BLINK_SEED_PASSWORDS:-}" ]; then
 fi
 
 DB="${BLINK_DB_PATH:-./data/blink.db}"
+case "$DB" in
+  /data/*) ;;
+  *) echo "[start] warning: BLINK_DB_PATH is $DB, not under /data, so on Railway the database is lost on every deploy" >&2 ;;
+esac
 mkdir -p "$(dirname "$DB")"
 
 echo "[start] migrating $DB"
-drizzle-kit migrate
+run drizzle-kit migrate
 echo
 
 USERS=$(node -e '
@@ -38,10 +59,10 @@ db.close();
 
 if [ "$USERS" = "0" ]; then
   echo "[start] empty database: full seed"
-  tsx scripts/seed.ts
+  run tsx scripts/seed.ts
 else
   echo "[start] database has $USERS users: seeding users only"
-  tsx scripts/seed.ts --users-only
+  run tsx scripts/seed.ts --users-only
 fi
 
 exec concurrently -k -n web,worker "next start -p ${PORT:-3000}" "tsx scripts/worker.ts"

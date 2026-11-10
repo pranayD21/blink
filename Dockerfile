@@ -1,8 +1,10 @@
 # The production image (Task 42): the web server and the worker in one container, started by
-# scripts/start-prod.sh. The database lives on a volume at BLINK_DB_PATH, never in the image.
+# scripts/start-prod.sh. The database lives on a volume at BLINK_DB_PATH (default /data/blink.db,
+# where Railway mounts the volume; a Railway variable overrides it), never in the image.
 FROM node:26-bookworm-slim
 
-# better-sqlite3 compiles from source when no prebuilt binary matches this Node.
+# A fallback only: better-sqlite3 13 ships N-API prebuilds for linux-x64 and linux-arm64 inside its
+# package, so nothing compiles. The tools are here in case a future version or platform has none.
 RUN apt-get update \
   && apt-get install -y --no-install-recommends python3 make g++ \
   && rm -rf /var/lib/apt/lists/*
@@ -27,6 +29,9 @@ COPY . .
 # Only after the install, which would otherwise skip the development dependencies.
 ENV NODE_ENV=production
 RUN pnpm build
+
+# Set after the build, so nothing at build time can open a database under /data.
+ENV BLINK_DB_PATH=/data/blink.db
 
 EXPOSE 3000
 CMD ["sh", "scripts/start-prod.sh"]

@@ -27,6 +27,9 @@ export const DEMO_USERS: readonly Actor[] = [
   { id: "user_dana", name: "Dana Okafor", role: "policy_owner" },
 ];
 
+/** A demo user's sign-in email, as the seed gives it: `priya@blink.demo` for Priya Raman. */
+export const demoEmail = (name: string): string => `${name.split(" ")[0].toLowerCase()}@blink.demo`;
+
 export const ROLE_LABEL: Record<Role, string> = {
   analyst: "Banker",
   reviewer: "Compliance reviewer",
