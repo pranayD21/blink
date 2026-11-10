@@ -55,18 +55,18 @@ export function BaselineReview({ view, users }: { view: View; users: Record<stri
     }
   }
 
-  if (!view.transcript) return <p className="text-sm text-slate-500">This case has no transcript yet.</p>;
+  if (!view.transcript) return <p className="text-sm text-muted-foreground">This case has no transcript yet.</p>;
 
   return (
     <div className="grid grid-cols-[1fr_22rem] items-start gap-4">
       <Panel title={`Transcript v${view.transcript.versionNo}`} bodyClassName="p-0">
-        <div className="max-h-[70vh] divide-y divide-slate-100 overflow-y-auto">
+        <div className="max-h-[70vh] divide-y divide-border overflow-y-auto">
           {view.transcript.turns.map((t) => (
-            <label key={t.label} className={cn("flex cursor-pointer gap-3 px-4 py-2 text-sm hover:bg-slate-50", flagged.includes(t.label) && "bg-amber-50 hover:bg-amber-50")}>
+            <label key={t.label} className={cn("flex cursor-pointer items-start gap-3 px-4 py-2 text-sm hover:bg-muted/60", flagged.includes(t.label) && "bg-muted hover:bg-muted")}>
               <input type="checkbox" className="mt-1" checked={flagged.includes(t.label)} onChange={(e) => setFlagged((f) => (e.target.checked ? [...f, t.label] : f.filter((x) => x !== t.label)))} aria-label={`Flag ${t.label}`} />
-              <span className="w-8 shrink-0 font-mono text-xs text-slate-400">{t.label}</span>
+              <span className="w-8 shrink-0 font-mono text-xs text-muted-foreground">{t.label}</span>
               <span>
-                <span className="text-xs font-semibold text-slate-600 capitalize">{t.speaker}</span> <span className="text-slate-800">{t.text}</span>
+                <span className="text-xs font-semibold text-muted-foreground capitalize">{t.speaker}</span> <span className="text-foreground">{t.text}</span>
               </span>
             </label>
           ))}
@@ -75,27 +75,27 @@ export function BaselineReview({ view, users }: { view: View; users: Record<stri
 
       <div className="space-y-4">
         <Panel title="Review timer" bodyClassName="p-3">
-          <div className="flex items-center gap-2 text-2xl font-semibold text-slate-900 tabular-nums" data-testid="baseline-timer">
-            <Timer className="size-5 text-indigo-600" />
+          <div className="flex items-center gap-2 text-2xl font-semibold text-foreground tabular-nums" data-testid="baseline-timer">
+            <Timer className="size-5 text-muted-foreground" />
             {done !== null ? formatMinutes(done) : `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`}
           </div>
-          <p className="mt-1 text-xs text-slate-500">Counts active time only: the clock pauses after two minutes without activity and stops when you record a decision.</p>
+          <p className="mt-1 text-xs text-muted-foreground">Counts active time only: the clock pauses after two minutes without activity and stops when you record a decision.</p>
         </Panel>
 
         <Panel title="AI summary" bodyClassName="p-3">
-          <p className="text-sm text-slate-700">{view.summary ?? "No summary: the call has not been analyzed yet."}</p>
-          <p className="mt-2 text-xs text-slate-500">{view.summarySource === "gold" ? "Hand-written summary (development data)." : "A plain summary with no claims, findings, traces, or public-evidence comparison: what a reviewer has without Blink."}</p>
+          <p className="text-sm text-foreground">{view.summary ?? "No summary: the call has not been analyzed yet."}</p>
+          <p className="mt-2 text-xs text-muted-foreground">{view.summarySource === "gold" ? "Hand-written summary (development data)." : "A plain summary with no claims, findings, traces, or public-evidence comparison: what a reviewer has without Blink."}</p>
         </Panel>
 
         <Panel title="Your decision" bodyClassName="space-y-2 p-3">
-          <select value={outcome} onChange={(e) => setOutcome(e.target.value)} className="h-8 w-full rounded-md border border-slate-300 bg-white px-2 text-sm" data-testid="baseline-outcome">
+          <select value={outcome} onChange={(e) => setOutcome(e.target.value)} className="h-8 w-full rounded-md border border-input bg-background px-2 text-sm" data-testid="baseline-outcome">
             {OUTCOMES.map((o) => (
               <option key={o.value} value={o.value}>
                 {o.label}
               </option>
             ))}
           </select>
-          <p className="text-xs text-slate-500">Flagged turns: {flagged.length > 0 ? flagged.join(", ") : "none (tick turns in the transcript)"}</p>
+          <p className="text-xs text-muted-foreground">Flagged turns: {flagged.length > 0 ? flagged.join(", ") : "none (tick turns in the transcript)"}</p>
           <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="What you decided and why (at least 10 characters)" className="h-24 text-sm" data-testid="baseline-notes" />
           <Button className="w-full" disabled={busy || done !== null || notes.trim().length < 10} onClick={submit} data-testid="baseline-submit">
             {done !== null ? "Recorded" : "Record decision and stop the timer"}
@@ -104,7 +104,7 @@ export function BaselineReview({ view, users }: { view: View; users: Record<stri
 
         {view.sessions.filter((s) => s.endedAt).length > 0 && (
           <Panel title="Earlier baseline reviews" bodyClassName="p-3">
-            <ul className="space-y-1 text-xs text-slate-600">
+            <ul className="space-y-1 text-xs text-muted-foreground">
               {view.sessions
                 .filter((s) => s.endedAt)
                 .map((s) => (

@@ -1,7 +1,8 @@
 "use client";
 
-import { CheckCircle2, ShieldCheck, XCircle } from "lucide-react";
+import { ShieldCheck } from "lucide-react";
 import { useState } from "react";
+import { type DotTone, StatusDot } from "@/components/app/status-dot";
 import { Button } from "@/components/ui/button";
 import { api, errorMessage } from "@/lib/api";
 import { formatDateTime, humanize, shortHash } from "@/lib/format";
@@ -10,27 +11,30 @@ import type { AuditEventView } from "@/server/audit/log";
 
 type Verification = { ok: true; count: number; headHash: string } | { ok: false; count: number; brokenSeq: number; reason: string };
 
-const TONE: Record<string, string> = {
-  STALE_DEPENDENCY: "border-red-300 bg-red-50",
-  BRIEF_STALE: "border-red-300 bg-red-50",
-  RELEASE_BLOCKED: "border-red-300 bg-red-50",
-  ANALYSIS_FAILED: "border-red-300 bg-red-50",
-  BRIEF_RELEASED: "border-emerald-300 bg-emerald-50",
-  BRIEF_APPROVED: "border-emerald-300 bg-emerald-50",
-  FINDING_DISPOSITIONED: "border-emerald-300 bg-emerald-50",
-  CASE_ATTESTED: "border-emerald-300 bg-emerald-50",
-  FINDING_ESCALATED: "border-violet-300 bg-violet-50",
+/** The dot an event carries; anything not listed here is a plain event with a quiet dot. */
+const DOT: Record<string, DotTone> = {
+  STALE_DEPENDENCY: "stop",
+  BRIEF_STALE: "stop",
+  RELEASE_BLOCKED: "stop",
+  ANALYSIS_FAILED: "stop",
+  BRIEF_RELEASED: "good",
+  BRIEF_APPROVED: "good",
+  FINDING_DISPOSITIONED: "good",
+  CASE_ATTESTED: "good",
+  FINDING_ESCALATED: "ring",
 };
+
+const state = (v: unknown) => humanize(String(v));
 
 function summarize(e: AuditEventView): string {
   const p = e.payload;
   switch (e.type) {
     case "CASE_STATUS_CHANGED":
-      return `${p.from} → ${p.to} (${p.cause})`;
+      return `${state(p.from)} → ${state(p.to)} (${p.cause})`;
     case "FINDING_CREATED":
       return `${p.label ?? ""} opened: ${p.title ?? ""}`;
     case "FINDING_STATE_CHANGED":
-      return `${p.label ?? ""} ${p.from} → ${p.to}${p.cause ? ` (${p.cause})` : ""}`;
+      return `${p.label ?? ""} ${state(p.from)} → ${state(p.to)}${p.cause ? ` (${p.cause})` : ""}`;
     case "FINDING_DISPOSITIONED":
       return `${p.label} dispositioned ${p.outcome} by a ${String(p.decided_by_role).replaceAll("_", " ")}: ${p.rationale}`;
     case "FINDING_ESCALATED":
@@ -93,39 +97,38 @@ export function AuditTimeline({ events, users, scope }: { events: AuditEventView
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center gap-3 rounded-xl border bg-white px-4 py-3">
+      <div className="flex flex-wrap items-center gap-3 rounded-xl border bg-card px-4 py-3">
         <Button size="sm" onClick={verify} disabled={busy} data-testid="verify-chain">
           <ShieldCheck /> {busy ? "Verifying…" : "Verify chain"}
         </Button>
         {result?.ok && (
-          <span className="flex items-center gap-1.5 text-sm font-medium text-emerald-700" data-testid="verify-ok">
-            <CheckCircle2 className="size-4" /> Verify chain ✓ {result.count} events recomputed, head {shortHash(result.headHash, 12)}
-          </span>
+          <StatusDot tone="good" className="text-sm font-medium text-foreground" data-testid="verify-ok">
+            Verify chain ✓ {result.count} events recomputed, head <span className="font-mono">{shortHash(result.headHash, 12)}</span>
+          </StatusDot>
         )}
         {result && !result.ok && (
-          <span className="flex items-center gap-1.5 text-sm font-medium text-red-700" data-testid="verify-broken">
-            <XCircle className="size-4" /> Chain broken at event #{result.brokenSeq}: {result.reason}
-          </span>
+          <StatusDot tone="stop" className="text-sm font-medium text-foreground" data-testid="verify-broken">
+            Chain broken at event #{result.brokenSeq}: {result.reason}
+          </StatusDot>
         )}
-        {error && <span className="text-sm text-red-700">{error}</span>}
-        <span className="ml-auto text-xs text-slate-500">
+        {error && <span className="text-sm text-destructive">{error}</span>}
+        <span className="ml-auto text-xs text-muted-foreground">
           {events.length} events for {scope}. Each event stores the hash of the one before it; editing or deleting any row breaks the chain from that point.
         </span>
       </div>
 
-      <ol className="space-y-1.5" data-testid="audit-events">
+      <ol className="divide-y rounded-xl border bg-card text-sm" data-testid="audit-events">
         {events.map((e) => (
-          <li key={e.id} className={cn("rounded-lg border-l-4 border-slate-200 bg-white px-3 py-2 text-sm", TONE[e.type], result && !result.ok && result.brokenSeq === e.seq && "ring-2 ring-red-500")} data-type={e.type}>
-            <div className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5">
-              <span className="font-mono text-xs text-slate-400">#{e.seq}</span>
-              <span className="font-medium text-slate-900">{humanize(e.type)}</span>
-              <span className="text-xs text-slate-500">{e.actorId === "system" ? "Blink (system)" : (users[e.actorId] ?? e.actorId)}</span>
-              <span className="text-xs text-slate-400">{formatDateTime(e.ts)}</span>
-              <span className="ml-auto font-mono text-[11px] text-slate-400" title={`hash ${e.hash}\nprev ${e.prevHash}`}>
-                {shortHash(e.prevHash, 8)} → {shortHash(e.hash, 8)}
-              </span>
-            </div>
-            <p className="mt-0.5 text-slate-700">{summarize(e)}</p>
+          <li key={e.id} className={cn("flex items-baseline gap-3 px-4 py-2", result && !result.ok && result.brokenSeq === e.seq && "bg-destructive/10 ring-2 ring-destructive ring-inset")} data-type={e.type}>
+            <span className="w-40 shrink-0 text-xs text-muted-foreground tabular-nums">{formatDateTime(e.ts)}</span>
+            <span className="w-36 shrink-0 truncate text-xs text-muted-foreground">{e.actorId === "system" ? "Blink (system)" : (users[e.actorId] ?? e.actorId)}</span>
+            <span className="min-w-0 flex-1 text-foreground">
+              <StatusDot tone={DOT[e.type] ?? "none"} className="mr-2 align-baseline" />
+              <span className="font-medium">{humanize(e.type)}</span> <span className="text-muted-foreground">{summarize(e)}</span>
+            </span>
+            <span className="shrink-0 font-mono text-xs text-muted-foreground" title={`#${e.seq}\nhash ${e.hash}\nprev ${e.prevHash}`}>
+              {shortHash(e.hash, 8)}
+            </span>
           </li>
         ))}
       </ol>

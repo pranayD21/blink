@@ -1386,10 +1386,10 @@ git commit   # style(ui): restyle the review workspace
 **Files:**
 - Modify: `src/components/brief/brief-workspace.tsx`, `src/app/cases/[id]/brief/page.tsx`, `src/components/audit/audit-timeline.tsx`, `src/app/cases/[id]/audit/page.tsx`, `src/components/baseline/baseline-review.tsx`, `src/app/cases/[id]/baseline/page.tsx`, `tests/helpers/ui-scope.ts`
 
-- [ ] **Step 1: Extend the scope and see the rule test fail.**
-- [ ] **Step 2: Restyle.** The release checklist is one line per check with a dot. The audit timeline is one line per event: time, who, what, a short hash in mono.
-- [ ] **Step 3: Run the checks and look.** Run: `pnpm test && pnpm e2e`, screenshot into `test-results/redesign/33/`. Expected: PASS.
-- [ ] **Step 4: Commit.**
+- [x] **Step 1: Extend the scope and see the rule test fail.**
+- [x] **Step 2: Restyle.** The release checklist is one line per check with a dot. The audit timeline is one line per event: time, who, what, a short hash in mono.
+- [x] **Step 3: Run the checks and look.** Run: `pnpm test && pnpm e2e`, screenshot into `test-results/redesign/33/`. Expected: PASS.
+- [x] **Step 4: Commit.**
 
 ```bash
 git add src/components/brief src/components/audit src/components/baseline src/app/cases tests/helpers/ui-scope.ts

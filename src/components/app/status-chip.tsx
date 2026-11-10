@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 import { type DotTone, StateLabel, dotOf } from "./status-dot";
 
 /** `warn | stop | good | none | ring` is the vocabulary; the colour names below are old aliases kept until the screens that still use them are restyled. */
-type Tone = "warn" | "stop" | "good" | "none" | "ring" | "amber" | "red" | "violet" | "emerald" | "slate" | "indigo" | "sky";
+type Tone = "warn" | "stop" | "good" | "none" | "ring" | "amber" | "red" | "emerald" | "slate" | "indigo" | "sky";
 
 const QUIET = "bg-muted text-muted-foreground";
 const TONE: Record<Tone, string> = {
@@ -18,7 +18,6 @@ const TONE: Record<Tone, string> = {
   amber: "bg-warning/15 text-foreground",
   red: "bg-destructive/15 text-foreground",
   emerald: "bg-success/15 text-foreground",
-  violet: QUIET,
   slate: QUIET,
   indigo: QUIET,
   sky: QUIET,
@@ -52,7 +51,6 @@ export const HIGHLIGHT: Record<Tone, string> = {
   amber: "bg-warning/15 decoration-warning hover:bg-warning/25",
   red: "bg-destructive/15 decoration-destructive hover:bg-destructive/25",
   emerald: "bg-success/15 decoration-success hover:bg-success/25",
-  violet: "bg-muted decoration-muted-foreground hover:bg-muted",
   slate: "bg-muted decoration-border hover:bg-muted",
   indigo: "bg-muted decoration-muted-foreground hover:bg-muted",
   sky: "bg-muted decoration-muted-foreground hover:bg-muted",
