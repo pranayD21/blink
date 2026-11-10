@@ -149,3 +149,9 @@ The SDK's per-request `timeout` stops counting once the response headers arrive,
   - Turn requests: a 401 stops the call and shows broken, as the brief says; so does any other refusal no retry can fix (other 4xx). Network failures, timeouts, 408, 429 and 5xx are retried with the same seq.
 - Controller ruling from Task 8's review, applied in `reduceClient`: a red warning always runs its 6 s, even over a broken stage, and broken shows again afterwards if a stage is still down. Applied consistently, it also means a red already showing is no longer cut short when a stage passes 3 s down; the existing test that expected that now uses amber, and a new test covers the red case.
 - A Flux `EndOfTurn` without its audio window is reported as a momentary `transcribing` outage (down, then up at once) with the cause "speech-to-text ended a turn without its audio times; that turn was lost", so it reaches the outage record instead of vanishing.
+- Review fix round 1:
+  - A channel whose audio pipeline cannot be built opens no Flux socket. Its failure sits under `hearing` (its own part, `<channel>-audio`), which no socket event can clear.
+  - Flux backoff resets only after a socket stays open 5 s or sends its first `TurnInfo`. Flux's `Connected` greeting does not count.
+  - Every retry of the same turn, outage or acknowledgement reuses one `Idempotency-Key`. The server stores only successes, so a retry after an error runs again, and a retry after a lost success is replayed.
+  - A 2xx turn reply with an unusable shape is not retried: nothing is shown for that turn, and a momentary `reading` outage records why.
+  - A refusal that stops the call also records an open `reading` outage, unless the server would refuse that too (401, 403, 404 or `CALL_NOT_LIVE`).

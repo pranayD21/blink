@@ -100,6 +100,8 @@ export function liveTurnSource(callId: string): TurnSource {
               (up, cause) => transcribing(channel, up, cause && `${CHANNEL_NAME[channel]}: ${cause}`),
               {
                 mint,
+                // A dead audio pipeline is its own part of hearing, so no socket event can clear it.
+                onAudioFailed: (cause) => hearing(`${channel}-audio`, false, `${CHANNEL_NAME[channel]}: ${cause}`),
                 onLevel: (peak, atMs) => {
                   const change = watch.push({ channel, peak, atMs });
                   if (change) hearing("computer-audio-silent", change === "up", "the computer's audio has been perfectly silent for 3 s while the microphone heard speech");
@@ -156,6 +158,9 @@ const clockMs = (ms: number) => Math.max(0, Math.round(ms));
 /** Worth sending again: the network, a timeout, a rate limit or the server's own failure. Anything else will fail the same way. */
 const retryable = (err: unknown) => !(err instanceof ApiError) || err.status === 0 || err.status === 408 || err.status === 429 || err.status >= 500;
 const describe = (err: unknown) => (err instanceof ApiError ? (err.status === 0 ? "the server could not be reached" : `the server answered ${err.status} (${err.code})`) : "the request failed");
+/** Whether the server can still take an outage after this refusal: not when it no longer knows the banker or the call, or the call has ended. */
+const outageStillAccepted = (err: unknown) =>
+  err instanceof ApiError && ![401, 403, 404].includes(err.status) && err.code !== "CALL_NOT_LIVE";
 const isReply = (r: unknown): r is TurnReply => {
   const pill = (r as { pill?: { level?: unknown } } | null)?.pill;
   return typeof pill?.level === "string" && LEVELS.includes(pill.level);
@@ -211,7 +216,7 @@ export async function runCall(opts: {
    * reading stage is held down from more than BROKEN_AFTER_MS ago, so the pill turns broken now
    * and stays so until `end()`.
    */
-  const stopBroken = (why: string) => {
+  const stopBroken = (why: string, err: unknown) => {
     if (halted) return;
     halted = true;
     acceptingTurns = false;
@@ -221,19 +226,26 @@ export async function runCall(opts: {
     state = reduceClient(state, { type: "stage_down", stage: "reading", atMs: now - BROKEN_AFTER_MS - 1 });
     dispatch({ type: "tick", nowMs: now });
     console.error(`Blink stopped this call: ${why}.`);
+    // Reading is down from here to the end. Record it now if the server will still take it; a reading
+    // outage already open is folded in, so the end does not post a second one.
+    const earlier = outages.get("reading");
+    outages.delete("reading");
+    const outage = { startedAtMs: earlier?.startedAtMs ?? now, cause: earlier ? `${earlier.cause}; then ${why}` : why, shownToBanker: true };
+    if (outageStillAccepted(err)) void postOutage("reading", outage, null);
   };
 
   /** A small request that matters for the record: a few tries, then said out loud. */
   const postRecord = (what: string, path: string, body: unknown) =>
     track(
       (async () => {
+        const idempotencyKey = crypto.randomUUID(); // one record, however many tries
         let wait = RECONNECT_FIRST_MS;
         for (let attempt = 1; ; attempt++) {
           try {
-            await api(path, { body });
+            await api(path, { body, idempotencyKey });
             return;
           } catch (err) {
-            if (err instanceof ApiError && err.status === 401) return stopBroken(`the server refused the ${what} (401)`);
+            if (err instanceof ApiError && err.status === 401) return stopBroken(`the server refused the ${what}: ${describe(err)}`, err);
             if (!retryable(err) || attempt >= 4) return void console.error(`Blink could not record the ${what}: ${describe(err)}.`);
             await sleep(wait);
             wait = Math.min(wait * 2, RECONNECT_MAX_MS);
@@ -262,8 +274,17 @@ export async function runCall(opts: {
     void postOutage(stage, open, now);
   };
 
+  /** A failure that is over as soon as it happens: closes any open outage of `stage`, then records this one on its own. */
+  const recordMoment = (stage: Stage, cause: string) => {
+    onStage(stage, true);
+    if (halted) return;
+    const now = Date.now();
+    void postOutage(stage, { startedAtMs: now, cause, shownToBanker: false }, now);
+  };
+
   /** Sends one turn until the server has it. The same seq and words every time, so a retry cannot count twice. */
   const sendTurn = async (body: TurnBody) => {
+    const idempotencyKey = crypto.randomUUID(); // the same key on every retry of this turn
     let wait = RECONNECT_FIRST_MS;
     while (!halted) {
       const abort = new AbortController();
@@ -274,9 +295,15 @@ export async function runCall(opts: {
       }, TURN_DEADLINE_MS);
       let cause: string;
       try {
-        const reply = await api<TurnReply>(`${base}/turns`, { body, signal: abort.signal });
+        const reply = await api<TurnReply>(`${base}/turns`, { body, signal: abort.signal, idempotencyKey });
         clearTimeout(deadline);
-        if (!timedOut && isReply(reply)) {
+        if (!timedOut && !isReply(reply)) {
+          // The server took the turn (2xx) but its answer is unusable, and asking again returns the
+          // same answer. Show nothing for this turn, record why, and go on to the next.
+          recordMoment("reading", `the server's reply to turn ${body.seq} could not be read`);
+          return;
+        }
+        if (!timedOut) {
           const receivedAtMs = Date.now();
           onStage("reading", true);
           dispatch({ type: "decision", level: reply.pill.level, atMs: receivedAtMs });
@@ -284,10 +311,10 @@ export async function runCall(opts: {
           void postRecord(`acknowledgement of turn ${body.seq}`, `${base}/acks`, { seq: body.seq, responseReceivedAt: iso(receivedAtMs), shownAt: iso(shownAtMs) });
           return;
         }
-        cause = timedOut ? `turn ${body.seq} took more than ${TURN_DEADLINE_MS / 1000} s` : `the server's reply to turn ${body.seq} could not be read`;
+        cause = `turn ${body.seq} took more than ${TURN_DEADLINE_MS / 1000} s`;
       } catch (err) {
         clearTimeout(deadline);
-        if (!timedOut && !retryable(err)) return stopBroken(`turn ${body.seq} was refused: ${describe(err)}`);
+        if (!timedOut && !retryable(err)) return stopBroken(`turn ${body.seq} was refused: ${describe(err)}`, err);
         cause = timedOut ? `turn ${body.seq} took more than ${TURN_DEADLINE_MS / 1000} s` : `turn ${body.seq}: ${describe(err)}`;
       }
       onStage("reading", false, cause);

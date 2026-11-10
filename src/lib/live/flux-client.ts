@@ -5,12 +5,14 @@
  * the Sec-WebSocket-Protocol header as `bearer, <token>`, as Deepgram documents for client-side
  * connections (checked against the live service: `bearer` opens, `token` with a grant token is 401).
  */
-import { isEndWithoutWindow } from "@/core/live/flux";
+import { isEndWithoutWindow, parseFluxMessage } from "@/core/live/flux";
 import { FRAME_MS, pcmFrames } from "./audio";
 
 export const FLUX_URL = "wss://api.deepgram.com/v2/listen?model=flux-general-en&encoding=linear16&sample_rate=16000&eot_threshold=0.8&eot_timeout_ms=7000";
 export const RECONNECT_FIRST_MS = 250;
 export const RECONNECT_MAX_MS = 4000;
+/** A socket counts as working, and the backoff starts again from RECONNECT_FIRST_MS, once it has stayed open this long or sent a transcript message. */
+export const STABLE_AFTER_MS = 5000;
 /** After CloseStream, how long to wait for Flux to send its last turn and close before closing ourselves. */
 const CLOSE_GRACE_MS = 2000;
 
@@ -19,6 +21,12 @@ export interface FluxOptions {
   mint?: () => Promise<string>;
   /** Every frame's peak level (0 to 1), whether or not the socket is up. */
   onLevel?: (peak: number, atMs: number) => void;
+  /**
+   * The audio pipeline could not be built, so no socket is opened and nothing will be transcribed
+   * on this channel until the call ends. Without it the failure goes to `onState(false, cause)`,
+   * which no later event clears either.
+   */
+  onAudioFailed?: (cause: string) => void;
 }
 
 /**
@@ -39,7 +47,19 @@ export function openFlux(
   let audioStartedAtMs: number | null = null;
   let backoffMs = RECONNECT_FIRST_MS;
   let retry: ReturnType<typeof setTimeout> | null = null;
+  let stable: ReturnType<typeof setTimeout> | null = null;
   let frames: { stop(): void } | null = null;
+
+  const clearStable = () => {
+    if (stable) clearTimeout(stable);
+    stable = null;
+  };
+  // Only a socket that has proved itself resets the backoff, so one that opens and drops at once
+  // keeps backing off instead of reconnecting every 250 ms.
+  const markStable = () => {
+    clearStable();
+    backoffMs = RECONNECT_FIRST_MS;
+  };
 
   const connect = (tok: string) => {
     const socket = new WebSocket(FLUX_URL, ["bearer", tok]);
@@ -47,12 +67,14 @@ export function openFlux(
     ws = socket;
     audioStartedAtMs = null;
     socket.onopen = () => {
-      backoffMs = RECONNECT_FIRST_MS;
+      stable = setTimeout(markStable, STABLE_AFTER_MS);
       onState(true);
     };
     socket.onmessage = (e: MessageEvent) => {
       if (typeof e.data !== "string") return;
       const atMs = Date.now();
+      // Flux greets every socket with `Connected`; only a transcript message (TurnInfo) shows it is working.
+      if (stable && parseFluxMessage(e.data).kind !== "other") markStable();
       if (isEndWithoutWindow(e.data)) {
         // A finished turn Flux sent without its audio times cannot be placed or sent: record it as a
         // momentary transcribing outage rather than let it vanish.
@@ -65,6 +87,7 @@ export function openFlux(
     socket.onclose = (e: CloseEvent) => {
       if (ws !== socket) return;
       ws = null;
+      clearStable();
       if (closed) return;
       onState(false, `the speech-to-text connection closed (code ${e.code}${e.reason ? `, ${e.reason}` : ""})`);
       scheduleReconnect();
@@ -100,22 +123,28 @@ export function openFlux(
     ws.send(pcm);
   };
 
+  // The socket opens only once audio is flowing: a socket with no audio behind it would report
+  // transcribing as up while nothing can be transcribed.
   pcmFrames(stream, onFrame).then(
     (f) => {
-      if (closed) f.stop();
-      else frames = f;
+      if (closed) return f.stop();
+      frames = f;
+      connect(token);
     },
     (err: unknown) => {
-      if (!closed) onState(false, `audio could not be prepared for speech-to-text (${err instanceof Error ? err.name : "error"})`);
+      if (closed) return;
+      const cause = `the audio could not be prepared for speech-to-text (${err instanceof Error ? err.name : "error"})`;
+      if (opts.onAudioFailed) opts.onAudioFailed(cause);
+      else onState(false, cause);
     },
   );
-  connect(token);
 
   return {
     close() {
       if (closed) return;
       closed = true;
       if (retry) clearTimeout(retry);
+      clearStable();
       frames?.stop();
       const socket = ws;
       if (!socket) return;

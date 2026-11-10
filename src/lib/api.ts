@@ -21,12 +21,14 @@ interface Options {
   form?: FormData;
   /** Aborting it fails the request as a network error. */
   signal?: AbortSignal;
+  /** Reuse one key on every retry of the same logical request, so a lost reply cannot apply it twice. */
+  idempotencyKey?: string;
 }
 
 export async function api<T = unknown>(path: string, options: Options = {}): Promise<T> {
   const method = options.method ?? (options.body !== undefined || options.form ? "POST" : "GET");
   const headers: Record<string, string> = {};
-  if (method !== "GET") headers["Idempotency-Key"] = crypto.randomUUID();
+  if (method !== "GET") headers["Idempotency-Key"] = options.idempotencyKey ?? crypto.randomUUID();
   if (!options.form && method !== "GET") headers["Content-Type"] = "application/json";
   let res: Response;
   try {
