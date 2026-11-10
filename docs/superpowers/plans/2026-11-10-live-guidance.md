@@ -1050,10 +1050,10 @@ git commit   # feat(release): store the blanked transcript at release and block 
 **Interfaces:**
 - Produces: `FindingView` gains `hidden: "until_decided" | "kept_hidden" | "shown_on_release"` and `passages: { turnLabel: string; text: string }[]`; `OUTCOME_LABEL` becomes `cleared_for_research: "Unhide: cleared for research"`, `restricted_exclude: "Keep hidden"`, `restricted_escalate_to_legal: "Keep hidden and send to legal"`, `no_concern: "Unhide: no concern"`.
 
-- [ ] **Step 1: Write the failing tests.** Service: on `seedAnalyzed()`, every undecided finding has `hidden: "until_decided"`; after `dispose(F2, "restricted_exclude")` it is `kept_hidden`; after `dispose(F3, "no_concern")` it is `shown_on_release`; a `live` finding lists its passage text. Browser, added to the demo spec after F1 is selected: `await expect(page.getByTestId("hidden-status")).toHaveText("Hidden from the banker until you decide");`
-- [ ] **Step 2: Run them and see them fail.**
-- [ ] **Step 3: Implement.** The evidence pane shows one line under the title with `data-testid="hidden-status"`: "Hidden from the banker until you decide", "Hidden from the banker", or "Shown to the banker on release". A `live` finding is listed with the policy findings and labelled "Flagged during the call"; its passages show in place of linked quotes.
-- [ ] **Step 4: Run the tests.** Run: `pnpm test && pnpm e2e`. Expected: PASS.
+- [x] **Step 1: Write the failing tests.** Service: on `seedAnalyzed()`, every undecided finding has `hidden: "until_decided"`; after `dispose(F2, "restricted_exclude")` it is `kept_hidden`; after `dispose(F3, "no_concern")` it is `shown_on_release`; a `live` finding lists its passage text. Browser, added to the demo spec after F1 is selected: `await expect(page.getByTestId("hidden-status")).toHaveText("Hidden from the banker until you decide");`
+- [x] **Step 2: Run them and see them fail.**
+- [x] **Step 3: Implement.** The evidence pane shows one line under the title with `data-testid="hidden-status"`: "Hidden from the banker until you decide", "Hidden from the banker", or "Shown to the banker on release". A `live` finding is listed with the policy findings and labelled "Flagged during the call"; its passages show in place of linked quotes.
+- [x] **Step 4: Run the tests.** Run: `pnpm test && pnpm e2e`. Expected: PASS.
 - [ ] **Step 5: Commit.**
 
 ```bash
