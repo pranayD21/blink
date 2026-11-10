@@ -1227,7 +1227,7 @@ git commit   # feat(auth): check case ownership on every request and refuse cros
 **Interfaces:**
 - Consumes: every route under `src/app/api/`.
 
-- [ ] **Step 1: Write the test.** It lists every `route.ts` under `src/app/api` with `readdirSync` and fails if one is missing from the table below it. Each table row names the route file, the method, whether it is scoped to a case, and `noSession`, the status a caller with no session must get: 401 unless stated (400 for sign-in with an empty body, 404 for `act-as` and for the scripted-call route, 200 for the health check once Task 42 adds it). It runs in `password` mode on a database where a live call has been fed and ended, the case reviewed with two findings kept hidden, and the brief released.
+- [x] **Step 1: Write the test.** It lists every `route.ts` under `src/app/api` with `readdirSync` and fails if one is missing from the table below it. Each table row names the route file, the method, whether it is scoped to a case, and `noSession`, the status a caller with no session must get: 401 unless stated (400 for sign-in with an empty body, 404 for `act-as` and for the scripted-call route, 200 for the health check once Task 42 adds it). It runs in `password` mode on a database where a live call has been fed and ended, the case reviewed with two findings kept hidden, and the brief released.
 
 ```ts
 it("every route file is in the table", () => expect(routeFiles().filter((f) => !TABLE.some((r) => r.file === f))).toEqual([]));
@@ -1241,9 +1241,9 @@ it("an error never repeats hidden text", async () => { /* force the release fail
 
 `hiddenTexts()` returns every restricted quote, every `finding_passages` text, and every live `call_turns.text` that is part of a flagged claim.
 
-- [ ] **Step 2: Run it.** Run: `pnpm exec vitest run tests/services/breakin.test.ts`. Expected: every case PASS. Any failure is a real hole: fix the service, not the test.
-- [ ] **Step 3: Run the full checks.** Run: `pnpm test && pnpm e2e`. Expected: PASS.
-- [ ] **Step 4: Commit.**
+- [x] **Step 2: Run it.** Run: `pnpm exec vitest run tests/services/breakin.test.ts`. Expected: every case PASS. Any failure is a real hole: fix the service, not the test.
+- [x] **Step 3: Run the full checks.** Run: `pnpm test && pnpm e2e`. Expected: PASS.
+- [x] **Step 4: Commit.**
 
 ```bash
 git add tests/services/breakin.test.ts
