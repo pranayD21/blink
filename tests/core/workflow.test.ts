@@ -164,6 +164,23 @@ describe("case workflow", () => {
   });
 });
 
+/** A release check where everything holds; each test overrides what it breaks. */
+const approval = { briefHash: "h1", audience: "analyst", stale: false, staleReason: null };
+const okRelease: ReleaseCheckInput = {
+  actorRole: "reviewer",
+  audience: "analyst",
+  expectedBriefVersion: 2,
+  brief: { version: 2, status: "approved", contentHash: "h1", label: "Brief v1" },
+  latestApproval: approval,
+  caseStatus: "APPROVED",
+  reviewBlockers: [],
+  ineligibleCitations: [],
+  newlyStale: [],
+  leaks: [],
+  citationLeaks: [],
+  unplacedPassages: [],
+};
+
 describe("brief workflow, eligibility, and release check", () => {
   it("DRAFT → APPROVED → RELEASED, with STALE from approved or released only", () => {
     expect(transitionBrief("draft", "APPROVE")).toMatchObject({ next: "approved" });
@@ -212,22 +229,6 @@ describe("brief workflow, eligibility, and release check", () => {
     expect(md).toContain("- Distributors are soft. [C2]");
     expect(renderBriefMarkdown("t", [], 1)).toContain("1 statement withheld by compliance.");
   });
-
-  const approval = { briefHash: "h1", audience: "analyst", stale: false, staleReason: null };
-  const okRelease: ReleaseCheckInput = {
-    actorRole: "reviewer",
-    audience: "analyst",
-    expectedBriefVersion: 2,
-    brief: { version: 2, status: "approved", contentHash: "h1", label: "Brief v1" },
-    latestApproval: approval,
-    caseStatus: "APPROVED",
-    reviewBlockers: [],
-    ineligibleCitations: [],
-    newlyStale: [],
-    leaks: [],
-    citationLeaks: [],
-    unplacedPassages: [],
-  };
 
   it("passes when everything holds", () => expect(checkRelease(okRelease)).toEqual([]));
 
@@ -368,21 +369,6 @@ describe("eligibility by hidden span (Fix A)", () => {
 });
 
 describe("release check: the cited claims' summaries (Fix A)", () => {
-  const okRelease: ReleaseCheckInput = {
-    actorRole: "reviewer",
-    audience: "analyst",
-    expectedBriefVersion: 2,
-    brief: { version: 2, status: "approved", contentHash: "h1", label: "Brief v1" },
-    latestApproval: { briefHash: "h1", audience: "analyst", stale: false, staleReason: null },
-    caseStatus: "APPROVED",
-    reviewBlockers: [],
-    ineligibleCitations: [],
-    newlyStale: [],
-    leaks: [],
-    citationLeaks: [],
-    unplacedPassages: [],
-  };
-
   it("passes with no citation leak", () => expect(checkRelease(okRelease)).toEqual([]));
 
   it("a cited claim's summary that repeats hidden words fails with CITATION_LEAK, naming the claim and passage but never the text", () => {

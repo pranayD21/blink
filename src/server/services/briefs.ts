@@ -65,7 +65,11 @@ export interface CaseEligibility {
   claims: { claim: LoadedClaim; eligibility: Eligibility; turnLabels: string[] }[];
   eligible: LoadedClaim[];
   eligibleKeys: Set<string>;
-  /** Claims a reviewer restricted. The brief footer states this number, never the content. */
+  /**
+   * Claims not eligible for reason `restricted`: by a reviewer's outcome, by a live finding on a turn they
+   * quote, or because a quote overlaps words another finding not yet cleared keeps hidden (open findings
+   * included). The brief footer states this number, never the content.
+   */
   withheldCount: number;
   /** Every finding on the case with its latest decision, as the check used it. */
   findings: CaseFinding[];
