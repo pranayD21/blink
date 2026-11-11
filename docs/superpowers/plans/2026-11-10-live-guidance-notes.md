@@ -128,6 +128,7 @@ When the owner has reported, the next step is to fill in the answers here, write
 - Task 44: the leftover case `case_01M740EV6DA1XZ7FC7B5SMWXXN` ("Regional Sales Director, West", wrong packet from the run's first attempt) is in review on the shared deployment. The owner decides whether to clean it up or leave it.
 - Task 46 Steps 1 and 2: rehearse the demo twice from `docs/demo-script.md` on the deployed app, with the person who will read the expert's lines, then record a screen capture of one clean run as the backup, on or before 2026-11-18. The rehearsal is also the first time the Mac app hears a real call, unless Task 3 or Task 20 runs first.
 - Task 46 Step 3: waits on Task 46 Steps 1 and 2. It is not marked `(owner)`, but it can only run after the rehearsal: note what it showed here, and fix what can be fixed without changing prompts or rules.
+- Final review: eight Important findings for the owner to decide (open sign-up exposure and spend, the call page beyond the pill, the placeholder case, echoes, unended calls, dropped last turns, corrections blocking release). Details are in "Final review".
 
 ## Task 10: the time limit is enforced twice
 
@@ -458,3 +459,18 @@ Step 1 is done: `pnpm live:prepare` (`scripts/prepare-live-call.sh`) resets `dat
   - `pnpm desktop:build` and `pnpm desktop:smoke` (with `ELECTRON_RUN_AS_NODE` unset) exit 0.
   - The rebuild gives the app a new ad-hoc identity, so macOS asks for both permissions again on its next open.
 - **No spend.** Nothing live ran.
+
+## Final review (whole plan, 40de64a..4b43107)
+
+An end-to-end review on the finished plan. It found no Critical issue and eight Important ones, all waiting on the owner. Items 1 to 4 involve the other developer's sign-up and call page (commits aee5ccd and 1197692), which this plan's executor must not change. Items 5 to 8 are in this plan's code and are product decisions, so they are left for the owner too.
+
+1. **Anyone can read "Investment team" releases.** `canReadRelease` (`src/server/services/briefs.ts` ~378) lets any signed-in user read a release with the `investment_team` audience. With open banker sign-up (`src/app/api/session/register`), that now means anyone on the internet who registers on the deployment.
+2. **Open sign-up spends the paid keys.** Sign-up has no rate limit, cap or approval, so any new banker can start calls (Haiku), end them (Opus), mint Deepgram tokens and upload transcripts. Turn text has no length cap. Sign-up hashing (`scryptSync`) blocks the event loop.
+3. **The call page shows more than the pill.** `/call` (`src/components/live/call-control.tsx`, `agent-trace.tsx`) shows a large per-turn line, for example "A rule is met. Move on." or "One fact is still missing. Watching.". That goes against spec section 4 (pill only, no cognitive overload). It is described in the README, so it may be intended. The owner decides.
+4. **"Start call" without a prepared case uses a placeholder issuer** (`call-control.tsx` ~45). Under the demo policy, the issuer and employee guards then come back refuted, so a new banker's call hides nothing, live or after the call.
+5. **Echoed turns can release hidden words.** Without headphones, an echo that lands before the expert's turn stays in the transcript as an analyst turn with the same words (`src/core/live/turns.ts` ~49). Redaction blanks only claim quotes, and only expert claims are evaluated. A transcript-wide verbatim check at release would close this. Until then, wearing headphones is the only defence.
+6. **Live flags can miss compliance.** If a call never ends (the app dies before `/end`), or a transcript is uploaded to the case outside the call, `reconcileLiveFlags` never runs, so the red flags never become findings.
+7. **The last turns can drop silently.** Turns still queued after the 5-second drain at Stop go only to `console.error` (`src/lib/live/session.ts` ~403).
+8. **A transcript correction can block release.** If a correction drops or merges a flagged turn, its decisions go stale or the release fails with `HIDDEN_PASSAGE_UNPLACED`. The only way out is to unhide the passage.
+
+The minors are in the ledger. Among them: sign-up reveals which emails have accounts; a race on sign-up returns a 500; `start-prod.sh` does not refuse `BLINK_ALLOW_GOLD` or `BLINK_AUTH_MODE=switcher`; the live reader resends the whole history every turn, so late turns time out more.
