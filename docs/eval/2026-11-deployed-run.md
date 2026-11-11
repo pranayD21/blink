@@ -103,10 +103,10 @@ Measured from both ends, as Task 38 defined them. "Flux" means from `speech_ende
 | Deployed, attempt 2 (carried through) | 22 | 6 | 1.75 · 2.81 · 2.84 | 2.70 · 3.89 · 4.34 | 1 of 22 | 11 of 22 |
 | Deployed, attempt 1 (wrong packet) | 22 | 4 | 1.60 · 2.70 · 2.73 | 2.45 · 3.69 · 3.75 | 1 of 22 | 12 of 22 |
 | Deployed, both calls (as `/calls` shows them) | 44 | 10 | 1.8 · 2.8 · 2.8 | | | |
-| Task 38, Halvorsen, local `next dev` (manual policy) | 22 | 6 | 1.83 · 2.57 · 2.57 | 2.63 · 3.63 · 3.96 | 0 of 22 | |
+| Task 38, Halvorsen, local `next dev` (manual policy) | 22 | 6 | 1.83 · 2.57 · 2.57 | 2.63 · 3.63 · 3.96 | 0 of 22 | 13 of 22 |
 
 - **The speed target is still missed, as on the local run.** The target is within 1.0 s for a typical turn and within 2.0 s for 19 turns in 20. The typical time is a little better on the deployment. The tail is about 0.25 s worse: a timed-out turn shows at about 2.8 s instead of 2.57 s, because each turn now crosses the internet from this Mac to Railway's `iad` region and back.
-- **Flux's end-of-turn wait was the same as locally.** The median from the end of the audio to `speech_ended_at` was 0.79 s (Task 38: 0.79 s).
+- **Flux's end-of-turn wait was close to the local one.** The median from the end of the audio to `speech_ended_at` was 0.78 s on the deployment (attempt 2), against 0.72 s on Task 38's local Halvorsen run. Both are nearest-rank medians (rank 11 of 22), as the app's `percentile` computes them; the midpoint medians are 0.79 s and 0.74 s. Both come from the per-turn results in `data/spoken/results/`. Task 38's 0.79 s covers all six local calls (n = 77), so it is not the like-for-like figure.
 - **Banker turns are not the slow part.** Every banker turn was read. The slow ones are expert turns that carry a claim, whose reads run into the 2.5 s limit.
 - **Other stage times:**
   - The live compile took 185 s.
@@ -116,16 +116,20 @@ Measured from both ends, as Task 38 defined them. "Flux" means from `speech_ende
 ## What failed, or did not go as expected
 
 1. **No live red on the source remark (T11), in either attempt.** The read timed out at the 2.5 s limit. It is the known `haiku-slow` issue, waiting on the owner. The after-call read and compliance did hide T11, so the passage never reached the banker. No code was changed.
-2. **The first AI summary could not be released.** The release check found that the draft repeated five or more words of hidden passage F2 at T15. The sentence was "Competitor Brightwater has been aggressive on price and in the utilities market.", which cited C7.
+2. **The first AI summary could not be released, and this points to a potential leak path.** The release check found that the draft repeated five or more words of hidden passage F2 at T15. The sentence was "Competitor Brightwater has been aggressive on price and in the utilities market.", which cited C7.
    - **Why it happened:** the expert said the Brightwater remark and the unannounced Cardinal contract in one sentence. The after-call finding F2 hid that whole sentence. C7 quotes only the Brightwater part, and no finding is on C7, so C7 stayed eligible and the drafting step used it.
-   - **The cause in code:** `claimEligibility` in `src/core/workflow/brief.ts` restricts a claim by shared turn only for live findings. For an after-call finding it restricts only the finding's own claim. The release-time leak check (`src/core/release/leak.ts`) is the safety net, and it worked as designed.
-   - **The cost:** a reviewer has to edit the AI draft before release.
+   - **The cause in code:** `claimEligibility` in `src/core/workflow/brief.ts` restricts a claim by shared turn only for live findings. For an after-call finding it restricts only the finding's own claim. So a claim whose quote lies inside a span an uncleared finding hides can still be cited.
+   - **Why it is a leak path, not just friction.** The release check stopped it this time only because the drafted sentence copied five or more words of the hidden passage. The review verified two routes past it:
+     - `findLeaks` (`src/core/release/leak.ts`) catches only shared runs of five or more words, figures, and multi-word names. A paraphrased sentence citing C7 would pass, and so would a single-word name such as "Brightwater". The allowlist of visible figures and names is built from eligible claims, so C7's own figures and names would be exempt.
+     - The banker's citation chip shows the cited claim's `summary`. `citationsFor` (`src/server/services/briefs.ts`) includes it, release freezes it (`src/server/services/release.ts`, `citationsJson`), and `src/components/brief/released-brief.tsx` renders it. `findLeaks` never sees those summaries, so C7's chip could show hidden words even when the summary sentence itself is clean.
+     - From reading the same code (not checked on the deployment): the chip also renders the claim's quotes, frozen the same way, and C7's quote is itself words from the hidden T15 span.
+   - **A fix follows in a separate commit:** a claim becomes ineligible while any of its quotes overlaps a span that an uncleared finding hides, and release also leak-checks the cited claims' summaries.
    - **To reproduce:**
      1. Run a Halvorsen call where T15 is not flagged live.
      2. Let the after-call read raise the Cardinal finding.
      3. Keep it hidden.
      4. Draft with AI, approve, release.
-   - **Ownership:** this is the original author's code. Pranay has no commits in these files. Reported, not fixed.
+   - **Ownership:** this is the original author's code. Pranay has no commits in these files. Not fixed in this commit; the fix is the separate commit named above.
 3. **Flux misspelled the issuer, and the policy then missed it until a person corrected it.** Flux wrote Halvorsen as "Halvason", "Talveshams", "Halthorsen" and "Halverson". The case's aliases are "Halvorsen", "HLVP" and "Halvorsen Pumps".
    - **F2:** its claim named the company "Halvason", which did not match the covered issuer. So only R2 asked for context, and R3 (an unannounced event at the covered issuer) stayed silent. R3 fired only after Marcus mapped the company to the covered issuer in the clarification.
    - **F1:** its claim named "Talveshams" but was still marked as the issuer.
