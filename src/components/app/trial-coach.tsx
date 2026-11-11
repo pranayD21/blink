@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useSyncExternalStore } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import { Button } from "@/components/ui/button";
 
 const KEY = "blink-trial";
@@ -12,13 +12,23 @@ export function subscribe(onChange: () => void) {
   return () => window.removeEventListener(CHANGE, onChange);
 }
 
+// Storage can throw (a browser set to block site data), and the guide runs on every page, so a
+// failure there must mean "no trial", never a crashed page.
 export function snapshot() {
-  return sessionStorage.getItem(KEY);
+  try {
+    return sessionStorage.getItem(KEY);
+  } catch {
+    return null;
+  }
 }
 
 export function setTrial(value: string | null) {
-  if (value === null) sessionStorage.removeItem(KEY);
-  else sessionStorage.setItem(KEY, value);
+  try {
+    if (value === null) sessionStorage.removeItem(KEY);
+    else sessionStorage.setItem(KEY, value);
+  } catch {
+    return;
+  }
   window.dispatchEvent(new Event(CHANGE));
 }
 
@@ -46,6 +56,17 @@ type Place = {
   body: string;
 };
 
+// Never throws: an empty or invalid selector finds nothing. querySelector("") throws, and a step
+// with nothing to highlight has no selector.
+const found = (selector: string | null | undefined): HTMLElement | null => {
+  if (!selector) return null;
+  try {
+    return document.querySelector<HTMLElement>(selector);
+  } catch {
+    return null;
+  }
+};
+
 function place(index: number, pathname: string): Place {
   if (pathname !== "/trial") {
     return { arrived: false, selector: null, go: "/trial", button: "Open the sample call", completesOnClick: false, body: "We’ll use a sample call about Northline Pumps. Blink will read one sentence and check it against the company’s public filing." };
@@ -56,7 +77,7 @@ function place(index: number, pathname: string): Place {
   return { arrived: true, selector: step.target, go: null, button: click ? "Keep hidden" : "Next", completesOnClick: click, body: step.body };
 }
 
-/** A guided run. The highlighted control is the next click, and the card lists every step. */
+/** A guided run of the Northline sample call. The highlighted control is the next click. */
 export function TrialCoach() {
   const pathname = usePathname() ?? "";
   const router = useRouter();
@@ -64,6 +85,18 @@ export function TrialCoach() {
   const step = raw === null || raw === "" ? null : Number(raw);
   const hidden = pathname === "/" || pathname === "/login" || pathname.startsWith("/desktop");
   const active = step !== null && !hidden && !Number.isNaN(step);
+  // place() reads the page. On a client navigation this render can run before the new page is on
+  // screen, so read it again once it has been painted (and once more for content that streams in).
+  const [, setSeen] = useState(0);
+  useEffect(() => {
+    if (!active) return;
+    const frame = requestAnimationFrame(() => setSeen((n) => n + 1));
+    const later = window.setTimeout(() => setSeen((n) => n + 1), 400);
+    return () => {
+      cancelAnimationFrame(frame);
+      window.clearTimeout(later);
+    };
+  }, [active, pathname, step]);
   const here = active ? place(step, pathname) : null;
 
   useEffect(() => {
@@ -78,7 +111,7 @@ export function TrialCoach() {
       card: document.querySelector<HTMLElement>("[data-trial='card']"),
     };
     const apply = () => {
-      const el = here.selector ? document.querySelector<HTMLElement>(here.selector) : null;
+      const el = found(here.selector);
       const card = nodes.card;
       const showHole = (on: boolean) => {
         for (const key of ["top", "left", "right", "bottom", "ring"] as const) {
@@ -122,7 +155,7 @@ export function TrialCoach() {
       }
     };
     apply();
-    document.querySelector<HTMLElement>(here.selector ?? "")?.scrollIntoView({ block: "center", behavior: "smooth" });
+    found(here.selector)?.scrollIntoView({ block: "center", behavior: "smooth" });
     window.addEventListener("resize", apply);
     window.addEventListener("scroll", apply, true);
     return () => {
@@ -135,7 +168,7 @@ export function TrialCoach() {
     if (!active || !here?.completesOnClick || !here.selector || step === null) return;
     const selector = here.selector;
     const onClick = (event: MouseEvent) => {
-      const el = document.querySelector(selector);
+      const el = found(selector);
       if (el && event.target instanceof Node && el.contains(event.target)) setTrial(String(step + 1));
     };
     document.addEventListener("click", onClick, true);
@@ -152,11 +185,13 @@ export function TrialCoach() {
     }
     const current = place(step, pathname);
     if (!current.arrived && current.go) {
-      router.push(current.go);
+      if (current.go === pathname) setTrial(String(step + 1));
+      else router.push(current.go);
       return;
     }
     if (current.completesOnClick && current.selector) {
-      document.querySelector<HTMLElement>(current.selector)?.click();
+      found(current.selector)?.click();
+      setTrial(String(step + 1));
       return;
     }
     setTrial(String(step + 1));

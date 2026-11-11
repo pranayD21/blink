@@ -8,6 +8,7 @@
  * prior approvals.
  */
 import type { BriefSection } from "../deps/hash";
+import type { Span } from "../release/redact";
 import type { Role } from "../types";
 
 export const BRIEF_STATUSES = ["draft", "approved", "released", "stale"] as const;
@@ -41,6 +42,8 @@ export interface EligibilityClaim {
   status: "proposed" | "reviewer_corrected" | "rejected";
   /** The turns the claim quotes, matched against the turns a live finding hid. */
   turnLabels?: readonly string[];
+  /** The claim's quotes placed on the current transcript, matched against the spans each finding keeps hidden. */
+  spans?: readonly Span[];
 }
 
 export interface EligibilityFinding {
@@ -50,6 +53,11 @@ export interface EligibilityFinding {
   decision: { outcome: string | null; stale: boolean } | null;
   /** Set on a `live` finding: the turns it hid. A claim quoting any of them shares its fate. */
   turnLabels?: readonly string[];
+  /**
+   * What the finding keeps hidden on the current transcript until it is cleared: every quote of a claim it
+   * hides (see `findingHidesClaim`) and, for a live finding, its own passages.
+   */
+  hiddenSpans?: readonly Span[];
 }
 
 export type Eligibility = { eligible: true } | { eligible: false; reason: "rejected" | "finding_open" | "decision_stale" | "restricted"; detail: string };
@@ -75,6 +83,12 @@ export function hiddenStatus(f: EligibilityFinding): HiddenStatus {
   return "until_decided";
 }
 
+/** Whether a finding hides a claim's quotes while it is not cleared: it is on the claim, or it is a live finding on a turn the claim quotes. */
+export function findingHidesClaim(f: EligibilityFinding, claim: EligibilityClaim): boolean {
+  const quoted = new Set(claim.turnLabels ?? []);
+  return f.claimLogicalKey === claim.logicalKey || (f.turnLabels ?? []).some((t) => quoted.has(t));
+}
+
 /**
  * Whether a claim's quoted passages stay hidden from the banker, and by which finding (its label), or
  * null. Separate from citation eligibility on purpose: a claim that is rejected, for example retired by
@@ -82,12 +96,16 @@ export function hiddenStatus(f: EligibilityFinding): HiddenStatus {
  * cleared. A claim also stays hidden while it quotes a turn of a live finding that is not cleared.
  */
 export function hiddenBy(claim: EligibilityClaim, findings: readonly EligibilityFinding[]): string | null {
-  const quoted = new Set(claim.turnLabels ?? []);
   for (const f of findings) {
     if (findingCleared(f)) continue;
-    if (f.claimLogicalKey === claim.logicalKey || (f.turnLabels ?? []).some((t) => quoted.has(t))) return f.label;
+    if (findingHidesClaim(f, claim)) return f.label;
   }
   return null;
+}
+
+/** Two spans overlap when they are on the same turn and share at least one character; touching spans do not. */
+export function spansOverlap(a: Span, b: Span): boolean {
+  return a.turnLabel === b.turnLabel && a.start < b.end && b.start < a.end;
 }
 
 /**
@@ -95,7 +113,10 @@ export function hiddenBy(claim: EligibilityClaim, findings: readonly Eligibility
  * finding references it, or every finding referencing it is DISPOSITIONED
  * with outcome cleared_for_research or no_concern and a non-stale decision.
  * A claim quoting any turn a live finding hid is restricted until that
- * finding is cleared the same way (fail closed, spec section 5).
+ * finding is cleared the same way (fail closed, spec section 5). So is a
+ * claim any of whose quotes overlaps a span another finding not yet cleared
+ * keeps hidden: the drafting model is never given a restricted statement,
+ * even one quoted by a different claim.
  */
 export function claimEligibility(claim: EligibilityClaim, findings: readonly EligibilityFinding[]): Eligibility {
   if (claim.status === "rejected") return { eligible: false, reason: "rejected", detail: "the claim was rejected" };
@@ -115,6 +136,12 @@ export function claimEligibility(claim: EligibilityClaim, findings: readonly Eli
     if (!f.decision.outcome || !RELEASABLE_OUTCOMES.has(f.decision.outcome)) {
       return { eligible: false, reason: "restricted", detail: `finding ${f.label} was dispositioned ${f.decision.outcome}` };
     }
+  }
+  // The claim's own findings are judged above, by their outcome. The detail names the finding and the turn, never words.
+  for (const f of findings) {
+    if (f.claimLogicalKey === claim.logicalKey || findingCleared(f)) continue;
+    const hit = (claim.spans ?? []).find((s) => (f.hiddenSpans ?? []).some((h) => spansOverlap(s, h)));
+    if (hit) return { eligible: false, reason: "restricted", detail: `it quotes words in ${hit.turnLabel} that finding ${f.label} keeps hidden` };
   }
   return { eligible: true };
 }
@@ -197,6 +224,8 @@ export interface ReleaseCheckInput {
   newlyStale: { dependent: string; reason: string }[];
   /** What `findLeaks` found when comparing the summary with every hidden passage. */
   leaks: { passage: string; kind: string; detail: string }[];
+  /** The same, for the summary of each claim the brief cites, which the banker's citation chip shows. */
+  citationLeaks: { claimKey: string; passage: string; kind: string; detail: string }[];
   /** Labels of hidden passages that could not be located on the current transcript, so cannot be blanked. */
   unplacedPassages: string[];
 }
@@ -220,6 +249,7 @@ export interface ReleaseFailure {
     | "CLAIM_NOT_ELIGIBLE"
     | "STALE_DEPENDENCY"
     | "SUMMARY_LEAK"
+    | "CITATION_LEAK"
     | "HIDDEN_PASSAGE_UNPLACED";
   message: string;
   ref?: string;
@@ -274,6 +304,12 @@ export function checkRelease(input: ReleaseCheckInput): ReleaseFailure[] {
     if (leakMessages.has(message)) continue;
     leakMessages.add(message);
     failures.push({ code: "SUMMARY_LEAK", message, ref: l.passage });
+  }
+  for (const l of input.citationLeaks) {
+    const message = `the summary of cited claim ${l.claimKey} repeats a ${l.kind} from hidden passage ${l.passage}`;
+    if (leakMessages.has(message)) continue;
+    leakMessages.add(message);
+    failures.push({ code: "CITATION_LEAK", message, ref: l.claimKey });
   }
   // Fail closed: a passage that cannot be found on the transcript would be released unblanked.
   for (const label of input.unplacedPassages) {

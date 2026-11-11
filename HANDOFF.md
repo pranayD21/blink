@@ -1,188 +1,133 @@
 # Handoff
 
-Written 2026-11-10. State of `main` at commit `90d4aad`, plus this file.
+Written 2026-11-10, at the end of the live guidance plan ([plan](docs/superpowers/plans/2026-11-10-live-guidance.md), [design](docs/superpowers/specs/2026-11-10-live-guidance-design.md)). This describes `main` at `49fe660`, plus the commit that adds this file.
 
-Read this first, then the [README](README.md) for how to run things and [BLINK_BUILD_SPEC.md](BLINK_BUILD_SPEC.md) for what the product is meant to be.
+Read this first. The [README](README.md) says how to run things, and the [notes file](docs/superpowers/plans/2026-11-10-live-guidance-notes.md) holds every measurement, ruling and deviation. The handoff from before this plan is in git: `git show 5426d4e:HANDOFF.md`.
 
 ## Summary
 
-Blink is built to the spec and every exit check in the spec has been run and passes. It is **not finished** by the two bars the owner has since set:
+Every task an agent could do in the plan is done. What is left needs the owner: their hands, their decision, or a step that can only follow one of those. The full list is in [Open owner steps](#open-owner-steps).
 
-1. **Real, not local.** "Done" means a run on real services: a hosted database, a deployed app, live model calls. Today it runs on one machine with a SQLite file and replays recorded model output.
-2. **Good on data it has not seen.** The prompts and rules were tuned against the same nine fixtures they are scored on. The 10-of-10 eval result says nothing about new calls.
+- **The product is built.** A banker runs a call from the Mac app with a pill at the top of the screen. Blink hides what was flagged as soon as the call ends. Compliance decides each passage, and the banker reads the blanked transcript and a leak-checked summary.
+- **It is deployed:** https://blink-production.up.railway.app, with password sign-in.
+- **It has been tested on real material.**
 
-Both are open. Five questions for the owner are waiting; see [Open questions](#open-questions).
+Two results matter most:
 
-## The goal
+1. **The live red is often late.** The live reader misses its speed target, so it usually cannot turn the pill red on a long expert turn (`haiku-slow`). The after-call read hides those passages anyway. Whether to try a faster model host is the owner's decision.
+2. **The Mac app has never heard a real call.** The day-one spike that checks it hears Zoom, and the first real call, both wait on the owner. The finals demo depends on both.
 
-The original instruction was to follow `BLINK_BUILD_SPEC.md` and fully implement it, working. Blink is a hackathon project (BBS × Ramp, finals 2026-11-19) for compliance review of expert-network calls:
-
-- a firm's policy in plain language is compiled by a model into rules and state machines, validated by code, and approved by hash;
-- a model extracts the expert's claims from a call transcript with exact quotes, and code checks every quote;
-- code evaluates the claims against the policy and compares them with public documents;
-- a reviewer decides each finding; a brief is drafted from what was not restricted and released after a server-side check;
-- when evidence changes, exactly what depended on it reopens;
-- everything is written to a hash-chained audit log.
-
-The owner's later instructions, which now define the goal:
-
-- "Completion looks like an actual run with real tools. Everything is real, nothing is local."
-- "The goal is to make this very good. … The development of the entire product is overfit to what you already know and have seen in the test."
-
-## What is done
+## The state at the end of this plan
 
 ### Built
 
-All eleven scope items in section 1.3 of the spec, across the seven build phases:
+- **The live path:**
+  - the Mac app (`desktop/`), which shows the pill and captures the microphone and system audio as two channels;
+  - Deepgram Flux turn detection;
+  - a live reader on `claude-haiku-5-5` that fills in the claim form;
+  - the existing pure rules, which decide the pill;
+  - one wide record per turn.
+- **After the call:**
+  - flagged passages are hidden at the end;
+  - the after-call read on `claude-opus-5-5`;
+  - fail-closed live findings;
+  - compliance decisions in plain words ("Keep hidden", "Unhide: no concern", "Keep hidden and send to legal");
+  - release, which takes a snapshot of the blanked transcript and leak-checks the summary and the cited claims' summaries (Fix A);
+  - the banker's released transcript and summary.
+- **Security:**
+  - password sign-in with sessions;
+  - the role switcher only in development and tests;
+  - a case check on every request;
+  - break-in tests over every route;
+  - banker self-sign-up (by Pranay; always a banker).
+- **Observability:** one call's record, one moment opened step by step, and the all-calls overview (`/calls`).
+- **The look:** every screen restyled to the quiet monochrome look, then given a glass restyle by Pranay. That restyle added a landing page with the blinking mark, a sliding section bar, a guided trial ("Walk me through a trial") and a one-button Call page. Pranay also removed the "Synthetic data" marker.
+- **Honest testing:**
+  - three real policies;
+  - five real development calls;
+  - the spoken path with synthetic voices;
+  - a freeze tag and a brief for the sealed run;
+  - a permission request for a stay-quiet set.
+- **Deployment:** a Docker image, a health check, a start script and a smoke test. The app runs on Railway with a persistent volume.
 
-- **Pure core** (`src/core/`): three-valued logic, the ten-predicate vocabulary, policy schema, validator with exhaustive enumeration, scenario runner, monitor reducer, the four workflows, quote validation, public-evidence comparator, hashing and staleness.
-- **Server** (`src/server/`): SQLite schema, 20 service modules, a jobs table with a worker process, the LLM client with live, record and replay modes, prompts, the audit log.
-- **API** (`src/app/api/`): 31 routes, role checks in the services, idempotency keys.
-- **UI** (`src/app/`, `src/components/`): case queue, case intake, the three-pane review workspace, brief, audit, baseline, analyst, policy (seven tabs with state graphs), documents, metrics.
-- **Fixtures and recordings**: the demo policy and its broken variant, the Halvorsen case with two transcript versions, eight edge cases, six documents, and 27 recorded model responses from `claude-opus-5-5`.
-
-### Verified
+### Verified for this commit
 
 | Check | Result |
 |---|---|
-| `pnpm test` | 353 unit and service tests pass |
-| `pnpm e2e` | The ten demo steps pass in a browser against a production build |
-| `pnpm demo:check` | The demo flow through the services matches the gold labels at every step, from recordings |
-| `pnpm demo:offline` | `pnpm db:reset` and `pnpm demo` with all non-loopback network denied by a macOS sandbox, then the browser test: passes |
-| Node 26 | All of the above pass on Node 26.13.0 in a fresh clone of `90d4aad` with no `.env.local` and no API key. They also pass on 24.10 |
-| Live run | One full run with every model call live (19 calls, $1.24, no recordings) passed every gold check, on 2026-11-10. It went through the services, not the browser |
-| `pnpm eval` | 10 of 10 expected findings on nine fixtures, none extra. **Overfit; see below** |
+| `pnpm typecheck`, `pnpm lint` | pass |
+| `pnpm test` | 1,117 tests in 54 files pass |
+| `pnpm build` | pass |
+| `pnpm e2e` | the demo spec, then the 8 live specs (scripted call, call record, overview, access, pill), pass |
+| `pnpm demo:check` | all checks pass; 19 model calls replayed |
+| `pnpm live:check` | all checks pass. The pill is red at T11; 9 of 22 recorded reads took longer than the 2.5 s live limit |
+| `pnpm desktop:build`, `pnpm desktop:smoke` | pass |
+| `pnpm smoke --url https://blink-production.up.railway.app` | passed 10 of 10 in Task 43. On the Fix A deploy it failed only 'GET / redirects to /login', because `/` is now a public landing page; the check is updated in a separate commit, not yet run against the deployment |
 
-API spend so far is about $3.40.
+Anthropic spend over the plan is about $14.67, against a cap of $25 (spend log in the notes file).
 
-## What is left
+## Where the results are
 
-### 1. An honest evaluation (highest priority)
-
-The owner raised this and it is correct. The evidence:
-
-- **The prompts contain the test.** `src/server/llm/prompts/extract.ts` uses phrases from the test transcripts as examples: "I still have a login", "so it has clearly gotten worse since then", "At Halvorsen this quarter", "well before I left". `policy.ts` mirrors the demo policy's sentence structure. The extraction prompt was edited after seeing its output on the Halvorsen transcript, and the policy prompt was edited after the first compile failed the reviewer scenarios; both then passed.
-- **One author wrote both sides.** The eight edge cases and their expected answers were written by the same agent that tuned the prompts.
-- **The set is tiny and narrow.** Nine fixtures, ten expected findings, one fictional company. Seven of the eight edge cases are four turns long.
-- **A known silent miss.** `company_specific_operating_metric` in `src/core/predicates/registry.ts` treats any metric outside a fixed list (orders, bookings, revenue, margin, pricing, inventory, headcount, guidance, capex) as "not an operating result". An expert reading customer churn off an internal dashboard would produce no finding.
-
-There is no open dataset of expert calls labeled for compliance concerns; two searches found none. The plan agreed in outline, not yet started:
-
-| Test | What it shows | Data |
-|---|---|---|
-| Blind cases, about 30 | Whether it catches concerns and stays quiet on harmless calls | To be written by someone who has not seen the prompts. Fact patterns can come from the SEC complaint in *SEC v. Longoria* (the Primary Global Research case), so the right answer is what the SEC alleged |
-| Perturbation | Whether it learned the task or the fixture: rename the company, reformat, add filler turns, move the source remark far from the statement, and check the findings hold | Existing fixtures; no new labels |
-| New policies | Whether the compiler works beyond one policy: compile, then compare the guard's truth table with a hand-written reference | Real adviser codes of ethics on EDGAR (Ardian US, Bardin Capital) |
-| Public-evidence comparison | Whether the comparator is right on labels nobody here wrote | FinDVer (claims checked against 10-K and 10-Q filings) |
-| False alarms, long and messy calls | Robustness | Public earnings-call transcripts (`jlh-ibm/earnings_call` is CC0) |
-| Repeat runs | Whether the answer is stable: each case five times live | Any |
-| Timed review | Whether the "30% faster" pitch holds: two or three people, with and without Blink | Blind cases; the app already times both modes |
-
-Rules proposed to keep it honest:
-
-1. Remove the fixture-derived examples from the prompts, then freeze prompts and rules. This changes the request hashes, so everything must be re-recorded (`pnpm record`, then `BLINK_LLM_MODE=record pnpm eval`); `tests/services/recordings.test.ts` fails until that is done.
-2. Split the blind set: about 20 cases that may be inspected and fixed against, and 10 sealed ones run once at the end by the owner, who reports totals only.
-3. Fix the pass bars before running. Proposed, not agreed: at least 90% of planted concerns found, no silent misses, at most one false finding per call, the same findings on four of five repeat runs.
-4. Report counts per case, not one percentage.
-
-Licences of the public datasets have not been checked, and the dataset repositories have not been opened.
-
-### 2. Real services
-
-Nothing is deployed. Proposed, not confirmed:
-
-- **Database:** Turso (hosted SQLite). Keeps the schema and migration.
-- **Hosting:** Railway, with the web app and the worker as two services.
-- **Model:** the Anthropic API in live mode, with replay kept as a fallback switch.
-
-The cost is in the code. Every service function is synchronous and takes a better-sqlite3 transaction (`transact(fn)` in `src/server/db/client.ts`). A hosted database needs an async client, so the services, job handlers, routes, seed and service tests all have to become async. Estimate: about a day, including re-running every test against the hosted database. The smaller change is one host with a persistent disk, keeping SQLite, which does not meet "nothing is local" for the database.
-
-Do not provision anything before the owner confirms the services. Ask for credentials through the secure secret prompt, never in chat.
-
-### 3. Smaller gaps
-
-- **No live browser run.** The e2e test asserts the "Replayed" badge and uses 90-second job timeouts; a live compile takes over two minutes. It needs a live variant before it can drive a live server.
-- **Live output varies.** The recorded compile enumerates 1,156 evidence combinations; the live run produced 1,168, because the model wrote one rule with two predicates instead of one. Both validate. Two live runs have passed on the current prompts. That is not a reliability figure.
-- **The AI brief draft in replay** has a recording only for the demo script's exact decisions. Other decisions give a visible replay miss; "Template draft" is the fallback.
-- **The claim field editor** edits the enumerated fields and the period's relative value. It does not edit fiscal year, quarter, or the value.
-- **Sign-in** is a role switcher over four seeded users. Role checks are real; identity is not.
-- **`pnpm db:reset`** deletes `data/blink.db` by a hardcoded path, and `drizzle-kit migrate` reads `BLINK_DB_PATH` only from the real environment, not from `.env.local`.
-- **`pnpm demo:offline`** is macOS only (it uses `sandbox-exec`) and resets `data/blink.db`.
-
-### 4. From the spec's own schedule
-
-Rehearse, and record a screen capture of the demo as the backup the spec asks for (section 19), on or before 2026-11-18.
-
-## Decisions made
-
-### By the owner
-
-- Commit in small checkpoints and push after each. Do not lose work.
-- Prefer real services to local ones. Local is fine for the dev server and tests. Name the service before deploying anything.
-- "Done" means a real run on real services, nothing local.
-- The Anthropic API key lives only in `.env.local`, which is gitignored. It is never printed or committed.
-
-### In the build, where the spec was silent or reality disagreed
-
-| Decision | Why |
+| What | Where |
 |---|---|
-| One finding per claim, keyed `policy:<case>:<claim>` | A replayed evaluation updates the finding instead of adding another |
-| Escalation is an open task for a senior reviewer; the finding stays `REVIEW_REQUIRED` | Nothing hides the finding. A reviewer who tries to dispose gets a 403 from the server |
-| A conflict between two statements forces review even when the guard is false | The guard was evaluated on a field the expert contradicted |
-| No finding for a claim the expert completes later in the same call | Turn-ordered evaluation passes through `NEEDS_CONTEXT` on the way to `NOT_TRIGGERED`. The steps are stored as history, but the reviewer is not asked to acknowledge a question the call answered |
-| Policy findings are numbered before AI-suggested ones | So F1 to F3 are the findings the demo script names |
-| The model emits a flat extraction form; code restores the nested one | The API rejected the nested, nullable schema: "compiled grammar is too large" |
-| Pass B: a clarification clause is carried out by `open_context_task`; a rule triggered by a confidentiality signal uses `open_review` | The first wording made the model send everything to review. Asking an expert to clarify possibly confidential information invites more of it |
-| Pass B: each condition a clause states gets its own predicate | The model dropped the confidentiality condition because another predicate's description implied it |
-| Extraction: an inference from facts already extracted is not a new claim; at most two AI-suggested concerns | The first live run opened a finding on "so it has clearly gotten worse", and raised three concerns that restated the findings. **This edit was made against the test transcript and is part of the overfitting problem** |
-| Record mode reuses a recording that exists; `BLINK_LLM_RERECORD=1` refreshes | An interrupted recording run resumes without paying twice |
-| IDs are monotonic within a process | "Latest row" queries break ties on the id; a random tail made them flip within a millisecond |
-| A failed release returns 409 with every failure, and the transaction still commits | The blocked attempt records the staleness it found and its own audit event |
-| A released brief whose evidence changed stays visible as "under re-review" | The analyst already read it; hiding it would misstate what happened |
-| The eval uses the hand-written policy and document facts | So a score moves only when extraction does |
-| A nondeterministic monitor fails its scenarios instead of crashing the compile | The reducer throws on a tie; the validator has already reported it |
-| The offline check uses a sandbox, not Wi-Fi off | It can run unattended without cutting the machine off. The script tests a raw IP as well as names, because a first sandbox profile blocked DNS but let IP connections through |
-| Hand-labeled claims are refused in a production build unless `BLINK_ALLOW_GOLD=1` | They are a development aid |
-| The data stays synthetic | Real expert-call transcripts are confidential and there is no legitimate source for them |
+| Three published policies compiled by Blink: all compile, none validates (`CLAUSE_DROPPED`) | [docs/eval/2026-11-real-policies.md](docs/eval/2026-11-real-policies.md) |
+| The after-call read on five real calls under four policies: 5 of 5 labelled statements hidden; `chu` comes back with nothing flagged; repeat runs 5/5, 5/5, 4/5 | [docs/eval/2026-11-real-dev.md](docs/eval/2026-11-real-dev.md) |
+| Six calls through the live path as speech: 0 of 6 labelled turns red live, 6 of 6 hidden after the call; typical 2.11 s, 19 in 20 within 2.81 s; Flux on Earnings-21 | [docs/eval/2026-11-spoken.md](docs/eval/2026-11-spoken.md) |
+| One full live run on the deployment, policy to release; no live red on T11; the summary leak path that became Fix A; the misheard issuer name | [docs/eval/2026-11-deployed-run.md](docs/eval/2026-11-deployed-run.md) |
+| Fix A: a summary never cites a claim whose words are hidden | the notes file, "Fix A"; commits `0f27034` and `49fe660` |
+| The freeze for the sealed run | tag `eval-freeze-1` (`5b495fa`); the notes file, "Task 40: the freeze" |
+| The brief for the sealed run, for a separate session | [docs/eval/sealed-brief.md](docs/eval/sealed-brief.md) |
+| The request to In Practise for a stay-quiet set, not yet sent | [docs/eval/in-practise-request.md](docs/eval/in-practise-request.md) |
+| The finals demo | [docs/demo-script.md](docs/demo-script.md) |
 
-## Open questions
+## Honest limits
 
-Waiting on the owner. None has been answered.
+- **A handful of real test calls.** Five development calls with five labelled statements; two of the calls are private. The sealed set (two more documents) has not been run.
+- **No stay-quiet set.** Without In Practise's permission, the false-alarm bar cannot be measured.
+- **Synthetic voices in the spoken test:** macOS `say`, digital silence, no room noise.
+- **Live reds can be missed.** The live reader misses the 2.0 s target, and an expert turn that carries a claim often times out at 2.5 s and is not read live (`haiku-slow`). The after-call read hides it. So the pill's end count, which covers live flags only, can read "Nothing was hidden." while the case hides several passages.
+- **Flux can mishear issuer names** ("Halvason" for Halvorsen). An issuer-specific rule then stays quiet until a reviewer corrects the company.
+- **Real policies compile with coverage gaps.** The ten predicates cannot express some required clauses. The real-policy runs load them anyway, for testing only; the app would never activate them.
+- **The Mac app was built assuming `audio grant: needs-video`.** The spike that settles it waits on the owner. If it decides `audio-only`, drop the `video` field in `desktop/src/main.ts`.
+- **The Chrome fallback (Task 19) is not built.** It is needed only if the spike's verdict is `fallback`.
 
-1. Are Turso and Railway acceptable, or is something else preferred?
-2. Does sign-in need to be real too? The spec puts it out of scope.
-3. Who writes the blind cases? It cannot be the agent that tuned the prompts. Suggested: the owner or teammates write five by hand; a model from a different provider, with no access to this repository, writes the rest from a sealed brief, and the owner spot-checks its labels.
-4. May the public data be pulled (a FinDVer sample, five codes of ethics, ten earnings calls) and Blink run on it unchanged, for a few dollars of API time?
-5. Are the proposed pass bars right?
+## Open owner steps
+
+These are the same as "Waiting on the owner" in the notes file, where each has its details.
+
+1. **Task 2 Step 5.** The verdict is `haiku-slow`. Decide whether to take Groq out of the backlog as a faster host for the live reader. Until then, Haiku 5.5 stays. Task 38's speed finding goes with this decision, including whether `speech_ended_at` should be redefined.
+2. **Task 3 Steps 2 to 5.** Open the spike app, allow both permissions and play the Zoom speaker test (about ten minutes; instructions in the notes, "Spike: Mac app"). Steps 3 to 5 then record the answers, write `verdict: mac-app` or `fallback` and `audio grant: audio-only` or `needs-video`, and commit.
+3. **Task 19.** Build the Chrome picture-in-picture pill only if the spike says `verdict: fallback`.
+4. **Task 20 Steps 2 to 4.** Hold a five-minute real call with headphones, in Zoom, with a second person reading the expert's side. `pnpm live:prepare` is ready (instructions in the notes, "Task 20: first real call"). Steps 3 and 4 then read the timings back and commit them.
+5. **Task 38.** Spoken input misses the speed target; this is decided together with item 1.
+6. **Task 39 Step 3.** Send the In Practise request from the owner's own address, after filling in the recipient from their compliance page and checking their terms.
+7. **Task 41.** Start a separate session with `docs/eval/sealed-brief.md` as its whole brief. Then commit its counts-only report, `docs/eval/2026-11-real-sealed.md`. The session that tuned the prompts must not run it or read `~/.blink-sealed/`.
+8. **Task 44, the leftover case.** `case_01M740EV6DA1XZ7FC7B5SMWXXN` ("Regional Sales Director, West", a wrong packet) is in review on the deployment. Clean it up or leave it.
+9. **Task 44, the misheard issuer name.** Decide what to do about Flux's spellings keeping R3 quiet.
+10. **Task 46 Steps 1 and 2.** Rehearse the demo twice from `docs/demo-script.md` on the deployment, with the person who will read the expert's lines. Then record a screen capture of one clean run as the backup, on or before 2026-11-18. Step 3, noting and fixing what the rehearsal showed, waits on these two.
 
 ## Picking this up
 
 ```bash
 pnpm i
 pnpm db:reset          # seeded database, eval replayed
-pnpm dev               # http://localhost:3000, web and worker, replay mode
-pnpm test && pnpm e2e  # everything that should stay green
+pnpm dev               # http://localhost:3000, web and worker, replay mode, role switcher
+pnpm typecheck && pnpm lint && pnpm test && pnpm demo:check && pnpm live:check
 ```
 
-- **Remote:** `https://github.com/pranayD21/blink.git`, branch `main`.
-- **Local checkout:** `~/Documents/blink` on the owner's machine (moved there on 2026-11-10 from a scratch folder). Its `.env.local` holds the API key and sets replay mode. A new machine needs its own key for record or live mode; replay needs none.
-- **Node 26** is not installed system-wide on that machine. An official build is unpacked at `~/.t3/scratch/2026-11-10-goal-follow-everything-in-the-67af752d/tools/node26/node-v26.13.0-darwin-arm64/bin`; put it first on `PATH` to use it. That is a scratch folder and may be cleaned up; any Node 26 install does the same job. `node_modules` in the checkout is built for Node 24.
-- **Databases** under `data/` are disposable: `blink.db` (dev), `e2e.db`, `record.db`.
-
-Where to look first:
-
-| To understand | Read |
-|---|---|
-| What a prompt asks for, and where it leaks the test | `src/server/llm/prompts/extract.ts`, `policy.ts` |
-| What the rules can and cannot express | `src/core/predicates/registry.ts` |
-| How findings are created from monitor steps | `src/server/services/evaluation.ts` |
-| How a new transcript version is reconciled | `src/server/services/analysis.ts`, `src/core/evidence/lineage.ts` |
-| How staleness works | `src/server/services/staleness.ts`, `src/core/deps/staleness.ts` |
-| The release check | `src/server/services/release.ts`, `src/core/workflow/brief.ts` |
-| How the current eval scores | `src/server/eval/run.ts`, `scripts/eval.ts` |
-| The whole demo as code | `scripts/record-demo.ts`, `tests/e2e/demo.spec.ts` |
+- **Remote:** `https://github.com/pranayD21/blink.git`, branch `main`. The repository is public.
+- **A second developer:** Pranay commits UI work to `main`. Do not edit his files. He avoids prompts, predicates, the policy core, recordings, the real fixtures, eval code and scripts, docs, the deployment files, `package.json` and the lockfile.
+- **Keys:** `ANTHROPIC_API_KEY`, `DEEPGRAM_API_KEY`, `RAILWAY_API_TOKEN` and `BLINK_SEED_PASSWORDS` live only in `.env.local`, which git ignores, and in Railway's variables. Never print or commit one.
+- **The deployment:**
+  - **Where:** Railway project `blink`, service `blink`, region `iad`, volume `blink-volume` at `/data`. The trial ends on 2026-12-10.
+  - **What is deployed, at the time of writing:** deploy `c7fedf51`, from main `49fe660` (Fix A), made 2026-11-11 01:18 UTC. Pranay also deploys his own builds from Cursor, so check the Railway dashboard for the current one. The redeploys are listed in the notes, "Task 43: the deployment".
+  - **After the finals (2026-11-19):** stop the service to save credit (`railway down`, or the dashboard). The volume keeps the data until it is deleted.
+  - **Config:** `railway.json` keeps working until 2026-12-01; `railway config migrate` is left for later.
+  - **The CLI** lives under `data/railway-home/`, with `HOME` pointed there.
+- **The freeze:** until the sealed run is reported, do not change `src/server/llm/prompts/**`, `src/core/predicates/**`, `src/core/policy/**`, `fixtures/real/policies/*.compiled.json` or `src/server/eval/real.ts`. UI, docs and deployment work can go on.
+- **Private material:** the two Kyprios calls are in `~/.blink-real-local/dev/` on the owner's machine, never in git. They are reported by id and counts only. The sealed material goes in `~/.blink-sealed/` and is opened only by the sealed session.
+- **Node 26** is the pinned version (`.nvmrc`). Node 24 works too: this commit's checks ran on 24.10.
 
 Two rules that are easy to break:
 
-- **Changing a prompt changes its request hash.** Re-record, or the offline demo fails with a replay miss. `tests/services/recordings.test.ts` catches this.
-- **`src/core/` has no I/O, clock or randomness.** Keep it that way; the validator and the tests rely on it.
+- **Changing a prompt changes its request hash.** Bump its `*_PROMPT_VERSION` and record again, or the replayed checks fail with a replay miss. `tests/services/recordings.test.ts` catches it.
+- **`src/core/` has no I/O, clock or randomness.** Time arrives as an argument. Keep it that way; the validator, the pill and the tests rely on it.

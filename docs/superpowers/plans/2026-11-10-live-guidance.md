@@ -1551,10 +1551,10 @@ git commit   # docs(eval): draft the permission request for a stay-quiet test se
 - Create: `docs/eval/sealed-brief.md`
 - Modify: `docs/superpowers/plans/2026-11-10-live-guidance-notes.md`
 
-- [ ] **Step 1: Check the tree is green.** Run: `pnpm typecheck && pnpm lint && pnpm test && pnpm build && pnpm e2e && pnpm demo:check && pnpm live:check`. Expected: all exit 0.
-- [ ] **Step 2: Tag the freeze.** Run: `git tag eval-freeze-1`. From here, no prompt, predicate or rule changes until the sealed run is reported. Write the tag's commit hash in the notes file.
-- [ ] **Step 3: Write `docs/eval/sealed-brief.md`** for a separate session that has not seen this work. It says: fetch the FSA final notice on Einhorn (`https://www.fca.org.uk/publication/final-notices/david-einhorn.pdf`) and *FINRA v. Dotson* (`https://www.finra.org/sites/default/files/OHO_Dotson_20090208031-02_080715.pdf`); build each as a case in the layout of `fixtures/real/README.md` under `~/.blink-sealed/`, outside the repository; label only what the authority itself says, with Dotson's right answer being "flagged for compliance"; check out the tag `eval-freeze-1`; do not open anything under `src/server/llm/prompts/`; run `BLINK_LLM_MODE=live pnpm eval:real --set ~/.blink-sealed --policies oaktree,sage-rock,tcw --counts-only` once; judge coverage for unflagged turns as Task 37 step 5 describes; write the counts to `docs/eval/2026-11-real-sealed.md` and nothing else from the material.
-- [ ] **Step 4: Commit.**
+- [x] **Step 1: Check the tree is green.** Run: `pnpm typecheck && pnpm lint && pnpm test && pnpm build && pnpm e2e && pnpm demo:check && pnpm live:check`. Expected: all exit 0.
+- [x] **Step 2: Tag the freeze.** Run: `git tag eval-freeze-1`. From here, no prompt, predicate or rule changes until the sealed run is reported. Write the tag's commit hash in the notes file.
+- [x] **Step 3: Write `docs/eval/sealed-brief.md`** for a separate session that has not seen this work. It says: fetch the FSA final notice on Einhorn (`https://www.fca.org.uk/publication/final-notices/david-einhorn.pdf`) and *FINRA v. Dotson* (`https://www.finra.org/sites/default/files/OHO_Dotson_20090208031-02_080715.pdf`); build each as a case in the layout of `fixtures/real/README.md` under `~/.blink-sealed/`, outside the repository; label only what the authority itself says, with Dotson's right answer being "flagged for compliance"; check out the tag `eval-freeze-1`; do not open anything under `src/server/llm/prompts/`; run `BLINK_LLM_MODE=live pnpm eval:real --set ~/.blink-sealed --policies oaktree,sage-rock,tcw --counts-only` once; judge coverage for unflagged turns as Task 37 step 5 describes; write the counts to `docs/eval/2026-11-real-sealed.md` and nothing else from the material.
+- [x] **Step 4: Commit.**
 
 ```bash
 git add docs/eval/sealed-brief.md docs/superpowers/plans/2026-11-10-live-guidance-notes.md
@@ -1617,12 +1617,12 @@ git commit   # docs(deploy): record the deployed address and the trial's limits
 **Files:**
 - Create: `docs/eval/2026-11-deployed-run.md`
 
-- [ ] **Step 1: Compile and approve the demo policy on the deployment**, signed in as the policy owner, through the pages. Expected: status Active. A live compile takes over two minutes.
-- [ ] **Step 2: Create a case as the banker and run a spoken call against the deployment.** Run: `pnpm eval:spoken --transcript fixtures/cases/halvorsen/transcript-v1.txt --case <id> --server <address> --as user_priya`. Expected: red on the source remark, a count at the end.
-- [ ] **Step 3: Finish the case as compliance through the pages:** decide every finding, attest, draft and approve the summary, release.
-- [ ] **Step 4: Check both ends.** As the banker, the released transcript shows blanked passages and the summary; as compliance, `/calls` shows the call with its timings.
-- [ ] **Step 5: Write `docs/eval/2026-11-deployed-run.md`:** what was run, the timings (median, 95th percentile, worst), anything that failed, and the spend.
-- [ ] **Step 6: Commit.**
+- [x] **Step 1: Compile and approve the demo policy on the deployment**, signed in as the policy owner, through the pages. Expected: status Active. A live compile takes over two minutes.
+- [x] **Step 2: Create a case as the banker and run a spoken call against the deployment.** Run: `pnpm eval:spoken --transcript fixtures/cases/halvorsen/transcript-v1.txt --case <id> --server <address> --as user_priya`. Expected: red on the source remark, a count at the end. — ran; the red did not appear (T11's read timed out, `haiku-slow`); see notes, Task 44
+- [x] **Step 3: Finish the case as compliance through the pages:** decide every finding, attest, draft and approve the summary, release.
+- [x] **Step 4: Check both ends.** As the banker, the released transcript shows blanked passages and the summary; as compliance, `/calls` shows the call with its timings.
+- [x] **Step 5: Write `docs/eval/2026-11-deployed-run.md`:** what was run, the timings (median, 95th percentile, worst), anything that failed, and the spend.
+- [x] **Step 6: Commit.**
 
 ```bash
 git add docs/eval/2026-11-deployed-run.md
@@ -1635,11 +1635,11 @@ git commit   # docs(eval): record a full live run on the deployed app
 - Create: `docs/demo-script.md`
 - Modify: `README.md`, `HANDOFF.md`, `BLINK_BUILD_SPEC.md` (sections 1.4, 15 and 19: a one-line pointer to the design document and the demo script; no rewriting)
 
-- [ ] **Step 1: Write `docs/demo-script.md`,** five minutes, around a live call: the approved policy; the banker starts a call from the Mac app with the pill at the top; the expert reads lines that reach amber and then red; the call ends with a count; compliance opens the case, sees what is hidden and why, keeps one hidden and unhides one, releases; the banker reads the blanked transcript and the summary; compliance opens the call's record and one moment. Each step lists what is on screen and one line to say. It names the fallbacks in order: a phone hotspot, then the recorded video.
-- [ ] **Step 2: Update `README.md`:** what Blink does now, how to run it locally, how to build and open the Mac app, that the banker should wear headphones, the two sign-in modes, the new commands, the deployed address, and the limits (a handful of real test calls; no stay-quiet set; synthetic voices in the spoken test).
-- [ ] **Step 3: Update `HANDOFF.md`:** state at the end of this plan, what is left, the open owner steps, and where the results are.
-- [ ] **Step 4: Run every check.** Run: `pnpm typecheck && pnpm lint && pnpm test && pnpm build && pnpm e2e && pnpm demo:check && pnpm live:check`. Expected: all exit 0.
-- [ ] **Step 5: Commit.**
+- [x] **Step 1: Write `docs/demo-script.md`,** five minutes, around a live call: the approved policy; the banker starts a call from the Mac app with the pill at the top; the expert reads lines that reach amber and then red; the call ends with a count; compliance opens the case, sees what is hidden and why, keeps one hidden and unhides one, releases; the banker reads the blanked transcript and the summary; compliance opens the call's record and one moment. Each step lists what is on screen and one line to say. It names the fallbacks in order: a phone hotspot, then the recorded video.
+- [x] **Step 2: Update `README.md`:** what Blink does now, how to run it locally, how to build and open the Mac app, that the banker should wear headphones, the two sign-in modes, the new commands, the deployed address, and the limits (a handful of real test calls; no stay-quiet set; synthetic voices in the spoken test).
+- [x] **Step 3: Update `HANDOFF.md`:** state at the end of this plan, what is left, the open owner steps, and where the results are.
+- [x] **Step 4: Run every check.** Run: `pnpm typecheck && pnpm lint && pnpm test && pnpm build && pnpm e2e && pnpm demo:check && pnpm live:check`. Expected: all exit 0.
+- [x] **Step 5: Commit.**
 
 ```bash
 git add docs/demo-script.md README.md HANDOFF.md BLINK_BUILD_SPEC.md

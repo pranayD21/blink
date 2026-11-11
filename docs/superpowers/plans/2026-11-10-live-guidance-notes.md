@@ -104,6 +104,8 @@ When the owner has reported, the next step is to fill in the answers here, write
 | 2026-11-10 | 37 | Anthropic, all `claude-opus-5-5`, all live (no real-material recording): `pnpm eval:real`, a one-call probe ($0.24), the development set under four policies (public $1.15, private $0.11), fix round 1 reruns (private $0.37, public $1.10) and the repeat runs (15 calls, $0.53), as `llm_calls` reports; plus the round-1 re-recording (`pnpm record` $0.37, `pnpm record:live` $0.18, `BLINK_LLM_MODE=record pnpm eval` about $0.31 from its recordings' token counts). Plan total so far about $13.02 | $4.36 |
 | 2026-11-10 | 38 | Anthropic, all live (nothing recorded): `pnpm eval:spoken` on six spoken calls (Halvorsen under the manual policy; the five development calls under Oaktree). 55 `claude-haiku-5-5` live reads ($0.015) and 6 `claude-opus-5-5` after-call extractions ($0.60), as `llm_calls` reports. 22 reads timed out at 2.5 s and left no usage, so their cost is unknown (about $0.01 at the finished reads' rate). The Halvorsen call was the one-call probe ($0.22); the estimate for Steps 2 to 4 was about $1, under the $5 gate. Plan total so far about $13.64 | $0.62 |
 | 2026-11-10 | 38 | Deepgram Flux: about 38 minutes streamed: 18.0 min for the six calls (two channels of 9.0 min) and 20.1 min of Earnings-21. Estimated at $0.0077 a minute, the published pay-as-you-go Flux streaming rate; the console has the exact figure | about $0.29 |
+| 2026-11-10 | 44 | Anthropic, all live on the deployment, as its `/api/metrics` reports (read as the reviewer before and after: $0.056 to $1.084): the demo policy's live compile (6 `claude-opus-5-5` calls, $0.567), two after-call extractions (`claude-opus-5-5`, $0.425; the first call's case had a wrong packet, so the call was run twice), 34 finished `claude-haiku-5-5` live reads ($0.009; 10 more timed out and left no usage, unknown, about $0.003 at the same rate) and one summary draft ($0.026). Plan total so far about $14.67 | $1.03 |
+| 2026-11-10 | 44 | Deepgram Flux: two Halvorsen calls of 2.6 min on two channels, 10.6 min streamed (estimate at $0.0077 a minute; the console has the exact figure) | about $0.08 |
 
 ## Waiting on the owner
 
@@ -118,6 +120,15 @@ When the owner has reported, the next step is to fill in the answers here, write
 - Task 20 Step 4: waits on Step 3. Commit the notes as `docs: record the first real call's timings`.
 - Task 38: spoken input misses the speed target. The 95th percentile is 2.81 s from Flux's window end and 3.96 s from the end of the audio, against 2.0 s. Live, 0 of 6 labelled turns went red, because their reads timed out at 2.5 s (the after-call read hid all six). Task 20's measure, `speech_ended_at` (the end of Flux's audio window, a median 0.79 s after speech really ends), may also need redefining. Both go with the Groq / `haiku-slow` decision in Task 2 Step 5. Details are in "Task 38: the spoken path" and `docs/eval/2026-11-spoken.md`.
 - Task 39 Step 3: send `docs/eval/in-practise-request.md` from the owner's own address. Fill in the recipient from https://inpractise.com/about/compliance (the address is hidden from scripts, so read it on the live page), the link to the free interviews, and your name. Check their Terms and Conditions of Use for reuse limits first. The draft tells them that text goes to Anthropic and audio to Deepgram, and offers text-only testing. If they grant permission, say so, and the interviews are added as stay-quiet cases in a follow-up. Until then the false-alarm bar stays unmeasured, and the reports say so.
+- Task 41 (owner): the sealed run. Start a separate session with `docs/eval/sealed-brief.md` as its whole brief and let it finish (Step 1), then commit its counts-only report `docs/eval/2026-11-real-sealed.md`, or hand it to the executing session to commit unread beyond the counts (Step 2). The session executing this plan must not run it or read `~/.blink-sealed/`. Until it is reported, the freeze at `eval-freeze-1` holds ("Task 40: the freeze").
+- Task 44: two findings from the deployed run. Neither is fixed in the Task 44 commits. The first was fixed in 0f27034 (Fix A); the second still waits on the owner.
+  - **A potential leak path in the summary. Fixed in 0f27034 (Fix A).** An AI summary could cite a claim (C7) whose quote lay inside an after-call hidden passage (F2 at T15), because `claimEligibility` restricted by shared turn only for live findings. Now a claim is ineligible while any of its quotes overlaps a span an uncleared finding hides, and release also leak-checks the cited claims' summaries (`CITATION_LEAK`). See "Fix A" below.
+  - **A misheard issuer name keeps R3 quiet.** Flux's spellings of the issuer ("Halvason", "Talveshams") kept rule R3 from matching the covered issuer until a reviewer corrected the company.
+  - Details are in "Task 44: the deployed run" and `docs/eval/2026-11-deployed-run.md`. The missed live red on T11 is the existing `haiku-slow` item.
+- Task 44: the leftover case `case_01M740EV6DA1XZ7FC7B5SMWXXN` ("Regional Sales Director, West", wrong packet from the run's first attempt) is in review on the shared deployment. The owner decides whether to clean it up or leave it.
+- Task 46 Steps 1 and 2: rehearse the demo twice from `docs/demo-script.md` on the deployed app, with the person who will read the expert's lines, then record a screen capture of one clean run as the backup, on or before 2026-11-18. The rehearsal is also the first time the Mac app hears a real call, unless Task 3 or Task 20 runs first.
+- Task 46 Step 3: waits on Task 46 Steps 1 and 2. It is not marked `(owner)`, but it can only run after the rehearsal: note what it showed here, and fix what can be fixed without changing prompts or rules.
+- Final review: eight Important findings for the owner to decide (open sign-up exposure and spend, the call page beyond the pill, the placeholder case, echoes, unended calls, dropped last turns, corrections blocking release). Details are in "Final review".
 
 ## Task 10: the time limit is enforced twice
 
@@ -344,6 +355,11 @@ Step 1 is done: `pnpm live:prepare` (`scripts/prepare-live-call.sh`) resets `dat
 - **First start:** migrations ran, the database was empty, so the seed ran in full. That queued 6 document-facts jobs, and the worker (`LLM mode: live`) finished them for $0.06. The health check passed on the first poll.
 - **Smoke:** `pnpm smoke --url https://blink-production.up.railway.app` passed every check: health, the redirect to sign-in, all four sign-ins, the banker refused `/api/calls` (403) and `act-as` (404), an unknown case (404), and sign-out.
 - **Build warning:** Next's file tracer warns that a `process.cwd()` path in the server code makes it trace the whole project into the output. That makes the build slower and bigger, but nothing fails. Left as is.
+- **Redeploys since the first** (recorded in Task 45's fix round). Railway serves whichever deploy came last, and Pranay also deploys his own builds from Cursor, so the deployed commit can change without a commit here.
+  - **Pranay, from Cursor:** `4be865eb`, from `aee5ccd`, at 22:56 on 2026-11-10.
+  - **The controller:** `630c8a1f`, from `2a9a6a8`, which includes the `procps` fix (`8ca1cb5`). It was superseded before it finished.
+  - **Pranay, from Cursor:** `2200f77a`, from merged main `05dab3a`, which includes `procps`. Smoke passed 10 of 10.
+  - **At the time of writing:** `c7fedf51`, from main `49fe660` (Fix A), made 2026-11-11 01:18 UTC by the controller. Smoke passed 9 of 10. The failing check was 'GET / redirects to /login': since Pranay's `0ceb932`, `/` is a public landing page with no data on it. The smoke script is updated in Task 45's fix round to check a protected page instead.
 
 ## Task 37: the real development set, scored
 
@@ -378,3 +394,83 @@ Step 1 is done: `pnpm live:prepare` (`scripts/prepare-live-call.sh`) resets `dat
 - **`speech_ended_at` is not the end of speech.** It is the end of Flux's audio window, which came a median 0.79 s (95th percentile 1.49 s, nearest-rank, n = 77) after the synthetic speech really ended. Task 20's measure therefore leaves out most of Flux's end-of-turn wait. Measured from the true end of the audio, the typical time is 3.02 s, 3.96 s at the 95th percentile.
 - **Earnings-21** (`4387332` Zagg, `4366522` Aldeyra; CC BY-SA 4.0; first 10 minutes each): word error rate 11.9%, numbers correct 8 of 71, company names correct 51 of 60. Flux writes most numbers as words, and the prescribed normaliser expands nothing, so the numbers figure mostly measures that. The company-name misses are mostly the issuers' own names (Zagg, Aldeyra).
 
+
+## Task 40: the freeze
+
+- **Tag:** `eval-freeze-1` is commit `5b495fa83ea61ad520eb5aee2c4e358da4188b0a` (main on 2026-11-10, after Tasks 37 to 39 and the other developer's UI commits up to 6a7a08a).
+- **Checks on the tagged commit:** `pnpm typecheck`, `lint`, `test` (1094 tests), `build`, `e2e` (1 demo spec and 8 live specs), `demo:check` and `live:check` all exit 0.
+- **The freeze:** from here, no prompt, predicate or rule changes until the sealed run is reported. That means `src/server/llm/prompts/**`, `src/core/predicates/**` and `src/core/policy/**`, the same paths the other developer already avoids, and also the compiled real policies (`fixtures/real/policies/*.compiled.json`) and the scorer (`src/server/eval/real.ts`). The sealed run uses the tag, so later changes on `main` cannot affect it; the freeze is about not tuning anything before the result is known. UI, docs and deployment work can go on.
+- **The sealed run:** `docs/eval/sealed-brief.md` is the brief for a separate session (Task 41, owner). It runs the tag, never `main`. The tag is pushed to origin so that a fresh clone can check it out.
+
+## Task 44: the deployed run
+
+- **Run order:** after Task 40, as planned. Nothing on Railway was changed or redeployed, and no container restart interrupted a step. Pranay's files were not touched.
+- **What the seed left:** no policy version at all, `case_halvorsen` at intake, and a "Live call" case at intake made by someone else. Neither case was used.
+- **Step 1:** Dana compiled the demo policy live through `/policies/new`. Validated in 185 s: Pass B #1 ended `CLAUSE_DROPPED`, and the compiler's own retry passed. She approved it by hash, and `pv_01M7405V4J0AC1687XVTCSWSWH` is Active and AI-compiled. Cost $0.567.
+- **Step 2:** Priya's case `case_01M740QN874Q1T7DH8HZ1QQEHG` was made through `/cases/new` from the Halvorsen packet, then `pnpm eval:spoken --server <deployment> --as user_priya --expect-red T11`.
+  - **The red:** T11 did not go red. Its read timed out, as did 5 other expert turns. This is `haiku-slow`, already waiting on the owner. The step is ticked because it ran; its expectation is not met.
+  - **The end:** the count at the end was "Call ended. Nothing was hidden."
+  - **The first attempt:** the run's own form script filled the wrong fields (loose label matches), so its case, `case_01M740EV6DA1XZ7FC7B5SMWXXN` ("Regional Sales Director, West"), has a wrong packet. It is left in review on the deployment, and its call counts in `/calls`.
+- **Step 3:** done through the pages.
+  - F2 needed context. Marcus clarified it, and it then needed a senior.
+  - Marcus decided the AI-suggested F3 and F4. Jordan sent F1 and F2 to legal.
+  - Marcus attested and drafted the summary.
+  - The first release was refused by the leak check: the draft cited C7, whose words sit inside hidden passage F2 at T15. Marcus removed that sentence, approved v2 and released it.
+- **Step 4:**
+  - The banker's released transcript shows 6 blanked passages and the summary, with none of the hidden words in the page or its HTML.
+  - `/calls` shows both calls: 44 turns, typical 1.8 s, 19 in 20 within 2.8 s, worst 2.8 s, and 10 turns with a problem.
+- **Flux's window lag:** median 0.78 s on the deployment against 0.72 s on Task 38's local Halvorsen run. Both are nearest-rank (rank 11 of 22), recomputed from `data/spoken/results/`; the midpoints are 0.79 s and 0.74 s.
+- **Timings (attempt 2):** from Flux's window end, 1.75 · 2.81 · 2.84 s. From the end of the audio, 2.70 · 3.89 · 4.34 s. Task 38's local Halvorsen run was 1.83 · 2.57 · 2.57 and 2.63 · 3.63 · 3.96. The tail is about 0.25 s slower on the deployment, from the round trip to Railway.
+- **For the owner:**
+  - **A potential leak path in the summary.** Brief eligibility (`claimEligibility`) restricts claims by shared turn only for live findings, so an eligible claim inside an after-call hidden passage gets drafted. The release check (`findLeaks`) stopped it this time only because the sentence copied five or more words. It misses paraphrases, single-word names, and figures and names exempted through the eligible claims' allowlist. It also never reads the cited claims' summaries, which the banker's citation chip shows. A fix follows in a separate commit: a claim becomes ineligible while any of its quotes overlaps a span an uncleared finding hides, and release also leak-checks the cited claims' summaries.
+  - **A misheard issuer name keeps R3 quiet.** Flux heard Halvorsen as "Halvason" and "Talveshams". A claim naming "Halvason" did not match the covered issuer, so R3 stayed quiet until a reviewer mapped the company.
+  - Neither was changed in Task 44. Details are in `docs/eval/2026-11-deployed-run.md`.
+
+
+## Fix A: a summary never cites a claim whose words are hidden
+
+- **The cause:** found by Task 44. `claimEligibility` restricted a claim by shared turn only for live findings. For an after-call finding it checked only the finding's own claim. So C7, whose quote lay inside C8's quote under the uncleared F2, stayed eligible, and the drafting model was given it. The release check was not a sure net: `findLeaks` misses paraphrases and single-word names, its visible allowlist came from the eligible claims (C7 included), and it never read the cited claims' summaries, which the banker's citation chip shows.
+- **The rule:**
+  - A claim is not eligible (reason `restricted`) while any of its quotes overlaps a span that an uncleared finding keeps hidden on the current transcript. Overlap means the same current turn and `a.start < b.end && b.start < a.end`, so touching spans do not overlap.
+  - A finding's hidden spans are every quote of a claim it hides, exactly as `hiddenBy` and the blanking decide (its own claim for any origin, and for a live finding every claim on its turns), plus a live finding's own passages. Including the claims a live finding hides closes one more gap: a claim on T5 and T11 is blanked whole when a live finding hides T5, so a claim quoting the same T11 words is restricted too.
+  - The detail names the finding and the turn only ("it quotes words in T15 that finding F2 keeps hidden"). A claim's own findings keep their existing reasons, and the span rule runs after them, so no claim that was already ineligible changes its reason.
+  - The span overlap is pure code in `src/core/workflow/brief.ts` (`spansOverlap`, `findingHidesClaim`). `eligibilityForCase` supplies the placed spans. A quote that cannot be placed keeps its own turn and span; a live passage that cannot be placed adds none, as before, and still refuses the release through `HIDDEN_PASSAGE_UNPLACED`.
+  - `hiddenBy` and the blanked transcript did not change; the redaction tests pass unchanged.
+- **The second net:** release now also runs `findLeaks` over the summary of every cited claim, against the same hidden passages. A hit refuses the release with the new sibling code `CITATION_LEAK` ("the summary of cited claim C4 repeats a quote from hidden passage F1 · T11"), never the text. Its visible allowlist leaves out the claims' own summaries, otherwise a figure that only a cited summary states would excuse itself. The citations frozen at release are the same list that was checked.
+- **The citation quotes** were already safe and are unchanged: `frozenCitations` drops any quote `quoteIsVisible` does not find in a visible run. A regression test pins it.
+- **Tests:** in `tests/core/workflow.test.ts`, the C7/C8 shape, touching and one-character overlaps, another turn, a cleared finding, a claim's own reasons, and `CITATION_LEAK`. In `tests/services/release.test.ts`, the same shape on the seed (C3's context quote lies inside C2's quote in T7), clearing, the reverse direction, a live finding's hidden spans, the unchanged blanking, two citation-summary leaks that refuse the release, and the citation-quote backstop.
+- **Fixtures:** `demo:check` and `live:check` replayed every call: no drafting request changed, so nothing was re-recorded and nothing was spent.
+
+## Task 45: the demo script and the documents
+
+- **The demo script** (`docs/demo-script.md`) is built on the deployment and the Halvorsen case. The expert reads lines from `transcript-v1.txt`. T11 is split into two turns, "That's Halvorsen's West region, this quarter." and the login remark, with the banker's "How do you know?" between them so Flux hears two turns. These lines have not been run as speech; Task 46's rehearsal is their first run.
+- **Fix round 1: the expected pills.** The amber comes from the banker's question B3, "Are Halvorsen's own orders down that much this quarter?". It names the issuer, an operating metric and the current period, so the question probe matches R1 and R4, as in `tests/services/live.test.ts`.
+  - **E3 is likely red, not amber.** After E3 the claim meets R4 (P5): a recent employee, the issuer, an operating metric, an unreported period, and a public match the comparison refutes. `decidePill` checks red first.
+  - **E4 is red again** on R1 and R2 (P2, P3), or Listening if its read times out.
+  - **How this was checked:** by reading `manual-monitors-v1.json`, `pill.ts` and `probe.ts`; nothing was run live.
+  - **Amber has not appeared on any spoken call so far.**
+- **Compliance is Jordan in the script,** not Marcus. A senior compliance officer can decide every finding, attest, approve and release (`requireReviewer` admits both roles), and the source remark's finding is escalated, so one sign-in covers step 5 and step 6.
+- **What the script tells the presenter when the red does not come:** carry on, say the line as written, and show the passage hidden after the call. In every spoken Halvorsen run so far (Task 38, both Task 44 attempts) T11's read timed out. The end pill then reads "Call ended. Nothing was hidden.", because that count covers live flags only.
+- **The after-call read takes about 75 s on the deployment** (Task 44). The script lets step 8 (the call's record, which is ready as soon as the call ends) move ahead of step 5 while it runs.
+- **README:** the stale statements are fixed. These were the switcher-only sign-in in Quickstart, "Authentication is a cookie naming a seeded user" in the limits, "All data in this repository is synthetic", and the "Synthetic data" pill, which Pranay removed in 6a7a08a. The Deployed section is kept and extended with self-sign-up and what a user sees after Pranay's restyle.
+- **BLINK_BUILD_SPEC.md:** one quoted pointer line each under 1.4, 15 and 19. Nothing else changed.
+- **Checks** (Node 24.10):
+  - `pnpm typecheck`, `lint`, `test` (1,117 tests in 54 files), `build`, `e2e` (the demo spec, then 8 live specs), `demo:check` and `live:check` all exit 0;
+  - `pnpm desktop:build` and `pnpm desktop:smoke` (with `ELECTRON_RUN_AS_NODE` unset) exit 0.
+  - The rebuild gives the app a new ad-hoc identity, so macOS asks for both permissions again on its next open.
+- **No spend.** Nothing live ran.
+
+## Final review (whole plan, 40de64a..4b43107)
+
+An end-to-end review on the finished plan. It found no Critical issue and eight Important ones, all waiting on the owner. Items 1 to 4 involve the other developer's sign-up and call page (commits aee5ccd and 1197692), which this plan's executor must not change. Items 5 to 8 are in this plan's code and are product decisions, so they are left for the owner too.
+
+1. **Anyone can read "Investment team" releases.** `canReadRelease` (`src/server/services/briefs.ts` ~378) lets any signed-in user read a release with the `investment_team` audience. With open banker sign-up (`src/app/api/session/register`), that now means anyone on the internet who registers on the deployment.
+2. **Open sign-up spends the paid keys.** Sign-up has no rate limit, cap or approval, so any new banker can start calls (Haiku), end them (Opus), mint Deepgram tokens and upload transcripts. Turn text has no length cap. Sign-up hashing (`scryptSync`) blocks the event loop.
+3. **The call page shows more than the pill.** `/call` (`src/components/live/call-control.tsx`, `agent-trace.tsx`) shows a large per-turn line, for example "A rule is met. Move on." or "One fact is still missing. Watching.". That goes against spec section 4 (pill only, no cognitive overload). It is described in the README, so it may be intended. The owner decides.
+4. **"Start call" without a prepared case uses a placeholder issuer** (`call-control.tsx` ~45). Under the demo policy, the issuer and employee guards then come back refuted, so a new banker's call hides nothing, live or after the call.
+5. **Echoed turns can release hidden words.** Without headphones, an echo that lands before the expert's turn stays in the transcript as an analyst turn with the same words (`src/core/live/turns.ts` ~49). Redaction blanks only claim quotes, and only expert claims are evaluated. A transcript-wide verbatim check at release would close this. Until then, wearing headphones is the only defence.
+6. **Live flags can miss compliance.** If a call never ends (the app dies before `/end`), or a transcript is uploaded to the case outside the call, `reconcileLiveFlags` never runs, so the red flags never become findings.
+7. **The last turns can drop silently.** Turns still queued after the 5-second drain at Stop go only to `console.error` (`src/lib/live/session.ts` ~403).
+8. **A transcript correction can block release.** If a correction drops or merges a flagged turn, its decisions go stale or the release fails with `HIDDEN_PASSAGE_UNPLACED`. The only way out is to unhide the passage.
+
+The minors are in the ledger. Among them: sign-up reveals which emails have accounts; a race on sign-up returns a 500; `start-prod.sh` does not refuse `BLINK_ALLOW_GOLD` or `BLINK_AUTH_MODE=switcher`; the live reader resends the whole history every turn, so late turns time out more.

@@ -8,7 +8,7 @@ import { pageActor } from "@/server/auth/session";
 import { getDb } from "@/server/db/client";
 import { type StageMetrics, metricsFor } from "@/server/services/metrics";
 
-const STAGE_LABEL: Record<string, string> = { extract: "Claim extraction", docfacts: "Document facts", brief: "Brief draft", policy_pass_a: "Policy: clause inventory", policy_pass_b: "Policy: typed rules", policy_assembly: "Policy: monitor assembly", policy_scenarios: "Policy: AI scenarios" };
+const STAGE_LABEL: Record<string, string> = { extract: "Claim extraction", docfacts: "Document facts", brief: "Brief draft", policy_pass_a: "Policy: clause inventory", policy_pass_b: "Policy: typed rules", policy_assembly: "Policy: monitor assembly", policy_scenarios: "Policy: AI scenarios", live_read: "Live reads (during calls)" };
 
 export default async function MetricsPage() {
   const actor = await pageActor();

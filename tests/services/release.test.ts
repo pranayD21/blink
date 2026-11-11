@@ -9,14 +9,15 @@ import { type RedactedTurn, redactTurns } from "@/core/release/redact";
 import { beforeEach, describe, expect, it } from "vitest";
 import { listAudit, verifyAuditChain } from "@/server/audit/log";
 import { getDb, transact } from "@/server/db/client";
-import { approvals, attestations, briefs, decisions, findingPassages, processingIssues, releases, turnLineage } from "@/server/db/schema";
+import { approvals, attestations, briefs, claimQuotes, claims, decisions, findingPassages, processingIssues, releases, turnLineage } from "@/server/db/schema";
 import { newId } from "@/server/ids";
 import { drainJobs } from "@/server/jobs/runner";
-import { approveBrief, briefWorkspace, editBrief, eligibilityForCase, getBrief, releasedBriefs } from "@/server/services/briefs";
+import { approveBrief, briefWorkspace, citationsFor, editBrief, eligibilityForCase, getBrief, releasedBriefs } from "@/server/services/briefs";
 import { latestAttestation } from "@/server/services/caseStatus";
 import { createReviewerFinding } from "@/server/services/findings";
 import { type FindingRow, createFinding } from "@/server/services/findingsCore";
 import { currentTranscript, loadCurrentClaims, turnsOfVersion } from "@/server/services/loaders";
+import { type TurnPlacer, turnPlacer } from "@/server/services/placement";
 import { restrictedOnCase } from "@/server/services/redaction";
 import { releaseBrief } from "@/server/services/release";
 import { readFixtureText } from "@/server/services/seed";
@@ -495,5 +496,166 @@ describe("release snapshots the blanked transcript and refuses a leaking summary
     expect(r.passages.find((p) => p.label === "F2 · T15")!.names).toContain("Cardinal Utilities");
     expect(r.visible.names.has("Halvorsen")).toBe(true); // F3's claim is about Halvorsen too
     expect(r.visible.numbers.has(20)).toBe(false);
+  });
+});
+
+describe("a summary never cites a claim whose words are hidden (Fix A)", () => {
+  // C2 quotes the whole of "Distributors broadly are soft right now. Everyone overbought ..." in T7; C3's
+  // context quote is that sentence's first part. The deployed run's C8 and C7 had the same shape in T15.
+  const OUTER = "C2";
+  const INNER = "C3";
+  const releaseRow = () => getDb().select().from(releases).where(eq(releases.caseId, CASE)).orderBy(desc(releases.releasedAt)).get()!;
+  const eligibilityOf = (key: string) => eligibilityForCase(getDb(), CASE).claims.find((c) => c.claim.row.logicalKey === key)!.eligibility;
+
+  /** An after-call (policy) finding on one claim, the way analysis raises one. */
+  function afterCallFindingOn(claimKey: string): FindingRow {
+    return transact((tx) => createFinding(tx, { caseId: CASE, claimLogicalKey: claimKey, origin: "policy", title: "Second look", severity: "high", state: "REVIEW_REQUIRED", dedupeKey: `fixa-test:${claimKey}`, createdBy: "system" }).finding);
+  }
+
+  /** Sets a claim's summary behind the workflow's back, leaving its content hash alone so nothing goes stale. */
+  function setSummary(claimKey: string, summary: string): void {
+    const row = loadCurrentClaims(getDb(), CASE).find((c) => c.row.logicalKey === claimKey)!.row;
+    getDb().update(claims).set({ fieldsJson: JSON.stringify({ ...JSON.parse(row.fieldsJson), summary }) }).where(eq(claims.id, row.id)).run();
+  }
+
+  it("the seed has the shape: the inner claim's quote lies inside the outer claim's, on the same turn", () => {
+    const loaded = loadCurrentClaims(getDb(), CASE);
+    const outer = loaded.find((c) => c.row.logicalKey === OUTER)!.quotes[0];
+    const inner = loaded.find((c) => c.row.logicalKey === INNER)!.quotes.find((q) => q.role === "context")!;
+    expect(inner.turnLabel).toBe(outer.turnLabel);
+    expect(outer.start <= inner.start && inner.end <= outer.end).toBe(true);
+    expect(eligibilityOf(INNER)).toEqual({ eligible: true });
+  });
+
+  it("while an after-call finding on the outer claim is not cleared, the inner claim is not eligible", () => {
+    const f = afterCallFindingOn(OUTER);
+    const detail = `it quotes words in T7 that finding F${f.seqNo} keeps hidden`;
+    expect(eligibilityOf(INNER)).toEqual({ eligible: false, reason: "restricted", detail });
+    expect(eligibilityOf(OUTER)).toMatchObject({ eligible: false, reason: "finding_open" });
+    expect(eligibilityOf("C4")).toEqual({ eligible: true }); // T9: another turn
+    completeReview();
+    dispose(f.id, "restricted_exclude", "marcus");
+    expect(eligibilityOf(INNER)).toEqual({ eligible: false, reason: "restricted", detail });
+    // The drafting step never sees the inner claim, and the template cites neither.
+    const brief = draftTemplate();
+    expect(brief.sentencesJson).not.toContain(`"${INNER}"`);
+    expect(brief.sentencesJson).not.toContain(`"${OUTER}"`);
+  });
+
+  it("once the outer claim's finding is cleared, the inner claim is eligible again", () => {
+    const f = afterCallFindingOn(OUTER);
+    completeReview();
+    dispose(f.id, "cleared_for_research", "marcus");
+    expect(eligibilityOf(INNER)).toEqual({ eligible: true });
+    expect(eligibilityOf(OUTER)).toEqual({ eligible: true });
+  });
+
+  it("a finding on the inner claim restricts the outer claim, which quotes the hidden words too", () => {
+    const f = afterCallFindingOn(INNER);
+    expect(eligibilityOf(OUTER)).toEqual({ eligible: false, reason: "restricted", detail: `it quotes words in T7 that finding F${f.seqNo} keeps hidden` });
+  });
+
+  it("a live finding's hidden spans are its passages and every quote of a claim it hides", () => {
+    // C1 quotes T5 and T11. A live finding on T5 hides all of C1's quotes, so a claim quoting C1's T11 words is restricted too.
+    const kept = transact((tx) => {
+      const turn = turnsOfVersion(tx, currentTranscript(tx, CASE)!.id).find((t) => t.label === "T5")!;
+      const { finding } = createFinding(tx, { caseId: CASE, claimLogicalKey: null, origin: "live", title: "Flagged during the call", severity: "high", state: "REVIEW_REQUIRED", reasonCodes: ["LIVE_ONLY", "TURN:T5"], dedupeKey: "live-test:T5", createdBy: "system" });
+      tx.insert(findingPassages).values({ id: newId("fp"), findingId: finding.id, turnId: turn.id, startChar: 0, endChar: 10 }).run();
+      return finding;
+    });
+    const eligibility = eligibilityForCase(getDb(), CASE);
+    const live = eligibility.findings.find((f) => f.id === kept.id)!;
+    const c1 = loadCurrentClaims(getDb(), CASE).find((c) => c.row.logicalKey === G1)!;
+    // Its hidden spans are its own passage and every quote of a claim it hides.
+    expect(live.hiddenSpans).toEqual(expect.arrayContaining([{ turnLabel: "T5", start: 0, end: 10 }, ...c1.quotes.map((q) => ({ turnLabel: q.turnLabel, start: q.start, end: q.end }))]));
+  });
+
+  it("the transcript blanks exactly what it did before", () => {
+    afterCallFindingOn(OUTER);
+    const spans = restrictedOnCase(getDb(), CASE).spans.filter((s) => s.turnLabel === "T7");
+    const outer = loadCurrentClaims(getDb(), CASE).find((c) => c.row.logicalKey === OUTER)!.quotes[0];
+    expect(spans).toEqual([{ turnLabel: "T7", start: outer.start, end: outer.end }]);
+  });
+
+  it("a cited claim whose summary repeats hidden words refuses the release, naming the claim and passage only", () => {
+    const brief = reviewAndApprove();
+    expect(brief.sentencesJson).toContain('"C4"');
+    setSummary("C4", "Municipal water is fine; I still have a login to their pipeline dashboard.");
+    const result = release(brief.id);
+    expect(result.released).toBe(false);
+    expect(codes(result)).toEqual(["CITATION_LEAK"]);
+    expect(messages(result)).toEqual(["the summary of cited claim C4 repeats a quote from hidden passage F1 · T11"]);
+    expect(getDb().select().from(releases).all()).toEqual([]);
+    const blocked = listAudit(getDb(), CASE).at(-1)!;
+    expect(blocked.type).toBe("RELEASE_BLOCKED");
+    expect(JSON.stringify(blocked)).not.toContain("pipeline dashboard");
+  });
+
+  it("a figure in a cited claim's summary is a leak even though that summary is the only eligible place stating it", () => {
+    const brief = reviewAndApprove();
+    setSummary("C4", "Municipal water is fine, though orders are down about twenty percent.");
+    const result = release(brief.id);
+    // F1 hides "twenty percent" in both T5 and T11.
+    expect(messages(result)).toEqual(["the summary of cited claim C4 repeats a figure from hidden passage F1 · T5", "the summary of cited claim C4 repeats a figure from hidden passage F1 · T11"]);
+    expect(codes(result)).toEqual(["CITATION_LEAK", "CITATION_LEAK"]);
+  });
+
+  it("the banker's citations drop a quote that overlaps a hidden span", () => {
+    const f = afterCallFindingOn(OUTER);
+    completeReview();
+    dispose(f.id, "restricted_exclude", "marcus");
+    const brief = draftTemplate();
+    approve(brief.id);
+    expect(release(brief.id)).toMatchObject({ released: true });
+    // Say the inner claim had been cited anyway: its frozen citation carries both of its quotes.
+    const stored = JSON.parse(releaseRow().citationsJson!) as { key: string }[];
+    const inner = transact((tx) => citationsFor(tx, CASE, [INNER]))[0];
+    expect(inner.quotes).toHaveLength(2);
+    getDb().update(releases).set({ citationsJson: JSON.stringify([...stored, inner]) }).where(eq(releases.id, releaseRow().id)).run();
+    const shown = releasedBriefs(getDb(), user("priya"))[0].citations.find((c) => c.key === INNER)!;
+    expect(shown.quotes.map((q) => q.quote)).toEqual(["Pricing is holding though, and lead times have come in a lot."]);
+  });
+});
+
+describe("the span rule's edges (Fix A)", () => {
+  const eligibilityOf = (key: string, placer?: TurnPlacer) => eligibilityForCase(getDb(), CASE, placer).claims.find((c) => c.claim.row.logicalKey === key)!.eligibility;
+
+  it("a claim quoting words that a live finding hides through another claim's shared turn is restricted", () => {
+    // Claim A is C1, quoting T5 and T11. A live finding on T5 hides all of A's quotes, T11 included (`hiddenBy`).
+    // Its own finding is cleared, so only the live finding keeps A's T11 words hidden.
+    dispose(findingOn(G1).id, "cleared_for_research", "jordan");
+    const live = transact((tx) => {
+      const t5 = turnsOfVersion(tx, currentTranscript(tx, CASE)!.id).find((t) => t.label === "T5")!;
+      const { finding } = createFinding(tx, { caseId: CASE, claimLogicalKey: null, origin: "live", title: "Flagged during the call", severity: "high", state: "REVIEW_REQUIRED", reasonCodes: ["LIVE_ONLY", "TURN:T5"], dedupeKey: "live-test:T5", createdBy: "system" });
+      tx.insert(findingPassages).values({ id: newId("fp"), findingId: finding.id, turnId: t5.id, startChar: 0, endChar: 10 }).run();
+      return finding;
+    });
+    // Claim B quotes the same T11 words as A, and has no finding of its own.
+    const a = loadCurrentClaims(getDb(), CASE).find((c) => c.row.logicalKey === G1)!;
+    const aT11 = a.quotes.find((q) => q.turnLabel === "T11")!;
+    const template = getDb().select().from(claims).where(eq(claims.id, loadCurrentClaims(getDb(), CASE).find((c) => c.row.logicalKey === "C4")!.row.id)).get()!;
+    const bId = newId("clm");
+    getDb().insert(claims).values({ ...template, id: bId, logicalKey: "C99" }).run();
+    const aQuote = getDb().select().from(claimQuotes).where(eq(claimQuotes.id, aT11.id)).get()!;
+    getDb().insert(claimQuotes).values({ ...aQuote, id: newId("clq"), claimId: bId }).run();
+
+    expect(eligibilityOf("C99")).toEqual({ eligible: false, reason: "restricted", detail: `it quotes words in T11 that finding F${live.seqNo} keeps hidden` });
+  });
+
+  it("a claim quote that cannot be placed keeps its own turn and span, so it still restricts", () => {
+    // C2's quote in T7 holds C3's context quote. A finding on C2 hides C2's words; say C2's quote cannot be placed.
+    transact((tx) => createFinding(tx, { caseId: CASE, claimLogicalKey: "C2", origin: "policy", title: "Second look", severity: "high", state: "REVIEW_REQUIRED", dedupeKey: "fixa-test:C2", createdBy: "system" }));
+    const loaded = loadCurrentClaims(getDb(), CASE);
+    const unplaceable = (quote: { turnId: string; start: number; end: number }): TurnPlacer => {
+      const real = turnPlacer(getDb(), CASE);
+      return { ...real, place: (turnId, start, end) => (turnId === quote.turnId && start === quote.start && end === quote.end ? null : real.place(turnId, start, end)) };
+    };
+    const outer = loaded.find((c) => c.row.logicalKey === "C2")!.quotes[0];
+    const inner = loaded.find((c) => c.row.logicalKey === "C3")!.quotes.find((q) => q.role === "context")!;
+    const restricted = { eligible: false, reason: "restricted", detail: expect.stringMatching(/^it quotes words in T7 that finding F\d+ keeps hidden$/) };
+    // The hidden side cannot be placed: C2's own span still hides C3's words.
+    expect(eligibilityOf("C3", unplaceable(outer))).toEqual(restricted);
+    // The cited side cannot be placed: C3's own span still meets C2's hidden words.
+    expect(eligibilityOf("C3", unplaceable(inner))).toEqual(restricted);
   });
 });

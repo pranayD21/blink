@@ -2,8 +2,9 @@
  * pnpm smoke --url <base> — checks a running production server from outside, the way a visitor
  * reaches it (Task 42; run against Railway in Task 43, and locally against `scripts/start-prod.sh`).
  *
- * It fails unless: `/api/health` answers 200 `{ ok: true }`; `/` with no session redirects to
- * `/login`; each of the four demo users can sign in with the password under their id in
+ * It fails unless: `/api/health` answers 200 `{ ok: true }`; `/` with no session is 200 or a
+ * redirect and its HTML holds no `@blink.demo` email and no case id (it is a public landing page);
+ * `/cases/new` with no session redirects to `/login`; each of the four demo users can sign in with the password under their id in
  * `BLINK_SEED_PASSWORDS`; signed in as the banker, `GET /api/calls` is 403, `POST
  * /api/session/act-as` is 404 and the workspace of a case she does not own is 403 or 404; and
  * signing out ends the session.
@@ -67,11 +68,19 @@ async function main(): Promise<void> {
   const healthBody = await health.text();
   check("GET /api/health is 200 { ok: true }", health.status === 200 && healthBody.replace(/\s/g, "") === '{"ok":true}', `status ${health.status}`);
 
-  // A visitor with no session is sent to sign in.
+  // The home page is a public landing page (since 0ceb932): it may answer or redirect, but it must
+  // carry no data. Only what was found is reported, never the page's text.
   const home = await request("/");
-  const location = home.headers.get("location");
+  const homeHtml = await home.text();
+  const homeOk = home.status === 200 || (home.status >= 300 && home.status < 400);
+  const leaks = [/@blink\.demo/.test(homeHtml) ? "an @blink.demo email" : null, /\bcase_[A-Za-z0-9]{6,}/.test(homeHtml) ? "a case id" : null].filter((x) => x !== null);
+  check("GET / with no session is 200 or a redirect, and shows no email or case id", homeOk && leaks.length === 0, `status ${home.status}${leaks.length > 0 ? `, page contains ${leaks.join(" and ")}` : ""}`);
+
+  // A protected page with no session is sent to sign in.
+  const protectedPage = await request("/cases/new");
+  const location = protectedPage.headers.get("location");
   const toLogin = location !== null && new URL(location, base).pathname === "/login";
-  check("GET / with no session redirects to /login", home.status >= 300 && home.status < 400 && toLogin, `status ${home.status}`);
+  check("GET /cases/new with no session redirects to /login", protectedPage.status >= 300 && protectedPage.status < 400 && toLogin, `status ${protectedPage.status}`);
 
   // Each demo user signs in.
   const tokens: Record<string, string> = {};

@@ -22,6 +22,11 @@ export interface RestrictedOnCase {
   passages: HiddenPassage[];
   /** Figures and names that eligible claims state, so repeating them in the summary is not a leak. */
   visible: { numbers: Set<number>; names: Set<string> };
+  /**
+   * The same without the claims' own summaries, for checking those summaries: a figure that only a
+   * summary states would otherwise excuse itself.
+   */
+  visibleForSummaries: { numbers: Set<number>; names: Set<string> };
   /** Labels ("F1 · T5") of hidden passages that could not be placed on the current transcript. */
   unplaced: string[];
 }
@@ -76,18 +81,21 @@ export function restrictedOnCase(tx: DbOrTx, caseId: string): RestrictedOnCase {
     for (const p of f.passages) hide(f.label, p.turnId, p.start, p.end, []);
   }
 
-  const numbers = new Set<number>();
-  const names = new Set<string>();
-  for (const claim of eligibility.eligible) {
-    const strings: string[] = claim.quotes.map((q) => q.quote);
-    const values: number[] = [];
-    leaves(claim.fields, strings, values);
-    for (const n of values) numbers.add(n);
-    for (const text of strings) {
-      for (const n of numbersIn(text)) numbers.add(n);
-      for (const name of namePhrases(text)) names.add(name);
+  const visibleFrom = (withSummary: boolean) => {
+    const numbers = new Set<number>();
+    const names = new Set<string>();
+    for (const claim of eligibility.eligible) {
+      const strings: string[] = claim.quotes.map((q) => q.quote);
+      const values: number[] = [];
+      leaves(withSummary ? claim.fields : { ...claim.fields, summary: undefined }, strings, values);
+      for (const n of values) numbers.add(n);
+      for (const text of strings) {
+        for (const n of numbersIn(text)) numbers.add(n);
+        for (const name of namePhrases(text)) names.add(name);
+      }
+      for (const name of fieldNames(claim)) names.add(name);
     }
-    for (const name of fieldNames(claim)) names.add(name);
-  }
-  return { spans, passages, visible: { numbers, names }, unplaced };
+    return { numbers, names };
+  };
+  return { spans, passages, visible: visibleFrom(true), visibleForSummaries: visibleFrom(false), unplaced };
 }

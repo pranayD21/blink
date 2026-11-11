@@ -70,6 +70,8 @@ Blink turns a permitted transcript, the expert's background, and an approved fir
 
 ### 1.4 Out of scope
 
+> **Superseded in part (2026-11-10):** live audio and transcription are now in scope; see the [live guidance design](docs/superpowers/specs/2026-11-10-live-guidance-design.md), section 13.
+
 Live audio or transcription, real expert-network integrations, SSO, trade surveillance or trade clearance, a universal "MNPI score", autonomous case resolution, multilingual input, and production deployment hardening. Blink never states that a call "is compliant" or that information "is MNPI". It states which policy conditions evaluated to what, on which evidence, and what a human decided.
 
 ### 1.5 The pitch number
@@ -1039,6 +1041,8 @@ Analysts may **never** read findings, quotes of restricted claims, or unreleased
 
 ## 15. User interface
 
+> **Superseded (2026-11-10):** the design language is replaced by section 9 of the [live guidance design](docs/superpowers/specs/2026-11-10-live-guidance-design.md).
+
 Design language: calm, dense, professional. White and slate surfaces, one accent (indigo-600), status colors (amber = needs context, red = review required, violet = escalated, emerald = dispositioned, slate = not triggered). Inter font. A **"Synthetic data"** pill stays in the header at all times. A role switcher in the header shows the current user and role.
 
 ### 15.1 Pages
@@ -1420,6 +1424,8 @@ Runs §19 in replay mode. It asserts the visible text of each key moment: COMPIL
 ---
 
 ## 19. Demo script for the finals
+
+> **Superseded (2026-11-10):** the finals demo is now a live call; see [docs/demo-script.md](docs/demo-script.md). The steps below remain the offline replay demo (`pnpm demo`).
 
 Target: 5 minutes, laptop running `pnpm demo` (replay mode, offline-safe). Before starting: `pnpm db:reset`, then precompile nothing, so everything happens live from recordings.
 
