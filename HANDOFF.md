@@ -61,7 +61,7 @@ Two results matter most:
 | `pnpm demo:check` | all checks pass; 19 model calls replayed |
 | `pnpm live:check` | all checks pass. The pill is red at T11; 9 of 22 recorded reads took longer than the 2.5 s live limit |
 | `pnpm desktop:build`, `pnpm desktop:smoke` | pass |
-| `pnpm smoke --url https://blink-production.up.railway.app` | passed in Task 43 |
+| `pnpm smoke --url https://blink-production.up.railway.app` | passed 10 of 10 in Task 43. On the Fix A deploy it failed only 'GET / redirects to /login', because `/` is now a public landing page; the check is updated in a separate commit, not yet run against the deployment |
 
 Anthropic spend over the plan is about $14.67, against a cap of $25 (spend log in the notes file).
 
@@ -119,6 +119,7 @@ pnpm typecheck && pnpm lint && pnpm test && pnpm demo:check && pnpm live:check
 - **Keys:** `ANTHROPIC_API_KEY`, `DEEPGRAM_API_KEY`, `RAILWAY_API_TOKEN` and `BLINK_SEED_PASSWORDS` live only in `.env.local`, which git ignores, and in Railway's variables. Never print or commit one.
 - **The deployment:**
   - **Where:** Railway project `blink`, service `blink`, region `iad`, volume `blink-volume` at `/data`. The trial ends on 2026-12-10.
+  - **What is deployed, at the time of writing:** deploy `c7fedf51`, from main `49fe660` (Fix A), made 2026-11-11 01:18 UTC. Pranay also deploys his own builds from Cursor, so check the Railway dashboard for the current one. The redeploys are listed in the notes, "Task 43: the deployment".
   - **After the finals (2026-11-19):** stop the service to save credit (`railway down`, or the dashboard). The volume keeps the data until it is deleted.
   - **Config:** `railway.json` keeps working until 2026-12-01; `railway config migrate` is left for later.
   - **The CLI** lives under `data/railway-home/`, with `HOME` pointed there.

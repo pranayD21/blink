@@ -11,7 +11,7 @@ Five minutes, on the deployed app, around one real call between two people. The 
 1. **Check the deployment:** `pnpm smoke --url https://blink-production.up.railway.app` passes.
 2. **Check the policy:** signed in as Dana, Policy shows the demo policy as Active. (It was compiled and approved on the deployment in Task 44.)
 3. **Make a fresh case:** signed in as Priya, open `/cases/new` and fill it in from `fixtures/cases/halvorsen/packet.json` and `expert.json`. A call can only start on a case that has no transcript yet, so each rehearsal needs its own case.
-4. **Build and open the Mac app:** `pnpm desktop:build`, then `open -n desktop/out/Blink-darwin-arm64/Blink.app --args --server=https://blink-production.up.railway.app`. Open the app this way, never by running the binary inside it. Sign in as Priya in its control window. Allow Microphone and System Audio Recording when macOS asks. "Spike: Mac app" in the notes file says what to do if macOS does not ask. Every rebuild makes macOS ask again, so build once, before the rehearsals.
+4. **Build and open the Mac app:** `pnpm desktop:build`, then `open -n desktop/out/Blink-darwin-arm64/Blink.app --args --server=https://blink-production.up.railway.app`. Open the app this way, never by running the binary inside it. Sign in as Priya in its control window. Allow Microphone and System Audio Recording when macOS asks. Allow Screen Recording too if it asks: the app grants a screen source alongside the system audio (`audio grant: needs-video`). "Spike: Mac app" in the notes file says what to do if macOS does not ask. Every rebuild makes macOS ask again, so build once, before the rehearsals.
 5. **Sign in on the browser side:** use one browser profile for Dana, one for Jordan and one for Priya, because each profile holds one session.
 6. **Set up the call:** start a Zoom call between the banker's Mac and the expert reader's own device.
    - The banker wears headphones, so the expert's voice reaches Blink only through the system audio and never through the microphone.
@@ -31,17 +31,28 @@ The banker's lines are said into the microphone, and the expert's lines come fro
 | E1 | Expert | Sure. I spent about seven years at Halvorsen Pumps, most recently as regional sales director for the West. I left in July. | Listening |
 | B2 | Banker | Big picture, how does demand look for industrial pumps heading into year-end? | Listening |
 | E2 | Expert | Honestly, orders fell off a cliff. They're down about twenty percent. | Listening: a figure with no source is ambiguous, so it shows nothing |
-| B3 | Banker | Going back to the twenty percent, where does that number come from? | Amber possible here, or on E3 |
-| E3 | Expert | That's Halvorsen's West region, this quarter. | Amber: one fact short of a rule, and the talk stays on it |
+| B3 | Banker | Are Halvorsen's own orders down that much this quarter? | Amber: the question asks for the issuer's current-quarter figure, which a rule restricts |
+| E3 | Expert | That's Halvorsen's West region, this quarter. | Red likely (P5) |
 | B4 | Banker | How do you know? | Listening |
-| E4 | Expert | I still have a login to their pipeline dashboard in Salesforce. They never shut it off when I left. When I checked last week, Q3 bookings were tracking down twenty percent versus last year. | Red |
+| E4 | Expert | I still have a login to their pipeline dashboard in Salesforce. They never shut it off when I left. When I checked last week, Q3 bookings were tracking down twenty percent versus last year. | Red (P2, P3), or Listening |
 | B5 | Banker | I want to be careful here. Please don't share anything confidential. | Listening |
 | E5 | Expert | Of course, sorry. Let's move on. I'll just say Halvorsen's margins were under pressure well before I left. | Listening |
 | B6 | Banker | Thanks, that's all my questions. | Listening |
 
-Amber shows at most once in 30 seconds, so it appears on B3 or on E3, not on both. A red is never held back. The expected pills are what the rules give when every read finishes in time. Amber is covered by the service tests (`tests/services/live.test.ts`) and has not yet appeared on a spoken call. Red appears in the replayed scripted call (`pnpm live:check`), but on spoken calls it has come only from expert turns whose read finished within the limit.
+Why each pill:
 
-**If the red does not appear, carry on.** The live reader often misses its 2.5 s limit on a long expert turn like E4: in every spoken Halvorsen run so far, that turn's read timed out (`haiku-slow`, waiting on the owner). A turn that is not read live is read after the call, and the after-call read hides it. So say the line for step 3 as written, and at step 5 show the passage hidden. The pill then ends with "Call ended. Nothing was hidden.", because that count covers only what was flagged live. Do not repeat the line to get a red.
+- **B3, amber.** The question names the issuer, an operating figure and the current quarter. Those are the topic of P2 (an operating result from an internal source) and P5 (a recent employee on current-period results). Nothing yet rules either out, so the question probe shows amber.
+- **E3, red likely.** After E3 the claim has every part of P5. The expert left Halvorsen in July, within twelve months. The figure is the issuer's orders for the current, unreported quarter. The public comparison does not support it: the filed Q2 figure is company-wide and high single digits. So P5's rule meets review. Red always takes precedence over amber.
+- **E4, red or Listening.** The login remark meets P2 (an internal source) and P3 (access to a former employer's systems after leaving). Before it, neither rule could be decided. Their rules meet review on this turn, so the pill goes red again, because a red is never held back. If the read times out, it stays on Listening.
+
+These are what the rules give when every read finishes in time. They were checked by reading the policy and its rules, not by running these lines.
+
+- **The amber on a question** is covered by the service tests (`tests/services/live.test.ts`): a scripted reader returns a question about the issuer's current bookings, and the pill goes amber, then stays quiet for 30 seconds. Amber has not yet appeared on a spoken call.
+- **The red** appears in the replayed scripted call (`pnpm live:check`). On spoken calls it has come only from expert turns whose read finished within the limit.
+
+Amber shows at most once in 30 seconds.
+
+**If the red does not appear, carry on.** The live reader often misses its 2.5 s limit on an expert turn that carries a claim. In every spoken Halvorsen run so far, the read of the source remark (E3 and E4 together, there T11) timed out (`haiku-slow`, waiting on the owner). A turn that is not read live is read after the call, and the after-call read hides it. So say the line for step 3 as written, and at step 5 show the passage hidden. The pill then ends with "Call ended. Nothing was hidden.", because that count covers only what was flagged live. Do not repeat the line to get a red.
 
 ## The steps
 
@@ -62,9 +73,9 @@ Times are a guide; the rehearsals set them.
 ### 3. The expert drifts, then crosses the line (0:45 to 1:45)
 
 - **Who:** Priya and the expert reader, B1 to E4 above.
-- **On screen:** the pill stays on `Listening`. It shows `Getting close to inside information. Steer away.` near E3, and then `Sounds like inside information. Move on.` on E4. Each warning stays six seconds.
-- **Say (after the amber):** "Amber: the conversation is one fact short of a rule. No suggested questions, no transcript, just one line."
-- **Say (after the red, or where it should have been):** "Red: the expert just said where the number came from. Move on. And if Blink runs out of time on a turn, it reads it again properly after the call."
+- **On screen:** the pill stays on `Listening` until B3. It shows `Getting close to inside information. Steer away.` on B3, then `Sounds like inside information. Move on.` on E3, and possibly again on E4. Each warning stays six seconds.
+- **Say (after the amber):** "Amber: the banker's own question is heading toward something the policy restricts. No suggested questions, no transcript, just one line."
+- **Say (after the red, or where it should have been):** "Red: a recent Halvorsen employee just gave this quarter's number, which public filings don't support. Move on. And if Blink runs out of time on a turn, it reads it again properly after the call."
 
 ### 4. The call ends with a count (1:45 to 2:00)
 
@@ -86,13 +97,13 @@ Times are a guide; the rehearsals set them.
 - **Who:** Jordan.
 - **On screen:**
   - **Keep one hidden:** the finding on the source remark. Choose Dispose, then "Keep hidden and send to legal", and give a reason.
-  - **Unhide one:** the margins remark (E5), if it was flagged. It is waiting for context, so choose "Promote to review", then Dispose with "Unhide: no concern". If it was not flagged, unhide an AI-suggested concern instead. Pick a finding whose turn no kept finding also covers, or the banker will see no difference. Decide any other findings too; every finding needs a decision before attesting.
+  - **Unhide one:** the margins remark (E5), if it was flagged. It is waiting for context, so choose "Promote to review" with a reason, then Dispose with "Unhide: no concern". If it was not flagged, unhide an AI-suggested concern instead. Pick a finding whose turn no kept finding also covers, or the banker will see no difference. Decide any other findings too; every finding needs a decision before attesting.
   - **Attest:** choose Attest, then "I reviewed the whole call".
   - **The brief:** choose "Draft with AI" (about 12 s), then "Approve this hash…", then "Approve this hash" again in the dialog, then "Release to the analyst".
   - **If release is blocked:** the page lists the reasons. Edit out the sentence it names, approve again and release.
 - **Say:** "Every decision is recorded with who, when and why. Before release, code checks the summary against every hidden passage."
 
-Keep the reasons ready to paste. A disposition needs at least 20 characters of rationale.
+Keep the reasons ready to paste. "Promote to review" needs a reason, and a disposition needs at least 20 characters of rationale.
 
 ### 7. The banker reads the release (3:45 to 4:15)
 

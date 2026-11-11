@@ -107,15 +107,15 @@ open -n desktop/out/Blink-darwin-arm64/Blink.app --args --server=https://blink-p
 ```
 
 - **Server:** without `--server`, it uses `http://localhost:3000`.
-- **Open it packaged, with `open`:** never run it with `electron .` or by running the binary inside the app. macOS grants the system-audio permission to the app that opened it, and the wrong one gets a silently dead audio track.
-- **Permissions:** allow Microphone and System Audio Recording when macOS asks. Each rebuild asks again.
+- **Open it packaged, with `open`:** never run it with `electron .` or by running the binary inside the app. macOS credits the system-audio permission to the responsible app. Run from Terminal or an IDE, that is the Terminal, and an unpackaged run silently delivers a dead audio track.
+- **Permissions:** allow Microphone and System Audio Recording when macOS asks. Allow Screen Recording too if it asks: the app grants a screen source alongside the system audio (`needs-video`, below). Each rebuild asks again.
 - **The banker wears headphones,** so the other side reaches Blink only through the system audio and never through the microphone.
 - **Not yet tested on a real call.** It was built assuming macOS needs a screen source for system audio (`audio grant: needs-video`). The spike that settles that is waiting on the owner; see HANDOFF.
 - **`desktop/README.md`** has the details.
 
 **A live call on this machine:**
 
-1. Run `pnpm live:prepare`. It resets `data/blink.db` to the Halvorsen case at intake with the demo policy active.
+1. Run `pnpm live:prepare`. It resets `data/blink.db` to the Halvorsen case at intake, with the demo policy's hand-written fallback active (`--manual-policy`).
 2. Start the server: `BLINK_LLM_MODE=live BLINK_AUTH_MODE=switcher pnpm dev`. It needs `ANTHROPIC_API_KEY` and `DEEPGRAM_API_KEY` in `.env.local`.
 3. Open the Mac app.
 
@@ -241,7 +241,7 @@ Evidence has four states (supported, refuted, unknown, conflict). A rule's guard
 | `pnpm demo` | Production build and start, replay mode, switcher sign-in |
 | `pnpm db:reset` | Recreate and seed `data/blink.db`, then replay the eval so Metrics has a result |
 | `pnpm db:reset:dev` | As above, and also activate the hand-written fallback policy and load hand-labeled claims: a case ready to review with no model involved |
-| `pnpm live:prepare` | Reset `data/blink.db` for a real local call: the Halvorsen case at intake, the demo policy active |
+| `pnpm live:prepare` | Reset `data/blink.db` for a real local call: the Halvorsen case at intake, the hand-written fallback policy active (`--manual-policy`) |
 | `pnpm test` | Unit and service tests, including the break-in tests; no network |
 | `pnpm e2e` | In a browser against production builds: the offline demo, then the scripted live call, the call record and the pill |
 | `pnpm demo:check` | The demo flow through the services, checked against gold labels, from recordings |
