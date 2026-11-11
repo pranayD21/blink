@@ -13,6 +13,36 @@ import type { SpeakerRole } from "@/core/transcript/parse";
  */
 export const SPOKEN_FLUX_URL = "wss://api.deepgram.com/v2/listen?model=flux-general-en&encoding=linear16&sample_rate=16000&eot_threshold=0.8&eot_timeout_ms=7000";
 
+/**
+ * The banker's app's turn timing (`src/lib/live/session.ts`): a turn request slower than this is
+ * sent again, after a wait that starts at RETRY_FIRST_MS and doubles up to RETRY_MAX_MS (the app
+ * uses Flux's reconnect backoff for both). Copied for the same reason; a test keeps them equal.
+ */
+export const TURN_DEADLINE_MS = 3000;
+export const RETRY_FIRST_MS = 250;
+export const RETRY_MAX_MS = 4000;
+
+const PILL_LEVELS: readonly string[] = ["listening", "amber", "red"];
+
+/** A turn reply the app can show, by the app's own test (`isReply` in session.ts): a pill with a known level. */
+export function isTurnReply(r: unknown): r is { seq: number; pill: { level: "listening" | "amber" | "red"; text: string }; readStatus?: string } {
+  const pill = (r as { pill?: { level?: unknown } } | null)?.pill;
+  return typeof pill?.level === "string" && PILL_LEVELS.includes(pill.level);
+}
+
+/**
+ * Why a database path may not be used by the eval, or null when it may. It must resolve inside
+ * `data/` (git-ignored) once symlinks are followed, so `parentReal` and `dataReal` are the
+ * `realpath`s of its folder and of `data/`; and its name must not be `blink.db` in any case, which
+ * on a case-insensitive disk is the development database whatever it is spelled like.
+ */
+export function scratchDbProblem(input: { base: string; parentReal: string; dataReal: string }): string | null {
+  const { base, parentReal, dataReal } = input;
+  if (base.toLowerCase() === "blink.db") return "it must not be named blink.db: that is the development database";
+  if (parentReal !== dataReal && !parentReal.startsWith(`${dataReal}/`)) return "it must be under data/ (git-ignored), with symlinks followed";
+  return null;
+}
+
 /** The banker is on the microphone; everyone else on the call (expert, moderator) reaches the app through the computer's audio. */
 export const channelFor = (role: SpeakerRole): Channel => (role === "analyst" ? "analyst" : "expert");
 

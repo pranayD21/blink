@@ -31,10 +31,11 @@
  */
 import { spawnSync } from "node:child_process";
 import { randomUUID } from "node:crypto";
-import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import { basename, dirname, join, relative, resolve } from "node:path";
 import { eq, like } from "drizzle-orm";
 import { parseFluxMessage } from "../src/core/live/flux";
+import { BROKEN_AFTER_MS } from "../src/core/live/pill";
 import { summarizeLatency } from "../src/core/live/stats";
 import { type Channel, type FinishedTurn, createTurnAssembler } from "../src/core/live/turns";
 import { type SpeakerRole, parseTranscript } from "../src/core/transcript/parse";
@@ -44,7 +45,22 @@ import { closeDb, getDb, migrateDb, transact } from "../src/server/db/client";
 import { callClaims, callTurns, calls, cases, jobs, llmCalls } from "../src/server/db/schema";
 import { loadEnv } from "../src/server/env";
 import { errorCode, installPolicies, priceCalls } from "../src/server/eval/real";
-import { SPOKEN_FLUX_URL, alignPrefix, compareFlags, layoutTurns, mixChannels, nlpReference, normalizeWords, sourceTurnsOf, tokenAccuracy } from "../src/server/eval/spoken";
+import {
+  RETRY_FIRST_MS,
+  RETRY_MAX_MS,
+  SPOKEN_FLUX_URL,
+  TURN_DEADLINE_MS,
+  alignPrefix,
+  compareFlags,
+  isTurnReply,
+  layoutTurns,
+  mixChannels,
+  nlpReference,
+  normalizeWords,
+  scratchDbProblem,
+  sourceTurnsOf,
+  tokenAccuracy,
+} from "../src/server/eval/spoken";
 import { drainJobs } from "../src/server/jobs/runner";
 import { eligibilityForCase } from "../src/server/services/briefs";
 import { CreateCaseSchema, createCase } from "../src/server/services/cases";
@@ -59,15 +75,9 @@ const VOICES: Record<SpeakerRole, string> = { analyst: "Samantha", expert: "Dani
 const LAYOUT = { leadMs: 1000, switchGapMs: 700, sameChannelGapMs: 3000 };
 const TAIL_MS = 4000;
 const FLUX_USD_PER_MIN = 0.0077; // Flux English streaming, pay as you go (deepgram.com/pricing, 2026-11-10)
-// The banker's app (src/lib/live/session.ts): the same deadline and backoff for a turn request.
-const TURN_DEADLINE_MS = 3000;
-const RETRY_FIRST_MS = 250;
-const RETRY_MAX_MS = 4000;
-const BROKEN_AFTER_MS = 3000;
 
 const DATA = resolve(process.cwd(), "data");
 const SPOKEN = join(DATA, "spoken");
-const DEV_DB = join(DATA, "blink.db");
 
 // ── Arguments ───────────────────────────────────────────────────────────────
 
@@ -79,11 +89,27 @@ const opt = (flag: string) => {
 const has = (flag: string) => argv.includes(flag);
 const privateRun = has("--private");
 
-/** A path under data/, and never the developer's own database. */
-function scratchPath(raw: string, what: string): string {
+/**
+ * A path under data/, and never the developer's own database. Checked as written first (so no
+ * folder is made outside data/), then again with symlinks followed and the disk's own spelling,
+ * since data/BLINK.db or a link inside data/ could still reach data/blink.db.
+ */
+function scratchPath(raw: string, what: string, opts: { makeFolder?: boolean } = {}): string {
   const path = resolve(raw);
-  if (!path.startsWith(`${DATA}/`)) throw new Error(`${what} must be under data/ (it is git-ignored)`);
-  if (path === DEV_DB) throw new Error(`${what} must not be data/blink.db, the development database`);
+  const asWritten = scratchDbProblem({ base: basename(path), parentReal: dirname(path), dataReal: DATA });
+  if (asWritten) throw new Error(`${what} is refused: ${asWritten}`);
+  if (opts.makeFolder) mkdirSync(dirname(path), { recursive: true });
+  let target: string;
+  let dataReal: string;
+  try {
+    // The file itself is followed too when it exists, so a link named spoken.db cannot lead to blink.db.
+    target = existsSync(path) ? realpathSync.native(path) : join(realpathSync.native(dirname(path)), basename(path));
+    dataReal = realpathSync.native(DATA);
+  } catch {
+    throw new Error(`${what} is refused: its folder does not exist`);
+  }
+  const followed = scratchDbProblem({ base: basename(target), parentReal: dirname(target), dataReal });
+  if (followed) throw new Error(`${what} is refused: ${followed}`);
   return path;
 }
 
@@ -102,9 +128,8 @@ const secs = (ms: number | null) => (ms === null ? "n/a" : `${(ms / 1000).toFixe
 // ── Preparing the scratch database ──────────────────────────────────────────
 
 async function prepareDb(raw: string) {
-  const path = scratchPath(raw, "--prepare-db");
+  const path = scratchPath(raw, "--prepare-db", { makeFolder: true });
   for (const suffix of ["", "-wal", "-shm"]) rmSync(`${path}${suffix}`, { force: true });
-  mkdirSync(dirname(path), { recursive: true });
   process.env.BLINK_DB_PATH = path;
   // Document facts come from the committed recordings, so preparing costs nothing.
   process.env.BLINK_LLM_MODE = "replay";
@@ -287,13 +312,6 @@ async function warmUp(http: ReturnType<typeof client>) {
 
 // ── The call ────────────────────────────────────────────────────────────────
 
-interface TurnReply {
-  seq: number;
-  pill: { level: string; text: string };
-  readStatus?: string;
-  note?: string;
-}
-
 interface HeardTurn {
   seq: number;
   speaker: Channel;
@@ -351,6 +369,7 @@ async function runSpokenCall() {
   console.log(`call ${call.id} started on ${caseId}`);
 
   const heard: HeardTurn[] = [];
+  const unreadable: number[] = [];
   const pending = new Set<Promise<unknown>>();
   const track = (p: Promise<unknown>) => {
     pending.add(p);
@@ -387,30 +406,10 @@ async function runSpokenCall() {
     for (let attempt = 1; !halted; attempt++) {
       const abort = new AbortController();
       const deadline = setTimeout(() => abort.abort(), TURN_DEADLINE_MS);
+      let reply: unknown;
       try {
-        const reply = await http.request<TurnReply>(`${callPath}/turns`, { body: item.body, key, signal: abort.signal });
+        reply = await http.request<unknown>(`${callPath}/turns`, { body: item.body, key, signal: abort.signal });
         clearTimeout(deadline);
-        const receivedAtMs = Date.now();
-        const shownAtMs = Date.now();
-        if (downSince !== null) postRecord(`${callPath}/outages`, { stage: "reading", startedAt: iso(downSince), endedAt: iso(receivedAtMs), cause, shownToBanker: receivedAtMs - downSince > BROKEN_AFTER_MS });
-        postRecord(`${callPath}/acks`, { seq: item.body.seq, responseReceivedAt: iso(receivedAtMs), shownAt: iso(shownAtMs) });
-        const audioEnd = placed.filter((p) => item.sources.includes(p.label)).reduce<number | null>((n, p) => Math.max(n ?? 0, p.endMs), null);
-        const h: HeardTurn = {
-          seq: item.body.seq,
-          speaker: item.turn.speaker,
-          sources: item.sources,
-          speechStartMs: item.turn.speechStartMs,
-          speechEndMs: item.turn.speechEndMs,
-          speechEndedAtMs: t0 + item.turn.speechEndMs,
-          audioEndedAtMs: audioEnd === null ? null : t0 + audioEnd,
-          pill: reply.pill.level,
-          readStatus: reply.readStatus ?? "unknown",
-          shownAtMs,
-          attempts: attempt,
-        };
-        heard.push(h);
-        console.log(`   T${String(h.seq).padEnd(3)} ${h.speaker.padEnd(7)} from ${(h.sources.join("+") || "?").padEnd(8)} pill ${h.pill.padEnd(9)} ${`read ${h.readStatus}`.padEnd(13)} ${String(h.shownAtMs - h.speechEndedAtMs).padStart(5)} ms after Flux's end of speech${h.audioEndedAtMs === null ? "" : `, ${h.shownAtMs - h.audioEndedAtMs} ms after the audio ended`}${attempt > 1 ? ` (${attempt} tries)` : ""}`);
-        return;
       } catch (err) {
         clearTimeout(deadline);
         const timedOut = abort.signal.aborted;
@@ -421,9 +420,40 @@ async function runSpokenCall() {
         }
         downSince ??= Date.now();
         cause = timedOut ? `turn ${item.body.seq} took more than ${TURN_DEADLINE_MS / 1000} s` : `turn ${item.body.seq}: ${(err as Error).message}`;
+        await sleep(wait);
+        wait = Math.min(wait * 2, RETRY_MAX_MS);
+        continue;
       }
-      await sleep(wait);
-      wait = Math.min(wait * 2, RETRY_MAX_MS);
+      const receivedAtMs = Date.now();
+      // Reading is up again: close the outage this turn's retries opened, as the app does when a reply arrives.
+      if (downSince !== null) postRecord(`${callPath}/outages`, { stage: "reading", startedAt: iso(downSince), endedAt: iso(receivedAtMs), cause, shownToBanker: receivedAtMs - downSince > BROKEN_AFTER_MS });
+      if (!isTurnReply(reply)) {
+        // As the app does (session.ts): the server took the turn but its answer is unusable, and asking
+        // again returns the same answer. Nothing is shown or acknowledged; a momentary reading outage says why.
+        unreadable.push(item.body.seq);
+        postRecord(`${callPath}/outages`, { stage: "reading", startedAt: iso(receivedAtMs), endedAt: iso(receivedAtMs), cause: `the server's reply to turn ${item.body.seq} could not be read`, shownToBanker: false });
+        console.error(`   T${item.body.seq}: the server's reply could not be read; nothing shown for this turn`);
+        return;
+      }
+      const shownAtMs = Date.now();
+      postRecord(`${callPath}/acks`, { seq: item.body.seq, responseReceivedAt: iso(receivedAtMs), shownAt: iso(shownAtMs) });
+      const audioEnd = placed.filter((p) => item.sources.includes(p.label)).reduce<number | null>((n, p) => Math.max(n ?? 0, p.endMs), null);
+      const h: HeardTurn = {
+        seq: item.body.seq,
+        speaker: item.turn.speaker,
+        sources: item.sources,
+        speechStartMs: item.turn.speechStartMs,
+        speechEndMs: item.turn.speechEndMs,
+        speechEndedAtMs: t0 + item.turn.speechEndMs,
+        audioEndedAtMs: audioEnd === null ? null : t0 + audioEnd,
+        pill: reply.pill.level,
+        readStatus: reply.readStatus ?? "unknown",
+        shownAtMs,
+        attempts: attempt,
+      };
+      heard.push(h);
+      console.log(`   T${String(h.seq).padEnd(3)} ${h.speaker.padEnd(7)} from ${(h.sources.join("+") || "?").padEnd(8)} pill ${h.pill.padEnd(9)} ${`read ${h.readStatus}`.padEnd(13)} ${String(h.shownAtMs - h.speechEndedAtMs).padStart(5)} ms after Flux's end of speech${h.audioEndedAtMs === null ? "" : `, ${h.shownAtMs - h.audioEndedAtMs} ms after the audio ended`}${attempt > 1 ? ` (${attempt} tries)` : ""}`);
+      return;
     }
   };
 
@@ -503,6 +533,7 @@ async function runSpokenCall() {
     server: base,
     writtenTurns: written.length,
     heardTurns: heard.length,
+    unreadableReplies: unreadable,
     unplacedTurns: heard.filter((h) => h.sources.length === 0).length,
     notReadLive: notRead.map((h) => ({ seq: h.seq, readStatus: h.readStatus })),
     pills: { red: heard.filter((h) => h.pill === "red").map((h) => `T${h.seq}`), amber: heard.filter((h) => h.pill === "amber").map((h) => `T${h.seq}`) },
@@ -540,7 +571,7 @@ async function runSpokenCall() {
   writeFileSync(out, `${JSON.stringify(summary, null, 2)}\n`);
   console.log(`   results written to ${relative(process.cwd(), out)}`);
   const missedRed = expected.filter((e) => !e.red).length;
-  process.exitCode = halted || missedRed > 0 ? 1 : 0;
+  process.exitCode = halted || missedRed > 0 || unreadable.length > 0 ? 1 : 0;
 }
 
 /** From the server's database: the timings as stored, the after-call read, and whether its flags match the live ones. */
@@ -635,6 +666,8 @@ async function earnings21(ids: string[], minutes: number) {
   });
   const total = (f: (r: (typeof results)[number]) => number) => results.reduce((n, r) => n + f(r), 0);
   const errors = total((r) => r.substitutions + r.deletions + r.insertions);
+  // A file with no reference words matched would add nothing to the sums and hide that it failed.
+  for (const r of results.filter((r) => r.refUsed === 0)) console.warn(`   warning: ${r.id} matched no reference words (Flux returned ${r.hypWords} words), so it adds nothing to the line below`);
   console.log(`   both: WER ${((100 * errors) / total((r) => r.refUsed)).toFixed(1)}% · numbers ${total((r) => r.numbers.correct)}/${total((r) => r.numbers.total)} · company names ${total((r) => r.companyNames.correct)}/${total((r) => r.companyNames.total)}`);
   const audioMin = ids.length * minutes;
   console.log(`   Deepgram: ${audioMin} min streamed (plus 4 s of silence each), about $${(audioMin * FLUX_USD_PER_MIN).toFixed(3)}`);

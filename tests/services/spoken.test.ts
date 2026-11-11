@@ -1,14 +1,20 @@
 import { describe, expect, it } from "vitest";
-import { FLUX_URL } from "@/lib/live/flux-client";
+import { FLUX_URL, RECONNECT_FIRST_MS, RECONNECT_MAX_MS } from "@/lib/live/flux-client";
+import { TURN_DEADLINE_MS as APP_TURN_DEADLINE_MS } from "@/lib/live/session";
 import {
+  RETRY_FIRST_MS,
+  RETRY_MAX_MS,
   SPOKEN_FLUX_URL,
+  TURN_DEADLINE_MS,
   alignPrefix,
   channelFor,
   compareFlags,
+  isTurnReply,
   layoutTurns,
   mixChannels,
   nlpReference,
   normalizeWords,
+  scratchDbProblem,
   sourceTurnsOf,
   tokenAccuracy,
 } from "@/server/eval/spoken";
@@ -146,12 +152,21 @@ describe("alignPrefix", () => {
     expect(a).toMatchObject({ refUsed: 3, substitutions: 0, deletions: 0, insertions: 0, wer: 0 });
   });
 
-  it("counts a substitution, a deletion and an insertion", () => {
-    const a = alignPrefix(["a", "b", "c", "d"], ["a", "x", "d", "e"]);
-    // a=a, b→x, c deleted, d=d, e inserted (the trailing "e" is an insertion: the reference ends there)
-    expect(a.substitutions + a.deletions + a.insertions).toBe(3);
-    expect(a.refUsed).toBe(4);
-    expect(a.wer).toBeCloseTo(3 / 4);
+  it("counts a substitution, a deletion and an insertion, each where it is", () => {
+    // a=a, b→x (substitution), c=c, d deleted, e=e, f=f, y inserted, g=g: the only alignment that costs 3.
+    const a = alignPrefix(["a", "b", "c", "d", "e", "f", "g"], ["a", "x", "c", "e", "f", "y", "g"]);
+    expect(a).toMatchObject({ refUsed: 7, substitutions: 1, deletions: 1, insertions: 1 });
+    expect(a.wer).toBeCloseTo(3 / 7);
+    expect(a.refToHyp).toEqual([0, 1, 2, null, 3, 4, 6]);
+  });
+
+  it("uses the longest of equally good reference prefixes", () => {
+    // "a c" against "a b" costs one substitution; against "a b c" one deletion. The longer prefix wins.
+    expect(alignPrefix(["a", "b", "c"], ["a", "c"])).toMatchObject({ refUsed: 3, substitutions: 0, deletions: 1, insertions: 0 });
+  });
+
+  it("makes every hypothesis word an insertion against an empty reference, with no error rate", () => {
+    expect(alignPrefix([], ["a", "b"])).toMatchObject({ refUsed: 0, substitutions: 0, deletions: 0, insertions: 2, wer: null, refToHyp: [], matched: [] });
   });
 
   it("compares the hypothesis with the part of the reference it covers, since the audio was cut short", () => {
@@ -165,8 +180,8 @@ describe("alignPrefix", () => {
     expect(a.matched).toEqual([true, false, true]);
   });
 
-  it("is all deletions for an empty hypothesis, over none of the reference", () => {
-    expect(alignPrefix(["a", "b"], [])).toMatchObject({ refUsed: 0, wer: null });
+  it("covers none of the reference for an empty hypothesis, so there is no error rate", () => {
+    expect(alignPrefix(["a", "b"], [])).toMatchObject({ refUsed: 0, substitutions: 0, deletions: 0, insertions: 0, wer: null });
   });
 });
 
@@ -188,8 +203,41 @@ describe("compareFlags", () => {
   });
 });
 
-describe("SPOKEN_FLUX_URL", () => {
-  it("is the address the banker's app opens, so the eval hears what the app hears", () => {
+describe("the banker's app's values", () => {
+  it("opens the address the banker's app opens, so the eval hears what the app hears", () => {
     expect(SPOKEN_FLUX_URL).toBe(FLUX_URL);
+  });
+  it("sends turns with the app's deadline and backoff", () => {
+    expect(TURN_DEADLINE_MS).toBe(APP_TURN_DEADLINE_MS);
+    expect(RETRY_FIRST_MS).toBe(RECONNECT_FIRST_MS);
+    expect(RETRY_MAX_MS).toBe(RECONNECT_MAX_MS);
+  });
+});
+
+describe("isTurnReply", () => {
+  it("takes a reply with a pill at a known level", () => {
+    expect(isTurnReply({ seq: 1, pill: { level: "red", text: "x" } })).toBe(true);
+    expect(isTurnReply({ seq: 1, pill: { level: "listening", text: "x" } })).toBe(true);
+  });
+  it("refuses a reply with no pill, an unknown level, or no body", () => {
+    expect(isTurnReply({ seq: 1 })).toBe(false);
+    expect(isTurnReply({ seq: 1, pill: { level: "broken" } })).toBe(false);
+    expect(isTurnReply(null)).toBe(false);
+  });
+});
+
+describe("scratchDbProblem", () => {
+  const dataReal = "/repo/data";
+  it("allows a database in data/ or a folder under it", () => {
+    expect(scratchDbProblem({ base: "spoken.db", parentReal: dataReal, dataReal })).toBeNull();
+    expect(scratchDbProblem({ base: "x.db", parentReal: "/repo/data/spoken", dataReal })).toBeNull();
+  });
+  it("refuses blink.db in any case, wherever it is", () => {
+    for (const base of ["blink.db", "BLINK.db", "Blink.DB"]) expect(scratchDbProblem({ base, parentReal: dataReal, dataReal })).toMatch(/blink\.db/);
+    expect(scratchDbProblem({ base: "blink.db", parentReal: "/repo/data/spoken", dataReal })).not.toBeNull();
+  });
+  it("refuses a folder outside data/ once symlinks are followed, including a sibling that starts the same", () => {
+    expect(scratchDbProblem({ base: "spoken.db", parentReal: "/elsewhere", dataReal })).toMatch(/under data/);
+    expect(scratchDbProblem({ base: "spoken.db", parentReal: "/repo/data-old", dataReal })).toMatch(/under data/);
   });
 });

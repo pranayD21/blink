@@ -116,6 +116,7 @@ When the owner has reported, the next step is to fill in the answers here, write
 - Task 20 Step 2: hold the five-minute call. Steps are in "Task 20: first real call".
 - Task 20 Step 3: waits on Step 2. After the call, tell the agent; it reads the record back from `call_turns` (turn count, turns not read live, median, 95th percentile and worst of `shown_at` minus `speech_ended_at`, whether the pill went red where expected) and writes it in the notes against the targets.
 - Task 20 Step 4: waits on Step 3. Commit the notes as `docs: record the first real call's timings`.
+- Task 38: spoken input misses the speed target. The 95th percentile is 2.81 s from Flux's window end and 3.96 s from the end of the audio, against 2.0 s. Live, 0 of 6 labelled turns went red, because their reads timed out at 2.5 s (the after-call read hid all six). Task 20's measure, `speech_ended_at` (the end of Flux's audio window, a median 0.79 s after speech really ends), may also need redefining. Both go with the Groq / `haiku-slow` decision in Task 2 Step 5. Details are in "Task 38: the spoken path" and `docs/eval/2026-11-spoken.md`.
 
 ## Task 10: the time limit is enforced twice
 
@@ -373,6 +374,6 @@ Step 1 is done: `pnpm live:prepare` (`scripts/prepare-live-call.sh`) resets `dat
   - End of speech to decision (`shown_at` minus `speech_ended_at`): typical 2.11 s, 19 in 20 2.81 s, worst 4.18 s. No turn was within 1.0 s, and 36 of 77 were within 2.0 s.
   - The read is the stage that takes the time: 1.88 s typical, 2.51 s at the 95th percentile. Rules and display take milliseconds. Two banker turns over 3 s waited behind the read of the expert turn before them.
   - Live, 0 of 6 labelled turns went red. After the call, 6 of 6 were hidden. On no call did the live flags match the after-call read.
-- **`speech_ended_at` is not the end of speech.** It is the end of Flux's audio window, which came a median 0.76 s (95th percentile 1.50 s) after the synthetic speech really ended. Task 20's measure therefore leaves out most of Flux's end-of-turn wait. Measured from the true end of the audio, the typical time is 3.02 s, 3.96 s at the 95th percentile.
+- **`speech_ended_at` is not the end of speech.** It is the end of Flux's audio window, which came a median 0.79 s (95th percentile 1.49 s, nearest-rank, n = 77) after the synthetic speech really ended. Task 20's measure therefore leaves out most of Flux's end-of-turn wait. Measured from the true end of the audio, the typical time is 3.02 s, 3.96 s at the 95th percentile.
 - **Earnings-21** (`4387332` Zagg, `4366522` Aldeyra; CC BY-SA 4.0; first 10 minutes each): word error rate 11.9%, numbers correct 8 of 71, company names correct 51 of 60. Flux writes most numbers as words, and the prescribed normaliser expands nothing, so the numbers figure mostly measures that. The company-name misses are mostly the issuers' own names (Zagg, Aldeyra).
 
