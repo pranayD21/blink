@@ -364,8 +364,13 @@
   background: var(--background);
   transform-origin: center;
   transform: scaleY(0.08);
-  /* One blink when the page loads, then the eye stays open and still. */
+  /* One blink when the page loads, then the eye stays open until the pointer returns. */
   animation: blink-lid 1.1s ease-in-out 0.25s 1 both;
+}
+
+.blink-mark:hover .blink-lid,
+a:hover .blink-mark .blink-lid {
+  animation: blink-hover 0.7s ease-in-out;
 }
 
 @keyframes blink-lid {
@@ -373,6 +378,12 @@
   35% { transform: scaleY(0.08); }
   55% { transform: scaleY(1); }
   75%, 100% { transform: scaleY(0.08); }
+}
+
+@keyframes blink-hover {
+  0% { transform: scaleY(0.08); }
+  35% { transform: scaleY(1); }
+  70%, 100% { transform: scaleY(0.08); }
 }
 
 .glass-field {
@@ -525,6 +536,8 @@
   .aurora-field,
   .agent-mark,
   .blink-lid,
+  .blink-mark:hover .blink-lid,
+  a:hover .blink-mark .blink-lid,
   .glass-reveal.is-pressed {
     animation: none;
   }
