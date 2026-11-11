@@ -1635,11 +1635,11 @@ git commit   # docs(eval): record a full live run on the deployed app
 - Create: `docs/demo-script.md`
 - Modify: `README.md`, `HANDOFF.md`, `BLINK_BUILD_SPEC.md` (sections 1.4, 15 and 19: a one-line pointer to the design document and the demo script; no rewriting)
 
-- [ ] **Step 1: Write `docs/demo-script.md`,** five minutes, around a live call: the approved policy; the banker starts a call from the Mac app with the pill at the top; the expert reads lines that reach amber and then red; the call ends with a count; compliance opens the case, sees what is hidden and why, keeps one hidden and unhides one, releases; the banker reads the blanked transcript and the summary; compliance opens the call's record and one moment. Each step lists what is on screen and one line to say. It names the fallbacks in order: a phone hotspot, then the recorded video.
-- [ ] **Step 2: Update `README.md`:** what Blink does now, how to run it locally, how to build and open the Mac app, that the banker should wear headphones, the two sign-in modes, the new commands, the deployed address, and the limits (a handful of real test calls; no stay-quiet set; synthetic voices in the spoken test).
-- [ ] **Step 3: Update `HANDOFF.md`:** state at the end of this plan, what is left, the open owner steps, and where the results are.
-- [ ] **Step 4: Run every check.** Run: `pnpm typecheck && pnpm lint && pnpm test && pnpm build && pnpm e2e && pnpm demo:check && pnpm live:check`. Expected: all exit 0.
-- [ ] **Step 5: Commit.**
+- [x] **Step 1: Write `docs/demo-script.md`,** five minutes, around a live call: the approved policy; the banker starts a call from the Mac app with the pill at the top; the expert reads lines that reach amber and then red; the call ends with a count; compliance opens the case, sees what is hidden and why, keeps one hidden and unhides one, releases; the banker reads the blanked transcript and the summary; compliance opens the call's record and one moment. Each step lists what is on screen and one line to say. It names the fallbacks in order: a phone hotspot, then the recorded video.
+- [x] **Step 2: Update `README.md`:** what Blink does now, how to run it locally, how to build and open the Mac app, that the banker should wear headphones, the two sign-in modes, the new commands, the deployed address, and the limits (a handful of real test calls; no stay-quiet set; synthetic voices in the spoken test).
+- [x] **Step 3: Update `HANDOFF.md`:** state at the end of this plan, what is left, the open owner steps, and where the results are.
+- [x] **Step 4: Run every check.** Run: `pnpm typecheck && pnpm lint && pnpm test && pnpm build && pnpm e2e && pnpm demo:check && pnpm live:check`. Expected: all exit 0.
+- [x] **Step 5: Commit.**
 
 ```bash
 git add docs/demo-script.md README.md HANDOFF.md BLINK_BUILD_SPEC.md

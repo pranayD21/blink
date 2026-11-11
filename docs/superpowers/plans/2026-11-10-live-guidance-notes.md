@@ -125,6 +125,8 @@ When the owner has reported, the next step is to fill in the answers here, write
   - **A misheard issuer name keeps R3 quiet.** Flux's spellings of the issuer ("Halvason", "Talveshams") kept rule R3 from matching the covered issuer until a reviewer corrected the company.
   - Details are in "Task 44: the deployed run" and `docs/eval/2026-11-deployed-run.md`. The missed live red on T11 is the existing `haiku-slow` item.
 - Task 44: the leftover case `case_01M740EV6DA1XZ7FC7B5SMWXXN` ("Regional Sales Director, West", wrong packet from the run's first attempt) is in review on the shared deployment. The owner decides whether to clean it up or leave it.
+- Task 46 Steps 1 and 2: rehearse the demo twice from `docs/demo-script.md` on the deployed app, with the person who will read the expert's lines, then record a screen capture of one clean run as the backup, on or before 2026-11-18. The rehearsal is also the first time the Mac app hears a real call, unless Task 3 or Task 20 runs first.
+- Task 46 Step 3: waits on Task 46 Steps 1 and 2. It is not marked `(owner)`, but it can only run after the rehearsal: note what it showed here, and fix what can be fixed without changing prompts or rules.
 
 ## Task 10: the time limit is enforced twice
 
@@ -431,3 +433,17 @@ Step 1 is done: `pnpm live:prepare` (`scripts/prepare-live-call.sh`) resets `dat
 - **The citation quotes** were already safe and are unchanged: `frozenCitations` drops any quote `quoteIsVisible` does not find in a visible run. A regression test pins it.
 - **Tests:** in `tests/core/workflow.test.ts`, the C7/C8 shape, touching and one-character overlaps, another turn, a cleared finding, a claim's own reasons, and `CITATION_LEAK`. In `tests/services/release.test.ts`, the same shape on the seed (C3's context quote lies inside C2's quote in T7), clearing, the reverse direction, a live finding's hidden spans, the unchanged blanking, two citation-summary leaks that refuse the release, and the citation-quote backstop.
 - **Fixtures:** `demo:check` and `live:check` replayed every call: no drafting request changed, so nothing was re-recorded and nothing was spent.
+
+## Task 45: the demo script and the documents
+
+- **The demo script** (`docs/demo-script.md`) is built on the deployment and the Halvorsen case. The expert reads lines from `transcript-v1.txt`, with T11 split into two turns: "That's Halvorsen's West region, this quarter." (expected amber: one fact short, still on the subject) and the login remark (expected red). The banker's "How do you know?" sits between them, so Flux hears two turns. These lines have not been run as speech; Task 46's rehearsal is their first run. Amber has not appeared on any spoken call so far.
+- **Compliance is Jordan in the script,** not Marcus. A senior compliance officer can decide every finding, attest, approve and release (`requireReviewer` admits both roles), and the source remark's finding is escalated, so one sign-in covers step 5 and step 6.
+- **What the script tells the presenter when the red does not come:** carry on, say the line as written, and show the passage hidden after the call. In every spoken Halvorsen run so far (Task 38, both Task 44 attempts) T11's read timed out. The end pill then reads "Call ended. Nothing was hidden.", because that count covers live flags only.
+- **The after-call read takes about 75 s on the deployment** (Task 44). The script lets step 8 (the call's record, which is ready as soon as the call ends) move ahead of step 5 while it runs.
+- **README:** the stale statements are fixed. These were the switcher-only sign-in in Quickstart, "Authentication is a cookie naming a seeded user" in the limits, "All data in this repository is synthetic", and the "Synthetic data" pill, which Pranay removed in 6a7a08a. The Deployed section is kept and extended with self-sign-up and what a user sees after Pranay's restyle.
+- **BLINK_BUILD_SPEC.md:** one quoted pointer line each under 1.4, 15 and 19. Nothing else changed.
+- **Checks** (Node 24.10):
+  - `pnpm typecheck`, `lint`, `test` (1,117 tests in 54 files), `build`, `e2e` (the demo spec, then 8 live specs), `demo:check` and `live:check` all exit 0;
+  - `pnpm desktop:build` and `pnpm desktop:smoke` (with `ELECTRON_RUN_AS_NODE` unset) exit 0.
+  - The rebuild gives the app a new ad-hoc identity, so macOS asks for both permissions again on its next open.
+- **No spend.** Nothing live ran.
