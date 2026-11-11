@@ -12,13 +12,23 @@ function subscribe(onChange: () => void) {
   return () => window.removeEventListener(CHANGE, onChange);
 }
 
+// Storage can throw (a browser set to block site data), and the guide runs on every page, so a
+// failure there must mean "no trial", never a crashed page.
 function snapshot() {
-  return sessionStorage.getItem(KEY);
+  try {
+    return sessionStorage.getItem(KEY);
+  } catch {
+    return null;
+  }
 }
 
 export function setTrial(value: string | null) {
-  if (value === null) sessionStorage.removeItem(KEY);
-  else sessionStorage.setItem(KEY, value);
+  try {
+    if (value === null) sessionStorage.removeItem(KEY);
+    else sessionStorage.setItem(KEY, value);
+  } catch {
+    return;
+  }
   window.dispatchEvent(new Event(CHANGE));
 }
 

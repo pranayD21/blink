@@ -274,6 +274,8 @@ const TABLE: Row[] = [
   },
   // The one public route: the platform's health check, which says only that the database answers.
   { file: "src/app/api/health/route.ts", method: "GET", caseScoped: false, noSession: 200 },
+  // A crash report from the browser: open to anyone, logged as one line, answers 204 with no body.
+  { file: "src/app/api/client-errors/route.ts", method: "POST", caseScoped: false, noSession: 204, body: () => ({ message: "a page crashed" }) },
   { file: "src/app/api/jobs/[id]/route.ts", method: "GET", caseScoped: true, owner: "priya", params: () => ({ id: ids.job }) },
   { file: "src/app/api/metrics/route.ts", method: "GET", caseScoped: false },
   { file: "src/app/api/policies/[versionId]/approve/route.ts", method: "POST", caseScoped: false, params: () => ({ versionId: ids.policy }), body: () => ({ bundleHash: "0".repeat(64) }) },
