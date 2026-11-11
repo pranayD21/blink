@@ -7,12 +7,12 @@ import { Button } from "@/components/ui/button";
 const KEY = "blink-trial";
 const CHANGE = "blink-trial-change";
 
-function subscribe(onChange: () => void) {
+export function subscribe(onChange: () => void) {
   window.addEventListener(CHANGE, onChange);
   return () => window.removeEventListener(CHANGE, onChange);
 }
 
-function snapshot() {
+export function snapshot() {
   return sessionStorage.getItem(KEY);
 }
 
@@ -27,15 +27,15 @@ export function startTrial() {
 }
 
 const STEPS = [
-  { title: "A call becomes a case", lead: "Open Cases. Every expert call is a row in that queue.", arrived: "Each row is one call. This is where a run starts." },
-  { title: "A policy has to be active", lead: "Open Policy. Blink evaluates a call only against an approved policy.", arrived: "The owner compiles the policy into rules and approves one version. Only that version is used. Until then, nothing is evaluated." },
-  { title: "Open a case", lead: "Go to Cases and open one call.", arrived: "Open a case. The next screens are that call, step by step." },
-  { title: "The transcript is the input", lead: "Open a case from the queue.", arrived: "The banker adds the transcript. Blink reads each claim and checks it against the policy." },
-  { title: "A person decides each finding", lead: "Open a case. Findings are on the compliance view of that call.", arrived: "A finding is a concern plus the quote it rests on. A person decides it. Blink does not." },
-  { title: "A brief cites every sentence", lead: "Open the case. The brief comes after the decisions.", arrived: "When every finding is decided, compliance attests. A brief is drafted. Every sentence cites a claim, and release checks that nothing restricted leaked." },
-  { title: "The banker reads the release", lead: "Open Released briefs. This is what the banker is allowed to read.", arrived: "Released briefs leave out anything compliance kept hidden." },
-  { title: "A live call is one button", lead: "Open Call. During a live call the banker sees one control.", arrived: "Blink listens and says when to move on. The words of the call are not shown." },
+  { title: "Read the call", body: "This is a sample call about Northline Pumps. A banker is asking an expert how the quarter is going. Blink has not read it yet.", target: "[data-demo='call']" },
+  { title: "Blink reads one sentence", body: "Blink stopped on “Distributor orders fell 15% this quarter.” It wrote that down as a claim: one thing the expert said that can be checked.", target: "[data-demo='sentence']" },
+  { title: "Blink checks the filing", body: "Northline’s earnings release says orders were down 4%. The expert said 15%. Those are different numbers, so Blink flags the sentence.", target: "[data-demo='check']" },
+  { title: "Here is the flag", body: "The flag keeps the expert’s exact words next to the filing. A person decides what happens next. Blink does not hide or clear anything by itself.", target: "[data-demo='finding']" },
+  { title: "Keep the 15% line hidden", body: "Click Keep hidden. The banker will not see the 15% line in the note.", target: "[data-demo='decide']", click: true },
+  { title: "This is what the banker reads", body: "The note says demand is soft, and it cites the expert. The 15% line is not in it. One statement was kept hidden.", target: "[data-demo='note']" },
 ] as const;
+
+const DONE = "That was one call. Blink read a number, checked it against the public filing, and flagged the mismatch. You kept the 15% line hidden. The banker only received the part that was safe.";
 
 type Place = {
   arrived: boolean;
@@ -46,57 +46,14 @@ type Place = {
   body: string;
 };
 
-const onCase = (pathname: string) => /^\/cases\/(?!new$)[^/]+$/.test(pathname);
-const found = (selector: string) => document.querySelector<HTMLElement>(selector);
-
 function place(index: number, pathname: string): Place {
+  if (pathname !== "/trial") {
+    return { arrived: false, selector: null, go: "/trial", button: "Open the sample call", completesOnClick: false, body: "We’ll use a sample call about Northline Pumps. Blink will read one sentence and check it against the company’s public filing." };
+  }
   const step = STEPS[index];
-  if (!step) {
-    return { arrived: true, selector: null, go: null, button: "Finish", completesOnClick: false, body: "Policy, then the case, then the read, then a person's decision, then the brief, then the release. On a live call, Blink only says when to move on." };
-  }
-  const travel = (selector: string | null, go: string, body: string): Place => ({ arrived: false, selector, go, button: "Show me", completesOnClick: false, body });
-  const look = (selector: string | null, body: string, completesOnClick = false): Place => ({ arrived: true, selector, go: null, button: completesOnClick ? "Click it" : "Next", completesOnClick, body });
-
-  if (index === 0) {
-    if (pathname !== "/cases") return travel(found("nav a[href='/cases']") ? "nav a[href='/cases']" : null, "/cases", step.lead);
-    return look(found("[data-testid^='case-row-']") ? "[data-slot='table-container']" : "[data-testid='no-policy-banner']", step.arrived);
-  }
-  if (index === 1) {
-    if (pathname !== "/policies" && !pathname.startsWith("/policies/")) {
-      const link = "[data-testid='no-policy-banner'] a, nav a[href='/policies']";
-      return travel(found(link) ? link : null, "/policies", step.lead);
-    }
-    return look(found("[data-slot='table-container']") ? "[data-slot='table-container']" : "main h1", step.arrived);
-  }
-  if (index === 2) {
-    if (pathname !== "/cases") return travel(found("nav a[href='/cases']") ? "nav a[href='/cases']" : null, "/cases", step.lead);
-    if (!found("[data-testid^='case-row-'] a")) return look(null, "No case is in the queue yet. A banker starts one from Call. Continue, and the rest of the run is the same.");
-    return look("[data-testid^='case-row-'] a", step.arrived, true);
-  }
-  if (index === 3) {
-    if (!onCase(pathname)) return travel(found("[data-testid^='case-row-'] a") ? "[data-testid^='case-row-'] a" : "nav a[href='/cases']", "/cases", step.lead);
-    const findings = found("[data-testid='findings-pane']");
-    const target = "[data-testid='transcript-text'], [data-testid='open-upload'], [data-testid='workspace'], [data-testid='case-status']";
-    return look(found(target) ? target : null, findings ? "Compliance is in the review workspace. The transcript is on the left, and Blink has already checked it." : "The banker adds the transcript here. Blink reads each claim and checks it against the policy. The banker does not see the findings.");
-  }
-  if (index === 4) {
-    if (!onCase(pathname)) return travel(found("[data-testid^='case-row-'] a") ? "[data-testid^='case-row-'] a" : "nav a[href='/cases']", "/cases", step.lead);
-    if (found("[data-testid^='finding-']")) return look("[data-testid^='finding-']", step.arrived, true);
-    return look(found("[data-testid='case-status']") ? "[data-testid='case-status']" : null, "On this view the banker never sees findings. Compliance opens the same case, sees each quote, and decides.");
-  }
-  if (index === 5) {
-    if (pathname.endsWith("/brief")) return look(found("[data-testid='brief-status'], main h1") ? "[data-testid='brief-status'], main h1" : null, step.arrived);
-    const link = found("[data-testid='link-brief']");
-    if (link && onCase(pathname)) return travel("[data-testid='link-brief']", link.getAttribute("href") ?? pathname, "Open the brief. Every sentence has to cite a claim.");
-    if (!onCase(pathname)) return travel(found("[data-testid^='case-row-'] a") ? "[data-testid^='case-row-'] a" : "nav a[href='/cases']", "/cases", step.lead);
-    return look(found("[data-testid='case-status']") ? "[data-testid='case-status']" : null, step.arrived);
-  }
-  if (index === 6) {
-    if (pathname !== "/analyst" && !pathname.startsWith("/analyst/")) return travel(found("nav a[href='/analyst']") ? "nav a[href='/analyst']" : null, "/analyst", step.lead);
-    return look(found("[data-testid='released-brief'], [data-testid='no-released-briefs']") ? "[data-testid='released-brief'], [data-testid='no-released-briefs']" : "main h1", step.arrived);
-  }
-  if (pathname !== "/call") return travel(found("nav a[href='/call']") ? "nav a[href='/call']" : null, "/call", step.lead);
-  return look(found("[data-testid='start-call'], [data-testid='not-a-banker'], [data-testid='agent-now']") ? "[data-testid='start-call'], [data-testid='not-a-banker'], [data-testid='agent-now']" : null, found("[data-testid='not-a-banker']") ? "Calls are started by the banker. One button, then Blink says when to move on. The words of the call stay hidden." : step.arrived);
+  if (!step) return { arrived: true, selector: "[data-demo='note']", go: null, button: "Finish", completesOnClick: false, body: DONE };
+  const click = "click" in step && step.click;
+  return { arrived: true, selector: step.target, go: null, button: click ? "Keep hidden" : "Next", completesOnClick: click, body: step.body };
 }
 
 /** A guided run. The highlighted control is the next click, and the card lists every step. */
