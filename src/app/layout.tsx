@@ -3,6 +3,7 @@ import { Instrument_Sans } from "next/font/google";
 import { ThemeProvider } from "@/components/app/theme-provider";
 import { AppHeader } from "@/components/app/app-header";
 import { HeaderGate } from "@/components/app/header-gate";
+import { TrialCoach } from "@/components/app/trial-coach";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import "./globals.css";
@@ -41,6 +42,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 <AppHeader />
               </HeaderGate>
               <div className="flex min-h-0 flex-1 flex-col">{children}</div>
+              <TrialCoach />
             </div>
           </TooltipProvider>
           <Toaster position="bottom-right" richColors closeButton />

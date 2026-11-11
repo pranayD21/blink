@@ -30,7 +30,7 @@ export default async function MetricsPage() {
 
   return (
     <PageShell title="Metrics" description="Measured from the calls this app recorded.">
-      <div className="glass-surface mb-5 px-5 py-4 text-lg text-muted-foreground" data-testid="synthetic-note">
+      <div className="glass-surface mb-5 px-7 py-5 text-lg text-muted-foreground" data-testid="synthetic-note">
         <StatusDot tone="warn">Synthetic fixtures. These numbers show the measurement works. They are not production accuracy.</StatusDot>
       </div>
 

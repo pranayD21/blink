@@ -20,20 +20,20 @@ export function Panel({ title, action, children, className, bodyClassName }: { t
   return (
     <section className={cn("glass-surface rounded-lg", className)}>
       {(title || action) && (
-        <div className="flex items-center justify-between gap-3 border-b px-4 py-2.5">
-          <h2 className="text-sm font-semibold text-foreground">{title}</h2>
+        <div className="flex items-center justify-between gap-3 border-b px-7 py-4">
+          <h2 className="text-base font-semibold text-foreground">{title}</h2>
           {action}
         </div>
       )}
-      <div className={cn("p-4", bodyClassName)}>{children}</div>
+      <div className={cn("px-7 py-6", bodyClassName)}>{children}</div>
     </section>
   );
 }
 
 export function Stat({ label, value, hint }: { label: string; value: React.ReactNode; hint?: React.ReactNode }) {
   return (
-    <div className="glass-surface rounded-lg px-4 py-3">
-      <div className="text-xs font-medium text-muted-foreground">{label}</div>
+    <div className="glass-surface rounded-lg px-7 py-5">
+      <div className="text-base font-medium text-muted-foreground">{label}</div>
       <div className="mt-1 text-2xl font-semibold tracking-tight text-foreground tabular-nums">{value}</div>
       {hint && <div className="mt-0.5 text-xs text-muted-foreground">{hint}</div>}
     </div>
@@ -41,5 +41,5 @@ export function Stat({ label, value, hint }: { label: string; value: React.React
 }
 
 export function EmptyState({ children, className }: { children: React.ReactNode; className?: string }) {
-  return <div className={cn("glass-surface px-6 py-10 text-center text-lg leading-snug text-muted-foreground", className)}>{children}</div>;
+  return <div className={cn("glass-surface px-8 py-12 text-center text-lg leading-snug text-muted-foreground", className)}>{children}</div>;
 }

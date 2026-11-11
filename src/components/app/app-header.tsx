@@ -8,6 +8,7 @@ import { AccountMenu } from "./account-menu";
 import { GlassNav } from "./glass-nav";
 import { RoleSwitcher } from "./role-switcher";
 import { StatusDot } from "./status-dot";
+import { TrialButton } from "./trial-button";
 
 const NAV: Record<string, { href: string; label: string }[]> = {
   analyst: [
@@ -72,6 +73,7 @@ export async function AppHeader() {
             <StatusDot tone="ring">{mode === "replay" ? "Replay mode" : "Record mode"}</StatusDot>
           </span>
         )}
+        <TrialButton />
         {authMode() === "switcher" ? <RoleSwitcher current={actor} users={[...DEMO_USERS]} /> : <AccountMenu current={actor} />}
       </div>
     </header>

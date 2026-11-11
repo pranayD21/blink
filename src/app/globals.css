@@ -409,6 +409,69 @@
     0 14px 36px rgba(0, 0, 0, 0.28);
 }
 
+/* Text clears the curved rim. The first and last columns sit further in. */
+.glass-surface th,
+.glass-surface td,
+.bg-card th,
+.bg-card td {
+  padding: 1.05rem 1.25rem;
+}
+
+.glass-surface th:first-child,
+.glass-surface td:first-child,
+.bg-card th:first-child,
+.bg-card td:first-child {
+  padding-left: 1.85rem;
+}
+
+.glass-surface th:last-child,
+.glass-surface td:last-child,
+.bg-card th:last-child,
+.bg-card td:last-child {
+  padding-right: 1.85rem;
+}
+
+.glass-surface thead th,
+.bg-card thead th {
+  padding-top: 1.25rem;
+}
+
+.glass-surface tbody tr:last-child td,
+.bg-card tbody tr:last-child td {
+  padding-bottom: 1.25rem;
+}
+
+.bg-card > header,
+.glass-surface > header {
+  padding: 1.15rem 1.85rem;
+}
+
+.trial-dim {
+  position: fixed;
+  z-index: 60;
+  background: rgba(7, 7, 6, 0.55);
+  pointer-events: none;
+}
+
+.trial-ring {
+  position: fixed;
+  z-index: 70;
+  border-radius: 1rem;
+  pointer-events: none;
+  box-shadow:
+    0 0 0 2px rgba(246, 241, 232, 0.95),
+    0 0 0 8px rgba(246, 241, 232, 0.18);
+  animation: trial-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes trial-pulse {
+  50% {
+    box-shadow:
+      0 0 0 3px rgba(246, 241, 232, 1),
+      0 0 0 16px rgba(246, 241, 232, 0.08);
+  }
+}
+
 .auth-field {
   display: block;
   border: 1px solid var(--border);
@@ -466,5 +529,9 @@
   .glass-press,
   .glass-reveal {
     transition: none;
+  }
+
+  .trial-ring {
+    animation: none;
   }
 }
