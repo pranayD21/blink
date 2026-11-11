@@ -12,8 +12,6 @@ export function subscribe(onChange: () => void) {
   return () => window.removeEventListener(CHANGE, onChange);
 }
 
-// Storage can throw (a browser set to block site data), and the guide runs on every page, so a
-// failure there must mean "no trial", never a crashed page.
 export function snapshot() {
   try {
     return sessionStorage.getItem(KEY);
@@ -39,44 +37,44 @@ export function startTrial() {
 const STEPS = [
   {
     title: "How Blink works",
-    body: "Before any call, Blink compiles the firm's compliance rules into finite-state machines and pins Halvorsen's SEC filings. Next, we will sit in on the live call.",
+    body: "Blink loads Halvorsen's public filings and turns the firm's compliance rules into state machines before the call begins.",
     target: "[data-demo='workflow']",
     button: "Sit in on the call",
   },
   {
-    title: "Listen in real time",
-    body: "Priya and Ray are talking now. At 0:22 Ray mentions a 20% drop without naming a company or source. Blink evaluates indeterminate and stays quiet instead of raising a false alarm.",
+    title: "Listening to the call",
+    body: "Priya and Ray are speaking now. When Ray mentions a 20% drop without naming a company, Blink waits for context instead of raising a false alarm.",
     target: "[data-demo='live-room']",
     button: "Jump to Amber warning",
   },
   {
     title: "Amber before Ray answers",
-    body: "At 0:32 Priya asks for Halvorsen's own unreported Q3 bookings. Blink checks her question first and turns the banker pill Amber so she can steer away.",
+    body: "Priya asks for Halvorsen's own unreported Q3 numbers. Her status pill turns Amber right away so she can steer the conversation away.",
     target: "[data-demo='pill']",
-    button: "See Red & live FSM",
+    button: "See Red & state machine",
   },
   {
-    title: "Red leak, FSM & Kleene math",
-    body: "Ray reveals an active Salesforce login and cites -19.8% Q3 bookings versus -8.0% in the Q2 10-Q. Every predicate evaluates true, escalating Monitor M2 and flipping the pill Red.",
+    title: "Red leak & state machine",
+    body: "Ray reveals he checked his old Halvorsen Salesforce login (-19.8% Q3 bookings). Every condition on the rule is met, flipping the pill Red.",
     target: "[data-demo='engine']",
     button: "Review as compliance",
   },
   {
-    title: "A human decides the flag",
-    body: "Blink never clears or deletes anything by itself. Compliance sees the linked quotes, the 10-Q mismatch, and the FSM trace. Click Keep hidden & seal.",
+    title: "A human makes the call",
+    body: "Blink holds the flagged quote out of Priya's reach until compliance decides. Click Keep hidden from banker.",
     target: "[data-demo='decide']",
-    button: "Keep hidden & seal",
+    button: "Keep hidden from banker",
     click: true,
   },
   {
-    title: "Safe brief for the banker",
-    body: "Priya gets a cited note built from Ray's public steel remarks (+12%), and a transcript with the Salesforce leak replaced by sealed bars.",
+    title: "Safe brief for Priya",
+    body: "Priya receives a cited summary of Ray's public steel remarks (+12%), with the Salesforce leak blanked out of her transcript.",
     target: "[data-demo='note']",
     button: "Next",
   },
 ] as const;
 
-const DONE = "You just saw a full Blink run: policy compiled to state machines, live Amber and Red warnings during a real conversation, human review on pinned evidence, and a leak-checked brief.";
+const DONE = "That is a complete Blink run: rules loaded before the call, live Amber and Red warnings while speaking, human review on flagged quotes, and a clean brief with restricted lines removed.";
 
 type Place = {
   arrived: boolean;
@@ -102,9 +100,9 @@ function place(index: number, pathname: string): Place {
       arrived: false,
       selector: null,
       go: "/trial",
-      button: "Open live call demo",
+      button: "Open sample call",
       completesOnClick: false,
-      body: "We will walk through Blink's workflow and sit in on a live call between Priya Raman and former Halvorsen VP Ray Castellano.",
+      body: "Sit in on a realistic call between banker Priya Raman and former Halvorsen sales VP Ray Castellano.",
     };
   }
   const step = STEPS[index];
@@ -113,7 +111,7 @@ function place(index: number, pathname: string): Place {
   return { arrived: true, selector: step.target, go: null, button: step.button, completesOnClick: click, body: step.body };
 }
 
-/** A guided walkthrough of the Halvorsen live call, FSM calculations, and release workflow. */
+/** Guided walkthrough of the Halvorsen live call, state machine, and safe brief. */
 export function TrialCoach() {
   const pathname = usePathname() ?? "";
   const router = useRouter();
@@ -156,7 +154,7 @@ export function TrialCoach() {
         card.style.left = `${placeRect.left}px`;
         card.style.width = `${placeRect.width}px`;
         card.style.bottom = "auto";
-        card.style.maxHeight = `${placeRect.height}px`;
+        card.style.maxHeight = "calc(100vh - 6rem)";
         card.style.visibility = "visible";
       } else if (card) {
         card.style.visibility = pathname === "/trial" ? "hidden" : "visible";
@@ -259,15 +257,8 @@ export function TrialCoach() {
       >
         <p className="text-base text-muted-foreground">{step >= STEPS.length ? "Complete" : `Step ${step + 1} of ${STEPS.length}`}</p>
         <h2 className="mt-1 text-2xl text-foreground">{step >= STEPS.length ? "That is a Blink run" : STEPS[step].title}</h2>
-        <p className="mt-2 text-lg leading-snug text-foreground">{here.body}</p>
-        <ol className="mt-4 min-h-0 flex-1 space-y-1.5 overflow-y-auto text-base">
-          {STEPS.map((item, index) => (
-            <li key={item.title} className={index === step ? "font-medium text-foreground" : "text-muted-foreground"}>
-              <span className="tabular-nums">{index + 1}.</span> {item.title}
-            </li>
-          ))}
-        </ol>
-        <div className="mt-4 flex items-center justify-between gap-3">
+        <p className="mt-2.5 text-lg leading-snug text-foreground">{here.body}</p>
+        <div className="mt-6 flex items-center justify-between gap-3">
           <button type="button" className="glass-press text-base text-muted-foreground hover:text-foreground" onClick={() => setTrial(null)} data-testid="end-trial">
             End walkthrough
           </button>

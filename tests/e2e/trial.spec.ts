@@ -21,6 +21,16 @@ async function walkTrial(page: Page) {
     if ((await card.count()) === 0) break;
     await expect(page.getByTestId("trial-next")).toBeVisible();
     await page.waitForTimeout(500);
+    const wrapped = await page.evaluate(() => {
+      for (const bar of document.querySelectorAll('[role="tablist"]')) {
+        const tabs = Array.from(bar.querySelectorAll<HTMLElement>('[role="tab"]'));
+        if (tabs.length < 2) continue;
+        const tops = tabs.map((t) => Math.round(t.getBoundingClientRect().top));
+        if (Math.max(...tops) - Math.min(...tops) > 3) return bar.getAttribute("aria-label") ?? "tablist";
+      }
+      return null;
+    });
+    expect(wrapped, "a sliding tab bar wrapped onto two lines").toBeNull();
     const now = `${page.url()} ${await card.getAttribute("data-step")} ${await card.locator("p").nth(1).textContent()}`;
     expect(now, "a trial click changed nothing").not.toBe(last);
     last = now;

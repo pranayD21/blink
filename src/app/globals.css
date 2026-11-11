@@ -272,7 +272,25 @@
 }
 
 .glass-nav {
+  display: inline-flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  max-width: 100%;
+  overflow-x: auto;
+  scrollbar-width: none;
   border-radius: 999px;
+  background: rgba(0, 0, 0, 0.05);
+  box-shadow:
+    inset 1px 1px 1px -0.5px rgba(0, 0, 0, 0.25),
+    inset -1px -1px 1px -0.5px rgba(255, 255, 255, 0.75),
+    0 8px 24px rgba(0, 0, 0, 0.08);
+}
+
+.glass-nav::-webkit-scrollbar {
+  display: none;
+}
+
+.dark .glass-nav {
   background: rgba(255, 255, 255, 0.06);
   box-shadow:
     inset 1px 1px 1px -0.5px rgba(255, 255, 255, 0.55),
@@ -281,16 +299,27 @@
 }
 
 .glass-nav-thumb {
+  pointer-events: none;
   position: absolute;
-  top: 4px;
-  bottom: 4px;
+  top: 0;
   left: 0;
   border-radius: 999px;
+  background: rgba(0, 0, 0, 0.09);
+  box-shadow:
+    inset 1px 1px 0 rgba(255, 255, 255, 0.8),
+    inset -1px -1px 0 rgba(0, 0, 0, 0.14);
+  transition:
+    transform 0.42s cubic-bezier(0.22, 1, 0.36, 1),
+    width 0.42s cubic-bezier(0.22, 1, 0.36, 1),
+    height 0.42s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.2s ease;
+}
+
+.dark .glass-nav-thumb {
   background: rgba(255, 255, 255, 0.16);
   box-shadow:
     inset 1px 1px 0 rgba(255, 255, 255, 0.7),
     inset -1px -1px 0 rgba(255, 255, 255, 0.25);
-  transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1), width 0.45s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.2s ease;
 }
 
 .home-stage {

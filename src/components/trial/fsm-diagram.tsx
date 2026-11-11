@@ -3,10 +3,10 @@
 import type { FsmState, KleeneVal, MonitorSnapshot } from "./call-data";
 
 const STATE_LABEL: Record<FsmState, string> = {
-  UNASSESSED: "Unassessed",
+  UNASSESSED: "Listening",
   NEEDS_CONTEXT: "Needs context",
-  NOT_TRIGGERED: "Not triggered",
-  REVIEW_REQUIRED: "Review required",
+  NOT_TRIGGERED: "Safe",
+  REVIEW_REQUIRED: "Flagged",
   ESCALATION_REQUESTED: "Escalated",
 };
 
@@ -25,144 +25,101 @@ function edgeStroke(kind: KleeneVal, active: boolean): string {
   return "var(--success)";
 }
 
-/** Interactive SVG state machine for M1, M2, or M4, showing live transitions and Kleene guard math. */
+/** Clean, legible state machine diagram and plain-English condition checklist. */
 export function FsmDiagram({ monitor }: { monitor: MonitorSnapshot }) {
   const rightState = monitor.terminalState;
-  const nodes: { id: FsmState; x: number; y: number }[] = [
-    { id: "UNASSESSED", x: 18, y: 84 },
-    { id: "NEEDS_CONTEXT", x: 256, y: 14 },
-    { id: "NOT_TRIGGERED", x: 256, y: 154 },
-    { id: rightState, x: 500, y: 84 },
+  const nodes: { id: FsmState; x: number; y: number; w: number }[] = [
+    { id: "UNASSESSED", x: 8, y: 69, w: 122 },
+    { id: "NEEDS_CONTEXT", x: 164, y: 10, w: 148 },
+    { id: "NOT_TRIGGERED", x: 164, y: 128, w: 148 },
+    { id: rightState, x: 344, y: 69, w: 118 },
   ];
 
   const isEdgeOn = (from: FsmState, to: FsmState, res: KleeneVal) =>
     monitor.prevState === from && monitor.state === to && monitor.edgeResult === res;
 
-  const edges: { from: FsmState; to: FsmState; res: KleeneVal; d: string; lx: number; ly: number; label: string }[] = [
-    {
-      from: "UNASSESSED",
-      to: "NEEDS_CONTEXT",
-      res: "indeterminate",
-      d: "M 178 96 C 212 96, 214 38, 256 38",
-      lx: 196,
-      ly: 54,
-      label: "indeterminate",
-    },
-    {
-      from: "UNASSESSED",
-      to: "NOT_TRIGGERED",
-      res: "false",
-      d: "M 178 122 C 212 122, 214 178, 256 178",
-      lx: 204,
-      ly: 168,
-      label: "false",
-    },
-    {
-      from: "UNASSESSED",
-      to: rightState,
-      res: "true",
-      d: "M 178 108 L 500 108",
-      lx: 338,
-      ly: 100,
-      label: rightState === "ESCALATION_REQUESTED" ? "true · escalate" : "true",
-    },
-    {
-      from: "NEEDS_CONTEXT",
-      to: rightState,
-      res: "true",
-      d: "M 426 38 C 466 38, 468 96, 500 96",
-      lx: 472,
-      ly: 54,
-      label: "true",
-    },
-    {
-      from: "NEEDS_CONTEXT",
-      to: "NOT_TRIGGERED",
-      res: "false",
-      d: "M 340 62 L 340 154",
-      lx: 362,
-      ly: 132,
-      label: "false",
-    },
+  const edges: { from: FsmState; to: FsmState; res: KleeneVal; d: string }[] = [
+    { from: "UNASSESSED", to: "NEEDS_CONTEXT", res: "indeterminate", d: "M 130 82 C 148 82, 148 33, 164 33" },
+    { from: "UNASSESSED", to: "NOT_TRIGGERED", res: "false", d: "M 130 102 C 148 102, 148 151, 164 151" },
+    { from: "UNASSESSED", to: rightState, res: "true", d: "M 130 92 L 344 92" },
+    { from: "NEEDS_CONTEXT", to: rightState, res: "true", d: "M 312 33 C 328 33, 328 82, 344 82" },
   ];
+
+  const stateTone =
+    monitor.state === "REVIEW_REQUIRED" || monitor.state === "ESCALATION_REQUESTED"
+      ? "font-semibold text-destructive"
+      : monitor.state === "NEEDS_CONTEXT"
+        ? "font-semibold text-warning"
+        : monitor.state === "NOT_TRIGGERED"
+          ? "font-semibold text-success"
+          : "font-medium text-muted-foreground";
 
   return (
     <div className="space-y-4" data-testid={`fsm-${monitor.id}`}>
       <div className="fsm-box">
-        <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2">
-          <span className="text-base font-medium text-foreground">
-            Monitor {monitor.id} · Rule {monitor.ruleId} ({monitor.clause})
-          </span>
-          <span className="text-base text-muted-foreground">{monitor.title}</span>
+        <div className="flex flex-wrap items-baseline justify-between gap-2">
+          <span className="text-lg font-medium text-foreground">Rule: {monitor.title}</span>
+          <span className={`text-base ${stateTone}`}>{STATE_LABEL[monitor.state]}</span>
         </div>
 
-        <svg viewBox="0 0 680 216" className="h-auto w-full select-none" role="img" aria-label={`State machine ${monitor.id}, current state ${STATE_LABEL[monitor.state]}`}>
+        <svg
+          viewBox="0 0 470 184"
+          className="mt-2 h-auto w-full select-none"
+          role="img"
+          aria-label={`State machine for ${monitor.title}, current state ${STATE_LABEL[monitor.state]}`}
+        >
           <defs>
-            <marker id="fsm-arrow-muted" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <marker id={`arrow-muted-${monitor.id}`} viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
               <path d="M 0 1 L 9 5 L 0 9 z" fill="var(--border)" />
             </marker>
-            <marker id="fsm-arrow-true" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <marker id={`arrow-true-${monitor.id}`} viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
               <path d="M 0 1 L 9 5 L 0 9 z" fill="var(--destructive)" />
             </marker>
-            <marker id="fsm-arrow-indeterminate" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <marker id={`arrow-indeterminate-${monitor.id}`} viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
               <path d="M 0 1 L 9 5 L 0 9 z" fill="var(--warning)" />
             </marker>
-            <marker id="fsm-arrow-false" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <marker id={`arrow-false-${monitor.id}`} viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
               <path d="M 0 1 L 9 5 L 0 9 z" fill="var(--success)" />
             </marker>
           </defs>
 
           {edges.map((edge) => {
             const on = isEdgeOn(edge.from, edge.to, edge.res);
-            const marker = on ? `url(#fsm-arrow-${edge.res})` : "url(#fsm-arrow-muted)";
+            const marker = on ? `url(#arrow-${edge.res}-${monitor.id})` : `url(#arrow-muted-${monitor.id})`;
             return (
-              <g key={`${edge.from}-${edge.to}`}>
-                <path
-                  d={edge.d}
-                  fill="none"
-                  stroke={edgeStroke(edge.res, on)}
-                  strokeWidth={on ? 2.6 : 1.4}
-                  strokeDasharray={on ? undefined : "4 4"}
-                  markerEnd={marker}
-                />
-                <text
-                  x={edge.lx}
-                  y={edge.ly}
-                  textAnchor="middle"
-                  style={{
-                    fontSize: 12,
-                    fill: on ? "var(--foreground)" : "var(--muted-foreground)",
-                    fontWeight: on ? 600 : 400,
-                  }}
-                >
-                  {edge.label}
-                </text>
-              </g>
+              <path
+                key={`${edge.from}-${edge.to}`}
+                d={edge.d}
+                fill="none"
+                stroke={edgeStroke(edge.res, on)}
+                strokeWidth={on ? 2.8 : 1.5}
+                strokeDasharray={on ? undefined : "4 4"}
+                markerEnd={marker}
+              />
             );
           })}
 
           {nodes.map((node) => {
             const active = monitor.state === node.id;
-            const visited = monitor.path.some((p) => p.state === node.id);
-            const dot = stateColor(node.id, active || visited);
-            const width = node.id === "UNASSESSED" ? 160 : 170;
+            const visited = monitor.prevState === node.id || active;
+            const dot = stateColor(node.id, visited);
             return (
               <g key={node.id} transform={`translate(${node.x}, ${node.y})`}>
                 <rect
-                  width={width}
-                  height={48}
-                  rx={24}
+                  width={node.w}
+                  height={46}
+                  rx={23}
                   fill={active ? "var(--secondary)" : "var(--card)"}
                   stroke={active ? dot : "var(--border)"}
-                  strokeWidth={active ? 2.2 : 1.2}
+                  strokeWidth={active ? 2.4 : 1.3}
                 />
-                <circle cx={22} cy={24} r={5} fill={dot} />
+                <circle cx={20} cy={23} r={5} fill={dot} />
                 <text
-                  x={36}
+                  x={33}
                   y={28}
                   style={{
-                    fontSize: 13.5,
-                    fontWeight: active ? 600 : 400,
+                    fontSize: 14.5,
+                    fontWeight: active ? 600 : 450,
                     fill: active ? "var(--foreground)" : "var(--muted-foreground)",
                   }}
                 >
@@ -172,58 +129,25 @@ export function FsmDiagram({ monitor }: { monitor: MonitorSnapshot }) {
             );
           })}
         </svg>
-
-        <div className="mt-2 flex flex-wrap items-center gap-2 text-base text-muted-foreground" data-testid="live-fsm-path">
-          <span>Path:</span>
-          {monitor.path.map((step, i) => (
-            <span key={`${step.state}-${i}`} className="inline-flex items-center gap-2">
-              {i > 0 && <span aria-hidden>→</span>}
-              <span className={i === monitor.path.length - 1 ? "font-medium text-foreground" : "text-muted-foreground"}>
-                {STATE_LABEL[step.state]}
-                {step.at ? ` (${step.at})` : ""}
-              </span>
-            </span>
-          ))}
-        </div>
       </div>
 
       <div className="fsm-box">
-        <div className="flex flex-wrap items-baseline justify-between gap-2">
-          <span className="text-base font-medium text-foreground">Kleene three-valued guard</span>
-          <span className="text-base text-muted-foreground">
-            Result:{" "}
-            <span
-              className={
-                monitor.guardResult === "true"
-                  ? "font-semibold text-destructive"
-                  : monitor.guardResult === "indeterminate"
-                    ? "font-semibold text-warning"
-                    : "font-semibold text-success"
-              }
-            >
-              {monitor.guardResult}
-            </span>
-          </span>
-        </div>
-        <p className="mt-1 text-base text-muted-foreground">{monitor.formula}</p>
+        <span className="text-lg font-medium text-foreground">Rule checklist</span>
 
-        <ul className="mt-3 space-y-2.5">
-          {monitor.predicates.map((pred) => (
-            <li key={pred.name} className="flex flex-wrap items-baseline justify-between gap-2 rounded-xl bg-muted/60 px-4 py-2.5 text-base">
-              <div className="min-w-0">
-                <span className="font-medium text-foreground">{pred.phrase}</span>
-                <span className="ml-2 text-muted-foreground">· {pred.detail}</span>
-              </div>
+        <ul className="mt-3 space-y-2">
+          {monitor.conditions.map((cond) => (
+            <li key={cond.label} className="flex items-center justify-between gap-3 rounded-xl bg-muted/60 px-4 py-2.5 text-base">
+              <span className="text-foreground">{cond.label}</span>
               <span
                 className={
-                  pred.tri === "true"
-                    ? "shrink-0 font-medium text-destructive"
-                    : pred.tri === "indeterminate"
-                      ? "shrink-0 font-medium text-warning"
-                      : "shrink-0 font-medium text-success"
+                  cond.tri === "true"
+                    ? "shrink-0 font-semibold text-destructive"
+                    : cond.tri === "indeterminate"
+                      ? "shrink-0 font-semibold text-warning"
+                      : "shrink-0 font-semibold text-success"
                 }
               >
-                {pred.evidence} → {pred.tri}
+                {cond.answer}
               </span>
             </li>
           ))}
