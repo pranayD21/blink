@@ -236,7 +236,7 @@ function describeError(err: unknown, countsOnly: boolean): string {
   return countsOnly ? code : `${code}: ${err instanceof Error ? err.message : String(err)}`;
 }
 
-interface InstalledPolicy {
+export interface InstalledPolicy {
   name: string;
   versionId: string;
   /** Blocking coverage issues the policy was loaded despite (always 0 for the demo policy). */
@@ -246,8 +246,11 @@ interface InstalledPolicy {
 const OWNER_ID = "user_dana";
 const ANALYST_ID = "user_priya";
 
-/** Puts each policy in the database as its own version. Real policies go through the same validator; none is approved. */
-function installPolicies(names: string[]): InstalledPolicy[] {
+/**
+ * Puts each policy in the database as its own version. Real policies go through the same validator; none is approved.
+ * Exported for `pnpm eval:spoken` (Task 38), which installs a real policy into its scratch database the same way.
+ */
+export function installPolicies(names: string[]): InstalledPolicy[] {
   return names.map((name) =>
     transact((tx) => {
       const owner = loadActor(tx, OWNER_ID);
