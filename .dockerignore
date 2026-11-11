@@ -3,6 +3,7 @@
 data/
 desktop/
 spike/
+video/
 test-results/
 # Not needed to run, and some import desktop/, which next build would then fail to type-check.
 tests/
