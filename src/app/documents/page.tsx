@@ -15,14 +15,14 @@ export default async function DocumentsPage() {
   return (
     <PageShell
       title="Public documents"
-      description="The curated set that expert statements are compared with. A model extracts structured facts from each document, with a verbatim quote that code checks against the text. The comparison itself is deterministic. “Not found here” never means “proven nonpublic”."
+      description="Documents expert statements are checked against."
     >
       <div className="space-y-4">
         {docs.map((d) => (
           <DocumentCard key={d.id} doc={d} />
         ))}
       </div>
-      <p className="mt-4 text-xs text-muted-foreground">Ticking “verified” records that a reviewer checked the fact against the document. It changes the document&apos;s hash, so every analyzed case is compared again and decisions that depended on the old state reopen.</p>
+      <p className="mt-4 text-lg text-muted-foreground">Marking a fact verified changes the document, and open decisions are checked again.</p>
     </PageShell>
   );
 }

@@ -6,8 +6,8 @@ export function PageShell({ title, description, actions, children, className }: 
     <main className={cn("mx-auto w-full max-w-6xl px-6 py-6", className)}>
       <div className="mb-5 flex items-start justify-between gap-4">
         <div>
-          <h1 className="font-serif text-2xl text-foreground">{title}</h1>
-          {description && <p className="mt-1 max-w-3xl text-sm text-muted-foreground">{description}</p>}
+          <h1 className="text-3xl text-foreground">{title}</h1>
+          {description && <p className="mt-2 max-w-3xl text-lg leading-snug text-muted-foreground">{description}</p>}
         </div>
         {actions && <div className="flex shrink-0 items-center gap-2">{actions}</div>}
       </div>
@@ -41,5 +41,5 @@ export function Stat({ label, value, hint }: { label: string; value: React.React
 }
 
 export function EmptyState({ children, className }: { children: React.ReactNode; className?: string }) {
-  return <div className={cn("rounded-lg border border-dashed bg-muted/60 px-4 py-6 text-center text-sm text-muted-foreground", className)}>{children}</div>;
+  return <div className={cn("glass-surface px-6 py-10 text-center text-lg leading-snug text-muted-foreground", className)}>{children}</div>;
 }

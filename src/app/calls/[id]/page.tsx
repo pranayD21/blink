@@ -36,7 +36,7 @@ export default async function CallPage({ params }: PageProps<"/calls/[id]">) {
     <PageShell
       className="max-w-4xl"
       title={view.call.title}
-      description={`${facts}. Everything that happened, in order: open a moment to see each step, who or what decided it, and how long it took.`}
+      description={`${facts}. Each moment, in order.`}
       actions={
         <>
           <Link href="/calls" className="text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline">

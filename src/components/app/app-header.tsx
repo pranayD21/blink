@@ -67,15 +67,11 @@ export async function AppHeader() {
           <span
             data-testid="llm-mode"
             title={mode === "replay" ? "Model responses are served from committed recordings. No network call is made." : "Model responses are recorded as they are made; a request that already has a recording is served from it."}
-            className="text-xs text-muted-foreground"
+            className="text-base text-muted-foreground"
           >
             <StatusDot tone="ring">{mode === "replay" ? "Replay mode" : "Record mode"}</StatusDot>
           </span>
         )}
-        {/* Permanent: every screen of this demo shows that the data is synthetic. */}
-        <span data-testid="synthetic-pill" className="text-xs text-muted-foreground">
-          <StatusDot tone="warn">Synthetic data</StatusDot>
-        </span>
         {authMode() === "switcher" ? <RoleSwitcher current={actor} users={[...DEMO_USERS]} /> : <AccountMenu current={actor} />}
       </div>
     </header>

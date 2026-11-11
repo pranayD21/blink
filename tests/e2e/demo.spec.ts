@@ -63,9 +63,8 @@ test("the demo script runs end to end from recordings", async ({ page, baseURL }
   });
 
   // ── 1. The queue ──────────────────────────────────────────────────────────
-  await test.step("1. queue with one case and the synthetic-data pill", async () => {
+  await test.step("1. queue with one case", async () => {
     await page.goto("/cases");
-    await expect(page.getByTestId("synthetic-pill")).toHaveText("Synthetic data");
     await expect(page.getByTestId("case-row-case_halvorsen")).toContainText("Halvorsen Pumps");
     await expect(page.getByTestId("no-policy-banner")).toBeVisible();
   });

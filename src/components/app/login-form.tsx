@@ -38,7 +38,7 @@ export function LoginForm({ next }: { next: string }) {
     <div className="flex min-h-0 flex-1 flex-col md:flex-row" data-testid="login-form">
       <section className="flex flex-1 items-center justify-center px-8 py-12">
         <div className="w-full max-w-md">
-          <h1 className="font-serif text-4xl leading-tight text-foreground md:text-5xl">{creating ? "Create an account" : "Sign in"}</h1>
+          <h1 className="text-4xl leading-tight text-foreground md:text-5xl">{creating ? "Create an account" : "Sign in"}</h1>
           <p className="mt-3 text-sm text-muted-foreground">{creating ? "A banker account. You can open calls and read what compliance has released." : "Blink, for the people on the call and the people who review it."}</p>
 
           <form className="mt-8 space-y-4" onSubmit={submit}>
@@ -98,7 +98,7 @@ export function LoginForm({ next }: { next: string }) {
       <section className="relative hidden flex-1 md:block">
         <div className="aurora-field" aria-hidden />
         <div className="absolute inset-0 flex items-end p-12">
-          <p className="max-w-sm font-serif text-3xl leading-snug text-foreground">Each turn is read, then checked against the firm&apos;s policy, while the call is still going.</p>
+          <p className="max-w-sm text-3xl leading-snug text-foreground">Each turn is read against the firm&apos;s policy while the call is still going.</p>
         </div>
       </section>
     </div>

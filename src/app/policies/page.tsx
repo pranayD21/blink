@@ -17,7 +17,7 @@ export default async function PoliciesPage() {
   return (
     <PageShell
       title="Policy versions"
-      description="The firm's expert-call policy, compiled into monitors that code can check. A model drafts the compilation; a validator enumerates every combination of evidence; the policy owner approves one exact bundle hash. Only an ACTIVE version is used to evaluate calls."
+      description="The policy, compiled into rules. Only an approved version evaluates calls."
       actions={
         owner ? (
           <Button asChild size="sm" data-testid="new-policy">

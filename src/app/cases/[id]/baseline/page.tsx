@@ -33,7 +33,7 @@ export default async function BaselinePage({ params }: PageProps<"/cases/[id]/ba
   return (
     <PageShell
       title="Baseline review"
-      description={`${view.case.title}. Review the call with only the transcript and a summary, the way it is done without Blink. The time you take is compared with a Blink review on the Metrics page.`}
+      description={`${view.case.title}. Review from the transcript alone. The time is compared with a Blink review.`}
       actions={
         <Button asChild variant="ghost" size="sm">
           <Link href={`/cases/${id}`}>

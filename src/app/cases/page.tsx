@@ -52,7 +52,7 @@ export default async function CasesPage() {
       )}
       {ready && !policy && (
         <div className="glass-surface mb-6 flex items-center justify-between gap-4 px-5 py-4 text-base text-foreground" data-testid="no-policy-banner">
-          <span>No policy is active yet. Nothing is evaluated until one is approved.</span>
+          <span className="text-lg">No policy is active. Nothing is evaluated until one is approved.</span>
           <Button asChild className="h-10 px-5">
             <Link href="/policies">Go to Policy</Link>
           </Button>

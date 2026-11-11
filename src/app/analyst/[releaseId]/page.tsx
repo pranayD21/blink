@@ -21,7 +21,7 @@ export default async function ReleasedTranscriptPage({ params }: PageProps<"/ana
   return (
     <PageShell
       title={view.release.caseTitle}
-      description={`Transcript released ${formatDateTime(view.release.releasedAt)}. Passages compliance kept hidden are blanked.`}
+      description={`Released ${formatDateTime(view.release.releasedAt)}. Hidden passages are blank.`}
       actions={
         <Link href="/analyst" className="text-sm text-muted-foreground underline-offset-4 hover:underline">
           Back to released briefs

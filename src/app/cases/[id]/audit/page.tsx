@@ -25,7 +25,7 @@ export default async function AuditPage({ params }: PageProps<"/cases/[id]/audit
   return (
     <PageShell
       title="Audit log"
-      description={`${row.title}. Who did what, when, and on which evidence. Append-only and hash-chained.`}
+      description={`${row.title}. Who did what, and on which evidence.`}
       actions={
         <Button asChild variant="ghost" size="sm">
           <Link href={`/cases/${id}`}>

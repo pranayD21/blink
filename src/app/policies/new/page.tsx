@@ -32,7 +32,7 @@ export default async function NewPolicyPage() {
   return (
     <PageShell
       title="New policy version"
-      description="Paste the policy in plain language. Blink asks a model to inventory its clauses, turn them into typed rules, and assemble one monitor per rule. Code then validates the result. Nothing is used to evaluate a call until you approve the exact bundle hash."
+      description="Paste the policy. Nothing evaluates a call until you approve it."
       actions={
         <Button asChild variant="ghost" size="sm">
           <Link href="/policies">

@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Instrument_Sans, Instrument_Serif } from "next/font/google";
+import { Instrument_Sans } from "next/font/google";
 import { ThemeProvider } from "@/components/app/theme-provider";
 import { AppHeader } from "@/components/app/app-header";
 import { HeaderGate } from "@/components/app/header-gate";
@@ -8,7 +8,6 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import "./globals.css";
 
 const sans = Instrument_Sans({ subsets: ["latin"], variable: "--font-instrument-sans", display: "swap" });
-const serif = Instrument_Serif({ subsets: ["latin"], weight: "400", variable: "--font-instrument-serif", display: "swap" });
 
 export const metadata: Metadata = {
   title: "Blink — expert-call compliance review",
@@ -21,7 +20,7 @@ export const dynamic = "force-dynamic";
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${sans.variable} ${serif.variable} h-full antialiased`} suppressHydrationWarning>
+    <html lang="en" className={`${sans.variable} h-full antialiased`} suppressHydrationWarning>
       <body className="relative flex min-h-full flex-col bg-background text-foreground">
         <div className="aurora-field aurora-fixed" aria-hidden />
         <svg className="pointer-events-none absolute size-0" aria-hidden>

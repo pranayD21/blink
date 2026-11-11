@@ -15,10 +15,10 @@ export default async function NewCasePage() {
   return (
     <PageShell
       title="New case"
-      description="The case packet tells Blink which company the call was about, what its fiscal calendar is, and who the expert is. Those facts are what the policy rules are checked against."
+      description="The company, its calendar, and the expert."
       actions={
         <Button asChild variant="ghost" size="sm">
-          <Link href="/">
+          <Link href="/cases">
             <ArrowLeft /> Case queue
           </Link>
         </Button>

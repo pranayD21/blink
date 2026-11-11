@@ -13,7 +13,7 @@ export default async function CallsPage() {
     return <RoleGate title="Calls are for compliance" message="This page shows how every call went, which only compliance reviewers and the policy owner may see." current={actor} switchTo={DEMO_USERS.filter((u) => u.role !== "analyst")} />;
   }
   return (
-    <PageShell className="max-w-4xl" title="Is Blink working?" description="How fast warnings reach the banker, the parts that can fail, and every recent problem. The figures cover every call so far.">
+    <PageShell className="max-w-4xl" title="Is Blink working?" description="How fast warnings reach the banker.">
       <CallsOverviewView overview={callsOverview(getDb(), actor)} canOpen={isReviewer(actor)} />
     </PageShell>
   );

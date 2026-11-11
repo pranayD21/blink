@@ -18,7 +18,7 @@ export default async function MetricsPage() {
   const m = metricsFor(getDb(), actor);
   if (m.scope === "stages") {
     return (
-      <PageShell title="Metrics" description="Model cost and latency per stage, measured from the calls the app recorded. Review times and findings are for compliance reviewers.">
+      <PageShell title="Metrics" description="Cost and latency of each model stage.">
         <CostPanel llm={m.llm} />
       </PageShell>
     );
@@ -29,8 +29,8 @@ export default async function MetricsPage() {
   const perCallCost = pricedCases.length > 0 ? pricedCases.reduce((n, c) => n + c.costUsd, 0) / pricedCases.length : null;
 
   return (
-    <PageShell title="Metrics" description="Everything here is measured from what the app recorded: review sessions, corrections, model calls, and the eval run.">
-      <div className="mb-5 rounded-lg border bg-card px-4 py-2.5 text-sm text-muted-foreground" data-testid="synthetic-note">
+    <PageShell title="Metrics" description="Measured from the calls this app recorded.">
+      <div className="glass-surface mb-5 px-5 py-4 text-lg text-muted-foreground" data-testid="synthetic-note">
         <StatusDot tone="warn">Synthetic fixtures. These numbers show the measurement works. They are not production accuracy.</StatusDot>
       </div>
 
