@@ -27,7 +27,11 @@ The build was frozen at the git tag `eval-freeze-1`. Run only that commit, and c
    - **Labels:** label a turn only where the authority itself says that statement conveyed inside information, and cite the paragraph or page.
      - For Dotson, the right answer is "flagged for compliance": the call should come back with something flagged. Label only what the decision itself identifies.
      - Record every judgment call in `source.md`.
-   - **Checks:** the real-fixtures checks (`tests/core/real-fixtures.test.ts`) can be pointed at the folder by hand to confirm the layout. Do not add the folder to the test.
+   - **Checks:** no script checks this layout outside the repository, because `tests/core/real-fixtures.test.ts` reads only the development folders. Do not point it at the sealed cases, and do not copy or link them into those folders. Check each case by hand:
+     - every turn appears word for word, in order, in `source.txt`;
+     - each speaker in `speakers.json` has the right role;
+     - every label names a real turn and cites a page or paragraph;
+     - `packet.json` and `expert.json` have the same fields as `fixtures/real/dev/gupta-lau/`.
 
 3. **Check out the freeze** in a clean checkout of the repository. For example, run `git worktree add <somewhere outside ~/.blink-sealed> eval-freeze-1`, or use a fresh clone at that tag. Then copy `.env.local` into it and run `pnpm i`. Do not modify any tracked file.
 
@@ -44,14 +48,14 @@ The build was frozen at the git tag `eval-freeze-1`. Run only that commit, and c
 5. **Judge coverage** for every turn the run reports as extracted but not flagged, as Task 37 Step 5 does.
    - Read the policy text in `fixtures/real/policies/<policy>.md`. That is allowed, because it is not a prompt.
    - Write `~/.blink-sealed/<id>/coverage-<policy>.json` as `{ "<turn>": { "covered": true | false, "clause": "<the clause, quoted from the policy, or 'none'>" } }`.
-   - Then re-score from the saved run without calling the model again, if the script allows it. If it does not, report the coverage judgement next to the counts.
+   - Do not re-run the script to fold the coverage in. It reads coverage files only while it runs, and a second run would call the model again. In the report, give the script's "not flagged" count as printed, and next to it your split into "with a covering clause" and "without one".
 
 6. **Write `docs/eval/2026-11-real-sealed.md`** with counts only.
    - **Per call and per policy:** labelled, hidden, not extracted, not flagged with a covering clause, not flagged without one, and other passages hidden.
-   - **Pass bars:** the bars from section 11 of `docs/superpowers/specs/2026-11-10-live-guidance-design.md`, each with a plain yes or no:
-     - at least 90% of the authority's passages hidden;
-     - no faulted call comes back with nothing flagged;
-     - at most one hidden passage per stay-quiet call, which is not measured here;
-     - the same result on four of five repeat runs, which is not run here.
-   - **Run details:** the tag's commit hash, the date and the spend.
+   - **Pass bars:** the bars from section 11 of `docs/superpowers/specs/2026-11-10-live-guidance-design.md`:
+     - at least 90% of the authority's passages hidden (yes or no);
+     - no faulted call comes back with nothing flagged (yes or no). "Nothing flagged" means both hidden and other passages hidden are 0 for that call, which matters for a call with no labelled turns;
+     - at most one hidden passage per stay-quiet call: write "not measured", because there is no stay-quiet call here;
+     - the same result on four of five repeat runs: write "not measured", because the sealed run is run once.
+   - **Run details:** the tag's commit hash, the date, the spend, and how many times the script ran (once, or once more after a setup fix, and what kind of fix).
    - **Nothing else from the material.** Commit only that file, on `main`, as `docs(eval): report the sealed run`.
