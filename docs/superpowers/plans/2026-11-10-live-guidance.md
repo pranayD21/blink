@@ -1551,10 +1551,10 @@ git commit   # docs(eval): draft the permission request for a stay-quiet test se
 - Create: `docs/eval/sealed-brief.md`
 - Modify: `docs/superpowers/plans/2026-11-10-live-guidance-notes.md`
 
-- [ ] **Step 1: Check the tree is green.** Run: `pnpm typecheck && pnpm lint && pnpm test && pnpm build && pnpm e2e && pnpm demo:check && pnpm live:check`. Expected: all exit 0.
-- [ ] **Step 2: Tag the freeze.** Run: `git tag eval-freeze-1`. From here, no prompt, predicate or rule changes until the sealed run is reported. Write the tag's commit hash in the notes file.
-- [ ] **Step 3: Write `docs/eval/sealed-brief.md`** for a separate session that has not seen this work. It says: fetch the FSA final notice on Einhorn (`https://www.fca.org.uk/publication/final-notices/david-einhorn.pdf`) and *FINRA v. Dotson* (`https://www.finra.org/sites/default/files/OHO_Dotson_20090208031-02_080715.pdf`); build each as a case in the layout of `fixtures/real/README.md` under `~/.blink-sealed/`, outside the repository; label only what the authority itself says, with Dotson's right answer being "flagged for compliance"; check out the tag `eval-freeze-1`; do not open anything under `src/server/llm/prompts/`; run `BLINK_LLM_MODE=live pnpm eval:real --set ~/.blink-sealed --policies oaktree,sage-rock,tcw --counts-only` once; judge coverage for unflagged turns as Task 37 step 5 describes; write the counts to `docs/eval/2026-11-real-sealed.md` and nothing else from the material.
-- [ ] **Step 4: Commit.**
+- [x] **Step 1: Check the tree is green.** Run: `pnpm typecheck && pnpm lint && pnpm test && pnpm build && pnpm e2e && pnpm demo:check && pnpm live:check`. Expected: all exit 0.
+- [x] **Step 2: Tag the freeze.** Run: `git tag eval-freeze-1`. From here, no prompt, predicate or rule changes until the sealed run is reported. Write the tag's commit hash in the notes file.
+- [x] **Step 3: Write `docs/eval/sealed-brief.md`** for a separate session that has not seen this work. It says: fetch the FSA final notice on Einhorn (`https://www.fca.org.uk/publication/final-notices/david-einhorn.pdf`) and *FINRA v. Dotson* (`https://www.finra.org/sites/default/files/OHO_Dotson_20090208031-02_080715.pdf`); build each as a case in the layout of `fixtures/real/README.md` under `~/.blink-sealed/`, outside the repository; label only what the authority itself says, with Dotson's right answer being "flagged for compliance"; check out the tag `eval-freeze-1`; do not open anything under `src/server/llm/prompts/`; run `BLINK_LLM_MODE=live pnpm eval:real --set ~/.blink-sealed --policies oaktree,sage-rock,tcw --counts-only` once; judge coverage for unflagged turns as Task 37 step 5 describes; write the counts to `docs/eval/2026-11-real-sealed.md` and nothing else from the material.
+- [x] **Step 4: Commit.**
 
 ```bash
 git add docs/eval/sealed-brief.md docs/superpowers/plans/2026-11-10-live-guidance-notes.md

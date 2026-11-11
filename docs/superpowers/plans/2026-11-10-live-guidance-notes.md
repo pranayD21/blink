@@ -378,3 +378,10 @@ Step 1 is done: `pnpm live:prepare` (`scripts/prepare-live-call.sh`) resets `dat
 - **`speech_ended_at` is not the end of speech.** It is the end of Flux's audio window, which came a median 0.79 s (95th percentile 1.49 s, nearest-rank, n = 77) after the synthetic speech really ended. Task 20's measure therefore leaves out most of Flux's end-of-turn wait. Measured from the true end of the audio, the typical time is 3.02 s, 3.96 s at the 95th percentile.
 - **Earnings-21** (`4387332` Zagg, `4366522` Aldeyra; CC BY-SA 4.0; first 10 minutes each): word error rate 11.9%, numbers correct 8 of 71, company names correct 51 of 60. Flux writes most numbers as words, and the prescribed normaliser expands nothing, so the numbers figure mostly measures that. The company-name misses are mostly the issuers' own names (Zagg, Aldeyra).
 
+
+## Task 40: the freeze
+
+- **Tag:** `eval-freeze-1` is commit `5b495fa83ea61ad520eb5aee2c4e358da4188b0a` (main on 2026-11-10, after Tasks 37 to 39 and the other developer's UI commits up to 6a7a08a).
+- **Checks on the tagged commit:** `pnpm typecheck`, `lint`, `test` (1094 tests), `build`, `e2e` (1 demo spec and 8 live specs), `demo:check` and `live:check` all exit 0.
+- **The freeze:** from here, no prompt, predicate or rule changes until the sealed run is reported. That means `src/server/llm/prompts/**`, `src/core/predicates/**` and `src/core/policy/**`, the same paths the other developer already avoids. UI, docs and deployment work can go on.
+- **The sealed run:** `docs/eval/sealed-brief.md` is the brief for a separate session (Task 41, owner). It runs the tag, never `main`. The tag is pushed to origin so that a fresh clone can check it out.
