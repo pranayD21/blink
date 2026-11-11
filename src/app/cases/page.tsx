@@ -59,11 +59,11 @@ export default async function CasesPage() {
         </div>
       )}
 
-      {reviewer && (
+      {reviewer && summary.inReview > 0 && (
         <div className="mb-6 flex flex-wrap items-baseline gap-x-8 gap-y-1 text-base" data-testid="queue-figures">
           <Figure label="in review" value={String(summary.inReview)} />
-          <Figure label="average review time" value={summary.avgReviewMinutes === null ? "none" : `${summary.avgReviewMinutes} min`} />
-          <Figure label="findings awaiting escalation" value={summary.awaitingEscalation === null ? "0" : String(summary.awaitingEscalation)} />
+          {summary.avgReviewMinutes !== null && <Figure label="average review" value={`${summary.avgReviewMinutes} min`} />}
+          {summary.awaitingEscalation ? <Figure label="escalated" value={String(summary.awaitingEscalation)} /> : null}
         </div>
       )}
 
@@ -80,8 +80,7 @@ export default async function CasesPage() {
                 <TableHead>Expert</TableHead>
                 <TableHead>Call date</TableHead>
                 <TableHead>State</TableHead>
-                <TableHead>Open findings</TableHead>
-                <TableHead className="text-right">Time in review</TableHead>
+                <TableHead className="text-right">Findings</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -90,25 +89,22 @@ export default async function CasesPage() {
                 return (
                   <TableRow key={c.id} data-testid={`case-row-${c.id}`}>
                     <TableCell className="font-medium text-foreground">
-                      <Link href={`/cases/${c.id}`} className="hover:underline">
+                      <Link href={`/cases/${c.id}`} className="text-lg hover:underline">
                         {c.title}
                       </Link>
-                      <div className="font-normal text-muted-foreground">
-                        {c.issuer} ({c.ticker}) · {c.transcriptVersion ? `transcript v${c.transcriptVersion}` : "no transcript yet"}
-                      </div>
                     </TableCell>
                     <TableCell>{c.expertName}</TableCell>
-                    <TableCell className="tabular-nums">{formatDate(c.callDate)}</TableCell>
+                    <TableCell className="tabular-nums text-muted-foreground">{formatDate(c.callDate)}</TableCell>
                     <TableCell>
                       <StateChip state={c.status} />
                     </TableCell>
-                    <TableCell className="tabular-nums">
+                    <TableCell className="text-right tabular-nums">
                       {c.findingCounts === null ? (
-                        <span className="text-muted-foreground">compliance only</span>
+                        <span className="text-muted-foreground">Compliance only</span>
                       ) : open.length === 0 ? (
-                        <span className="text-muted-foreground">none</span>
+                        <span className="text-muted-foreground">—</span>
                       ) : (
-                        <div className="flex flex-wrap gap-x-3 gap-y-0.5">
+                        <div className="inline-flex flex-wrap justify-end gap-x-3 gap-y-0.5">
                           {open.map((s) => (
                             <StatusDot key={s} tone={dotOf(s)}>
                               {c.findingCounts![s]} {humanize(s).toLowerCase()}
@@ -117,7 +113,6 @@ export default async function CasesPage() {
                         </div>
                       )}
                     </TableCell>
-                    <TableCell className="text-right tabular-nums">{c.reviewMinutes === null ? "none" : `${c.reviewMinutes} min`}</TableCell>
                   </TableRow>
                 );
               })}

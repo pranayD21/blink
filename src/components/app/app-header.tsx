@@ -2,12 +2,10 @@ import Link from "next/link";
 import { DEMO_USERS } from "@/server/auth/actor";
 import { authMode } from "@/server/auth/mode";
 import { optionalPageActor } from "@/server/auth/session";
-import { llmMode } from "@/server/llm/client";
 import { BlinkMark } from "@/components/home/blink-mark";
 import { AccountMenu } from "./account-menu";
 import { GlassNav } from "./glass-nav";
 import { RoleSwitcher } from "./role-switcher";
-import { StatusDot } from "./status-dot";
 import { TrialButton } from "./trial-button";
 
 const NAV: Record<string, { href: string; label: string }[]> = {
@@ -56,7 +54,6 @@ export async function AppHeader() {
       </header>
     );
   }
-  const mode = llmMode();
   return (
     <header className={HEADER_CLASS}>
       <Link href="/" className="glass-press text-foreground" aria-label="Blink home">
@@ -64,15 +61,6 @@ export async function AppHeader() {
       </Link>
       <GlassNav links={NAV[actor.role] ?? NAV.reviewer} />
       <div className="ml-auto flex items-center gap-3">
-        {mode !== "live" && (
-          <span
-            data-testid="llm-mode"
-            title={mode === "replay" ? "Model responses are served from committed recordings. No network call is made." : "Model responses are recorded as they are made; a request that already has a recording is served from it."}
-            className="text-base text-muted-foreground"
-          >
-            <StatusDot tone="ring">{mode === "replay" ? "Replay mode" : "Record mode"}</StatusDot>
-          </span>
-        )}
         <TrialButton />
         {authMode() === "switcher" ? <RoleSwitcher current={actor} users={[...DEMO_USERS]} /> : <AccountMenu current={actor} />}
       </div>

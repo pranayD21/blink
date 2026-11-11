@@ -37,15 +37,12 @@ export function RoleSwitcher({ current, users }: { current: DemoUser; users: Dem
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline" size="sm" className="h-8 gap-2 px-2.5" disabled={busy || pending} data-testid="role-switcher">
-          <UserRound className="size-3.5 text-muted-foreground" />
+        <Button variant="outline" size="sm" className="h-10 gap-2 px-4 text-base" disabled={busy || pending} data-testid="role-switcher">
+          <UserRound className="size-4 text-muted-foreground" />
           <span className="font-medium" data-testid="current-user">
             {current.name}
           </span>
-          <span className="text-muted-foreground" data-testid="current-role">
-            {ROLE_LABEL[current.role]}
-          </span>
-          <ChevronDown className="size-3.5 text-muted-foreground" />
+          <ChevronDown className="size-4 text-muted-foreground" />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-64">
