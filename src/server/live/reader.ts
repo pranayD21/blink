@@ -17,10 +17,11 @@ export const LIVE_MODEL = () => process.env.BLINK_LIVE_MODEL || "claude-haiku-5-
 
 /** A turn the reader cannot finish in this time is recorded as not read live. */
 export const READ_TIMEOUT_MS = 2500;
+/** Network budget in live mode so 25-field Haiku structured reads (~2.7–4.2 s) complete reliably. */
+export const LIVE_READ_TIMEOUT_MS = 8500;
 /**
  * A recording run waits for the whole answer instead: it records what the reader says, and the
- * time limit is not part of the request hash, so replay serves the same answer. Live and replay
- * keep READ_TIMEOUT_MS.
+ * time limit is not part of the request hash, so replay serves the same answer.
  */
 export const RECORD_TIMEOUT_MS = 30_000;
 
@@ -55,7 +56,7 @@ export const readTurn: LiveReader = async (input) => {
       maxTokens: 2000,
       model: LIVE_MODEL(),
       thinking: "disabled",
-      timeoutMs: llmMode() === "record" ? RECORD_TIMEOUT_MS : READ_TIMEOUT_MS,
+      timeoutMs: llmMode() === "record" ? RECORD_TIMEOUT_MS : llmMode() === "live" ? LIVE_READ_TIMEOUT_MS : READ_TIMEOUT_MS,
       maxRetries: 0,
       ref: input.ref,
     });

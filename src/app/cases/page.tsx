@@ -39,9 +39,14 @@ export default async function CasesPage() {
       title="Cases"
       actions={
         actor.role === "analyst" ? (
-          <Button asChild className="h-14 px-10 text-base">
-            <Link href="/call">Start call</Link>
-          </Button>
+          <div className="flex flex-wrap items-center gap-3">
+            <Button asChild variant="outline" className="h-12 px-6 text-base" data-testid="new-case">
+              <Link href="/cases/new">New case</Link>
+            </Button>
+            <Button asChild className="h-12 px-8 text-base">
+              <Link href="/call">Start call</Link>
+            </Button>
+          </div>
         ) : null
       }
     >

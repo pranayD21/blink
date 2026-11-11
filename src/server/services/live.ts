@@ -20,7 +20,8 @@ import { probeRuleIds } from "@/core/live/probe";
 import { liveTranscriptText } from "@/core/live/transcript";
 import type { PublicMatchFact } from "@/core/predicates/registry";
 import { type CompiledPolicy, evaluateClaim } from "@/core/runtime/evaluateClaim";
-import type { ClaimRecord } from "@/core/types";
+import { type GuardTraceNode, traceLeaves } from "@/core/runtime/monitorReducer";
+import type { ClaimRecord, Tri } from "@/core/types";
 import { appendAudit } from "../audit/log";
 import { requireCaseAccess } from "../auth/access";
 import { type Actor, requireRole } from "../auth/actor";
@@ -147,6 +148,15 @@ export const TurnSchema = z.strictObject({
   transcribedAt: z.string(),
 });
 
+export interface LiveMonitorTelemetry {
+  monitorId: string;
+  ruleId: string;
+  prevState: string;
+  nextState: string;
+  result: Tri;
+  predicates: { name: string; tri: Tri }[];
+}
+
 export interface TurnDecision {
   seq: number;
   pill: { level: PillLevel; text: string };
@@ -154,6 +164,8 @@ export interface TurnDecision {
   note: string;
   decidedAt: string;
   readStatus: "read" | "timeout" | "refused" | "error";
+  /** Enum-only state-machine telemetry (never transcript words, quotes, or summaries). */
+  monitors: LiveMonitorTelemetry[];
 }
 
 /** One stored monitor state per claim: where each monitor stands after the latest turn. */
@@ -181,12 +193,35 @@ const label = (seq: number) => `T${seq}`;
 
 const REVIEW_STATES: ReadonlySet<string> = new Set(["REVIEW_REQUIRED", "ESCALATION_REQUESTED"]);
 
+const monitorSeverity = (state: string): number =>
+  state === "ESCALATION_REQUESTED" ? 4 : state === "REVIEW_REQUIRED" ? 3 : state === "NEEDS_CONTEXT" ? 2 : state === "NOT_TRIGGERED" ? 1 : 0;
+
+function telemetryOf(row: CallTurnRow): LiveMonitorTelemetry[] {
+  const evals = fromJson<TurnEvaluations | null>(row.evaluationsJson, null);
+  if (!evals || Array.isArray(evals) || !Array.isArray(evals.claims) || evals.claims.length === 0) return [];
+  const chosen = [...evals.claims].sort((a, b) => {
+    const aMax = Math.max(0, ...a.monitors.map((m) => monitorSeverity(m.nextState)));
+    const bMax = Math.max(0, ...b.monitors.map((m) => monitorSeverity(m.nextState)));
+    return bMax - aMax;
+  })[0];
+  if (!chosen) return [];
+  return chosen.monitors.map((m) => ({
+    monitorId: m.monitorId,
+    ruleId: m.ruleId,
+    prevState: m.prevState,
+    nextState: m.nextState,
+    result: m.result === "true" || m.result === "false" ? m.result : "indeterminate",
+    predicates: m.guardTrace ? traceLeaves(m.guardTrace as GuardTraceNode).map((leaf) => ({ name: leaf.name, tri: leaf.tri })) : [],
+  }));
+}
+
 const decisionOf = (row: CallTurnRow): TurnDecision => ({
   seq: row.seq,
   pill: { level: row.pill, text: PILL_TEXT[row.pill] },
   note: activityLine({ readStatus: row.readStatus, level: row.pill, reason: row.pillReason, suppressed: row.suppressed }),
   decidedAt: row.decidedAt,
   readStatus: row.readStatus,
+  monitors: telemetryOf(row),
 });
 
 const toClaimRecord = (c: GroundedClaim): ClaimRecord => ({

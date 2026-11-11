@@ -7,6 +7,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 const audio = vi.hoisted(() => ({
   pcmFrames: vi.fn(),
   captureChannels: vi.fn(),
+  captureMicrophone: vi.fn(),
 }));
 vi.mock("@/lib/live/audio", () => ({ FRAME_MS: 80, SAMPLE_RATE: 16000, FRAME_SAMPLES: 1280, ...audio }));
 
@@ -159,14 +160,37 @@ describe("openFlux", () => {
 });
 
 describe("liveTurnSource", () => {
-  const track = { readyState: "live", addEventListener: vi.fn() };
-  const fakeStream = (name: string) => ({ name, getAudioTracks: () => [track] }) as unknown as MediaStream;
+  const track = { readyState: "live", addEventListener: vi.fn(), stop: vi.fn() };
+  const fakeStream = (name: string) => ({ name, getAudioTracks: () => [track], getTracks: () => [track] }) as unknown as MediaStream;
 
   beforeEach(() => {
     const analyst = fakeStream("analyst");
     const expert = fakeStream("expert");
     audio.captureChannels.mockResolvedValue({ analyst, expert, stop: vi.fn() });
+    audio.captureMicrophone.mockResolvedValue(analyst);
     vi.stubGlobal("fetch", async () => new Response(JSON.stringify({ accessToken: "t", expiresIn: 30 }), { status: 200 }));
+  });
+
+  it("in solo mode captures only the microphone and tags turns with soloSpeaker", async () => {
+    audio.pcmFrames.mockResolvedValue({ stop: vi.fn() });
+    const turns: unknown[] = [];
+    const onStage = vi.fn();
+    let role: "expert" | "analyst" = "expert";
+    const src = liveTurnSource("call_solo", { mode: "solo", soloSpeaker: () => role });
+    await src.start((t) => turns.push(t), onStage);
+    await flush();
+    expect(audio.captureMicrophone).toHaveBeenCalledTimes(1);
+    expect(FakeSocket.all).toHaveLength(1);
+    FakeSocket.all[0].open();
+    FakeSocket.all[0].message(JSON.stringify({ type: "TurnInfo", event: "EndOfTurn", turn_index: 0, audio_window_start: 0, audio_window_end: 1.5, transcript: "Q3 bookings fell twenty percent." }));
+    role = "analyst";
+    FakeSocket.all[0].message(JSON.stringify({ type: "TurnInfo", event: "EndOfTurn", turn_index: 1, audio_window_start: 2, audio_window_end: 3.5, transcript: "Are Halvorsen bookings down?" }));
+    expect(turns).toMatchObject([
+      { speaker: "expert", text: "Q3 bookings fell twenty percent." },
+      { speaker: "analyst", text: "Are Halvorsen bookings down?" },
+    ]);
+    expect(onStage.mock.calls.filter(([, up]) => !up)).toEqual([]);
+    src.stop();
   });
 
   it("puts a dead audio pipeline under hearing, which no socket opening can clear", async () => {

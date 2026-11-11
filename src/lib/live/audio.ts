@@ -15,6 +15,14 @@ export const FRAME_MS = (FRAME_SAMPLES / SAMPLE_RATE) * 1000;
 
 const stopAll = (...streams: MediaStream[]) => streams.forEach((s) => s.getTracks().forEach((t) => t.stop()));
 
+/** Captures only the microphone, for solo testing in a web browser without screen-sharing audio. */
+export async function captureMicrophone(): Promise<MediaStream> {
+  return navigator.mediaDevices.getUserMedia({
+    audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+    video: false,
+  });
+}
+
 /**
  * The microphone, and system audio through getDisplayMedia. Video is asked for as well because the
  * Mac spike has not yet shown that audio alone is granted (notes, Task 3); its track is disabled

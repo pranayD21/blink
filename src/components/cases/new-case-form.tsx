@@ -105,10 +105,40 @@ export function NewCaseForm() {
     }
   }
 
+  function prefillSample() {
+    setTitle("Halvorsen Pumps — distributor demand check");
+    setIssuer("Halvorsen Pumps, Inc.");
+    setTicker("HLVP");
+    setAliases("Halvorsen, HLVP, Halvorsen Pumps");
+    setFyEnd(1);
+    setLastFy("2027");
+    setLastQ("2");
+    setReportedOn("2026-09-08");
+    setNextReport("2026-12-02");
+    setCallDate("2026-11-03");
+    setQuestions([
+      "How is end-market demand for industrial pumps trending into year-end?",
+      "How are input costs affecting pump manufacturers?",
+    ]);
+    setExpertName("R. Castellano");
+    setExpertEmployer("Independent consultant");
+    setExpertTitle("Advisor, industrial distribution");
+    setNetwork("Meridian Expert Network");
+    setJobs([{ employer: "Halvorsen Pumps, Inc.", title: "Regional Sales Director, West", start: "2019-03-01", end: "2026-07-15" }]);
+  }
+
   return (
     <div className="grid grid-cols-[1fr_22rem] items-start gap-4">
       <div className="space-y-4">
-        <Panel title="Covered issuer and call" bodyClassName="grid grid-cols-2 gap-3">
+        <Panel
+          title="Covered issuer and call"
+          action={
+            <Button type="button" size="sm" variant="outline" onClick={prefillSample} data-testid="prefill-sample-case">
+              Prefill Halvorsen sample
+            </Button>
+          }
+          bodyClassName="grid grid-cols-2 gap-3"
+        >
           <Field label="Case title" className="col-span-2">
             <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Acme Valves — channel check" data-testid="case-title" />
           </Field>

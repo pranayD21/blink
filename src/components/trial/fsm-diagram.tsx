@@ -26,7 +26,7 @@ function edgeStroke(kind: KleeneVal, active: boolean): string {
 }
 
 /** Single-frame state machine and condition checklist without nested card wrappers. */
-export function FsmDiagram({ monitor }: { monitor: MonitorSnapshot }) {
+export function FsmDiagram({ monitor }: { monitor: Omit<MonitorSnapshot, "id"> & { id: string } }) {
   const rightState = monitor.terminalState;
   const nodes: { id: FsmState; x: number; y: number; w: number }[] = [
     { id: "UNASSESSED", x: 8, y: 69, w: 122 },

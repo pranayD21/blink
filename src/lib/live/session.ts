@@ -10,10 +10,12 @@ import type { Stage } from "@/core/live/health";
 import { BROKEN_AFTER_MS, type PillLevel } from "@/core/live/pill";
 import { type Channel, type FinishedTurn, createHearingWatch, createTurnAssembler } from "@/core/live/turns";
 import { ApiError, api } from "@/lib/api";
-import { type AudioChannels, captureChannels } from "./audio";
+import type { LiveMonitorTelemetry } from "@/server/services/live";
+import { type AudioChannels, captureChannels, captureMicrophone } from "./audio";
 import { RECONNECT_FIRST_MS, RECONNECT_MAX_MS, openFlux } from "./flux-client";
 
 export type { FinishedTurn } from "@/core/live/turns";
+export type { LiveMonitorTelemetry } from "@/server/services/live";
 
 /**
  * Where a call's turns come from. A turn's `speechStartMs`/`speechEndMs` count from the moment
@@ -48,12 +50,27 @@ function onCallClock(event: FluxEvent, shiftMs: number): FluxEvent {
 
 const CHANNEL_NAME: Record<Channel, string> = { analyst: "microphone", expert: "computer audio" };
 
-/** The banker's microphone and the computer's audio, each through its own Flux socket. */
-export function liveTurnSource(callId: string): TurnSource {
+export interface LiveTurnSourceOptions {
+  /** "solo" uses only the microphone so one person can test both sides in a browser. */
+  mode?: "two_channel" | "solo";
+  /** In solo mode, which role the microphone is speaking as right now. */
+  soloSpeaker?: () => Channel;
+  /** Peak audio level (0..1) for the live voice meter. */
+  onAudioLevel?: (peak: number) => void;
+  /** Digital-zero system-audio watch (enabled on Mac desktop loopback and in node tests). */
+  watchSystemSilence?: boolean;
+}
+
+/** The banker's microphone and (in two_channel mode) the computer's audio, through Flux. */
+export function liveTurnSource(callId: string, opts: LiveTurnSourceOptions = {}): TurnSource {
   let stopped = false;
-  let channels: AudioChannels | null = null;
+  let channels: { stop(): void } | null = null;
   const sockets: { close(): void }[] = [];
   const mint = async () => (await api<{ accessToken: string }>(`/api/calls/${encodeURIComponent(callId)}/stt-token`, { body: {} })).accessToken;
+  const mode = opts.mode ?? "two_channel";
+  const watchSilence =
+    opts.watchSystemSilence ??
+    (typeof window === "undefined" || Boolean((window as { blinkDesktop?: { isDesktop?: boolean } }).blinkDesktop?.isDesktop));
 
   const stop = () => {
     stopped = true;
@@ -75,7 +92,40 @@ export function liveTurnSource(callId: string): TurnSource {
       const watch = createHearingWatch();
 
       try {
-        const captured = await captureChannels();
+        if (mode === "solo") {
+          const mic = await captureMicrophone();
+          channels = { stop: () => mic.getTracks().forEach((t) => t.stop()) };
+          if (stopped) return stop();
+          for (const track of mic.getAudioTracks()) {
+            const check = () => {
+              if (track.readyState === "ended") hearing("analyst-track", false, "the microphone track ended");
+            };
+            track.addEventListener("ended", check);
+            check();
+          }
+          const token = await mint();
+          if (stopped) return stop();
+          sockets.push(
+            openFlux(
+              token,
+              mic,
+              (raw, atMs, audioStartedAtMs) => {
+                const event = onCallClock(parseFluxMessage(raw), audioStartedAtMs - originMs);
+                const speaker = opts.soloSpeaker ? opts.soloSpeaker() : "expert";
+                for (const turn of assembler.push({ channel: speaker, event, atMs })) onTurn(turn);
+              },
+              (up, cause) => transcribing("analyst", up, cause && `microphone: ${cause}`),
+              {
+                mint,
+                onAudioFailed: (cause) => hearing("analyst-audio", false, `microphone: ${cause}`),
+                onLevel: (peak) => opts.onAudioLevel?.(peak),
+              },
+            ),
+          );
+          return;
+        }
+
+        const captured: AudioChannels = await captureChannels();
         channels = captured;
         if (stopped) return stop();
         for (const channel of ["analyst", "expert"] as const) {
@@ -103,6 +153,8 @@ export function liveTurnSource(callId: string): TurnSource {
                 // A dead audio pipeline is its own part of hearing, so no socket event can clear it.
                 onAudioFailed: (cause) => hearing(`${channel}-audio`, false, `${CHANNEL_NAME[channel]}: ${cause}`),
                 onLevel: (peak, atMs) => {
+                  opts.onAudioLevel?.(peak);
+                  if (!watchSilence) return;
                   const change = watch.push({ channel, peak, atMs });
                   if (change) hearing("computer-audio-silent", change === "up", "the computer's audio has been perfectly silent for 3 s while the microphone heard speech");
                 },
@@ -139,10 +191,11 @@ interface TurnBody {
   transcribedAt: string;
 }
 
-interface TurnReply {
+export interface TurnReply {
   seq: number;
   pill: { level: PillLevel; text: string };
   note?: string;
+  monitors?: LiveMonitorTelemetry[];
 }
 
 export interface AgentBeat {
@@ -186,7 +239,12 @@ export async function runCall(opts: {
   onStage?: (stage: Stage, up: boolean) => void;
   /** A line for the live trace. It never includes what anyone said. */
   onBeat?: (beat: AgentBeat) => void;
+  /** Enum-only state-machine update per finished turn. */
+  onDecision?: (reply: TurnReply) => void;
+  /** Per-turn HTTP deadline (defaults to TURN_DEADLINE_MS). */
+  turnDeadlineMs?: number;
 }): Promise<{ callId: string; end(): Promise<void> }> {
+  const deadlineMs = opts.turnDeadlineMs ?? TURN_DEADLINE_MS;
   const { call } = await api<{ call: { id: string } }>("/api/calls", { body: { caseId: opts.caseId } });
   const base = `/api/calls/${encodeURIComponent(call.id)}`;
   const source = typeof opts.source === "function" ? opts.source(call.id) : opts.source;
@@ -312,7 +370,7 @@ export async function runCall(opts: {
       const deadline = setTimeout(() => {
         timedOut = true;
         abort.abort();
-      }, TURN_DEADLINE_MS);
+      }, deadlineMs);
       let cause: string;
       try {
         const reply = await api<TurnReply>(`${base}/turns`, { body, signal: abort.signal, idempotencyKey });
@@ -327,17 +385,18 @@ export async function runCall(opts: {
           const receivedAtMs = Date.now();
           onStage("reading", true);
           dispatch({ type: "decision", level: reply.pill.level, atMs: receivedAtMs });
+          opts.onDecision?.(reply);
           const failed = reply.note?.startsWith("The reader stopped") || reply.note?.startsWith("The read ran out of time");
           beat(reply.note ?? "Checked against the policy. No rule applies.", reply.pill.level === "red" ? "stop" : reply.pill.level === "amber" || failed ? "warn" : "quiet");
           const shownAtMs = Date.now();
           void postRecord(`acknowledgement of turn ${body.seq}`, `${base}/acks`, { seq: body.seq, responseReceivedAt: iso(receivedAtMs), shownAt: iso(shownAtMs) });
           return;
         }
-        cause = `turn ${body.seq} took more than ${TURN_DEADLINE_MS / 1000} s`;
+        cause = `turn ${body.seq} took more than ${deadlineMs / 1000} s`;
       } catch (err) {
         clearTimeout(deadline);
         if (!timedOut && !retryable(err)) return stopBroken(`turn ${body.seq} was refused: ${describe(err)}`, err);
-        cause = timedOut ? `turn ${body.seq} took more than ${TURN_DEADLINE_MS / 1000} s` : `turn ${body.seq}: ${describe(err)}`;
+        cause = timedOut ? `turn ${body.seq} took more than ${deadlineMs / 1000} s` : `turn ${body.seq}: ${describe(err)}`;
       }
       onStage("reading", false, cause);
       await sleep(wait);
