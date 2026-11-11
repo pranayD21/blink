@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useSyncExternalStore } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import { Button } from "@/components/ui/button";
 
 const KEY = "blink-trial";
@@ -57,7 +57,16 @@ type Place = {
 };
 
 const onCase = (pathname: string) => /^\/cases\/(?!new$)[^/]+$/.test(pathname);
-const found = (selector: string) => document.querySelector<HTMLElement>(selector);
+// Never throws: an empty or invalid selector finds nothing. (querySelector("") throws, and a step
+// with nothing to highlight has no selector, which crashed the whole page on "Next".)
+const found = (selector: string | null | undefined): HTMLElement | null => {
+  if (!selector) return null;
+  try {
+    return document.querySelector<HTMLElement>(selector);
+  } catch {
+    return null;
+  }
+};
 
 function place(index: number, pathname: string): Place {
   const step = STEPS[index];
@@ -79,9 +88,14 @@ function place(index: number, pathname: string): Place {
     return look(found("[data-slot='table-container']") ? "[data-slot='table-container']" : "main h1", step.arrived);
   }
   if (index === 2) {
+    if (onCase(pathname)) return look(null, "This is one call's case. The next screens are that call, step by step.");
     if (pathname !== "/cases") return travel(found("nav a[href='/cases']") ? "nav a[href='/cases']" : null, "/cases", step.lead);
     if (!found("[data-testid^='case-row-'] a")) return look(null, "No case is in the queue yet. A banker starts one from Call. Continue, and the rest of the run is the same.");
     return look("[data-testid^='case-row-'] a", step.arrived, true);
+  }
+  const emptyQueue = pathname === "/cases" && !found("[data-testid^='case-row-'] a");
+  if (index >= 3 && index <= 5 && !onCase(pathname) && emptyQueue) {
+    return look(null, `No case is in the queue yet, so there is nothing to open. ${step.arrived}`);
   }
   if (index === 3) {
     if (!onCase(pathname)) return travel(found("[data-testid^='case-row-'] a") ? "[data-testid^='case-row-'] a" : "nav a[href='/cases']", "/cases", step.lead);
@@ -117,6 +131,18 @@ export function TrialCoach() {
   const step = raw === null || raw === "" ? null : Number(raw);
   const hidden = pathname === "/" || pathname === "/login" || pathname.startsWith("/desktop");
   const active = step !== null && !hidden && !Number.isNaN(step);
+  // place() reads the page. On a client navigation this render can run before the new page is on
+  // screen, so read it again once it has been painted (and once more for content that streams in).
+  const [, setSeen] = useState(0);
+  useEffect(() => {
+    if (!active) return;
+    const frame = requestAnimationFrame(() => setSeen((n) => n + 1));
+    const later = window.setTimeout(() => setSeen((n) => n + 1), 400);
+    return () => {
+      cancelAnimationFrame(frame);
+      window.clearTimeout(later);
+    };
+  }, [active, pathname, step]);
   const here = active ? place(step, pathname) : null;
 
   useEffect(() => {
@@ -131,7 +157,7 @@ export function TrialCoach() {
       card: document.querySelector<HTMLElement>("[data-trial='card']"),
     };
     const apply = () => {
-      const el = here.selector ? document.querySelector<HTMLElement>(here.selector) : null;
+      const el = found(here.selector);
       const card = nodes.card;
       const showHole = (on: boolean) => {
         for (const key of ["top", "left", "right", "bottom", "ring"] as const) {
@@ -175,7 +201,7 @@ export function TrialCoach() {
       }
     };
     apply();
-    document.querySelector<HTMLElement>(here.selector ?? "")?.scrollIntoView({ block: "center", behavior: "smooth" });
+    found(here.selector)?.scrollIntoView({ block: "center", behavior: "smooth" });
     window.addEventListener("resize", apply);
     window.addEventListener("scroll", apply, true);
     return () => {
@@ -188,7 +214,7 @@ export function TrialCoach() {
     if (!active || !here?.completesOnClick || !here.selector || step === null) return;
     const selector = here.selector;
     const onClick = (event: MouseEvent) => {
-      const el = document.querySelector(selector);
+      const el = found(selector);
       if (el && event.target instanceof Node && el.contains(event.target)) setTrial(String(step + 1));
     };
     document.addEventListener("click", onClick, true);
@@ -205,11 +231,14 @@ export function TrialCoach() {
     }
     const current = place(step, pathname);
     if (!current.arrived && current.go) {
-      router.push(current.go);
+      // Already where the step points (no case to open yet, say): move on instead of doing nothing.
+      if (current.go === pathname) setTrial(String(step + 1));
+      else router.push(current.go);
       return;
     }
     if (current.completesOnClick && current.selector) {
-      document.querySelector<HTMLElement>(current.selector)?.click();
+      found(current.selector)?.click();
+      setTrial(String(step + 1));
       return;
     }
     setTrial(String(step + 1));
