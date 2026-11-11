@@ -104,6 +104,8 @@ When the owner has reported, the next step is to fill in the answers here, write
 | 2026-11-10 | 37 | Anthropic, all `claude-opus-5-5`, all live (no real-material recording): `pnpm eval:real`, a one-call probe ($0.24), the development set under four policies (public $1.15, private $0.11), fix round 1 reruns (private $0.37, public $1.10) and the repeat runs (15 calls, $0.53), as `llm_calls` reports; plus the round-1 re-recording (`pnpm record` $0.37, `pnpm record:live` $0.18, `BLINK_LLM_MODE=record pnpm eval` about $0.31 from its recordings' token counts). Plan total so far about $13.02 | $4.36 |
 | 2026-11-10 | 38 | Anthropic, all live (nothing recorded): `pnpm eval:spoken` on six spoken calls (Halvorsen under the manual policy; the five development calls under Oaktree). 55 `claude-haiku-5-5` live reads ($0.015) and 6 `claude-opus-5-5` after-call extractions ($0.60), as `llm_calls` reports. 22 reads timed out at 2.5 s and left no usage, so their cost is unknown (about $0.01 at the finished reads' rate). The Halvorsen call was the one-call probe ($0.22); the estimate for Steps 2 to 4 was about $1, under the $5 gate. Plan total so far about $13.64 | $0.62 |
 | 2026-11-10 | 38 | Deepgram Flux: about 38 minutes streamed: 18.0 min for the six calls (two channels of 9.0 min) and 20.1 min of Earnings-21. Estimated at $0.0077 a minute, the published pay-as-you-go Flux streaming rate; the console has the exact figure | about $0.29 |
+| 2026-11-10 | 44 | Anthropic, all live on the deployment, as its `/api/metrics` reports (read as the reviewer before and after: $0.056 to $1.084): the demo policy's live compile (6 `claude-opus-5-5` calls, $0.567), two after-call extractions (`claude-opus-5-5`, $0.425; the first call's case had a wrong packet, so the call was run twice), 34 finished `claude-haiku-5-5` live reads ($0.009; 10 more timed out and left no usage, unknown, about $0.003 at the same rate) and one summary draft ($0.026). Plan total so far about $14.67 | $1.03 |
+| 2026-11-10 | 44 | Deepgram Flux: two Halvorsen calls of 2.6 min on two channels, 10.6 min streamed (estimate at $0.0077 a minute; the console has the exact figure) | about $0.08 |
 
 ## Waiting on the owner
 
@@ -118,6 +120,10 @@ When the owner has reported, the next step is to fill in the answers here, write
 - Task 20 Step 4: waits on Step 3. Commit the notes as `docs: record the first real call's timings`.
 - Task 38: spoken input misses the speed target. The 95th percentile is 2.81 s from Flux's window end and 3.96 s from the end of the audio, against 2.0 s. Live, 0 of 6 labelled turns went red, because their reads timed out at 2.5 s (the after-call read hid all six). Task 20's measure, `speech_ended_at` (the end of Flux's audio window, a median 0.79 s after speech really ends), may also need redefining. Both go with the Groq / `haiku-slow` decision in Task 2 Step 5. Details are in "Task 38: the spoken path" and `docs/eval/2026-11-spoken.md`.
 - Task 39 Step 3: send `docs/eval/in-practise-request.md` from the owner's own address. Fill in the recipient from https://inpractise.com/about/compliance (the address is hidden from scripts, so read it on the live page), the link to the free interviews, and your name. Check their Terms and Conditions of Use for reuse limits first. The draft tells them that text goes to Anthropic and audio to Deepgram, and offers text-only testing. If they grant permission, say so, and the interviews are added as stay-quiet cases in a follow-up. Until then the false-alarm bar stays unmeasured, and the reports say so.
+- Task 44: two findings from the deployed run, for a decision, not fixed.
+  - **Drafting and the leak check disagree.** An AI summary can cite a claim whose words sit inside an after-call hidden passage, and the release check then refuses it, so a reviewer has to edit the draft. The cause is `claimEligibility`, which restricts by shared turn only for live findings.
+  - **A misheard issuer name keeps R3 quiet.** Flux's spellings of the issuer ("Halvason", "Talveshams") kept rule R3 from matching the covered issuer until a reviewer corrected the company.
+  - Details are in "Task 44: the deployed run" and `docs/eval/2026-11-deployed-run.md`. The missed live red on T11 is the existing `haiku-slow` item.
 
 ## Task 10: the time limit is enforced twice
 
@@ -385,3 +391,27 @@ Step 1 is done: `pnpm live:prepare` (`scripts/prepare-live-call.sh`) resets `dat
 - **Checks on the tagged commit:** `pnpm typecheck`, `lint`, `test` (1094 tests), `build`, `e2e` (1 demo spec and 8 live specs), `demo:check` and `live:check` all exit 0.
 - **The freeze:** from here, no prompt, predicate or rule changes until the sealed run is reported. That means `src/server/llm/prompts/**`, `src/core/predicates/**` and `src/core/policy/**`, the same paths the other developer already avoids, and also the compiled real policies (`fixtures/real/policies/*.compiled.json`) and the scorer (`src/server/eval/real.ts`). The sealed run uses the tag, so later changes on `main` cannot affect it; the freeze is about not tuning anything before the result is known. UI, docs and deployment work can go on.
 - **The sealed run:** `docs/eval/sealed-brief.md` is the brief for a separate session (Task 41, owner). It runs the tag, never `main`. The tag is pushed to origin so that a fresh clone can check it out.
+
+## Task 44: the deployed run
+
+- **Run order:** after Task 40, as planned. Nothing on Railway was changed or redeployed, and no container restart interrupted a step. Pranay's files were not touched.
+- **What the seed left:** no policy version at all, `case_halvorsen` at intake, and a "Live call" case at intake made by someone else. Neither case was used.
+- **Step 1:** Dana compiled the demo policy live through `/policies/new`. Validated in 185 s: Pass B #1 ended `CLAUSE_DROPPED`, and the compiler's own retry passed. She approved it by hash, and `pv_01M7405V4J0AC1687XVTCSWSWH` is Active and AI-compiled. Cost $0.567.
+- **Step 2:** Priya's case `case_01M740QN874Q1T7DH8HZ1QQEHG` was made through `/cases/new` from the Halvorsen packet, then `pnpm eval:spoken --server <deployment> --as user_priya --expect-red T11`.
+  - **The red:** T11 did not go red. Its read timed out, as did 5 other expert turns. This is `haiku-slow`, already waiting on the owner. The step is ticked because it ran; its expectation is not met.
+  - **The end:** the count at the end was "Call ended. Nothing was hidden."
+  - **The first attempt:** the run's own form script filled the wrong fields (loose label matches), so its case, `case_01M740EV6DA1XZ7FC7B5SMWXXN` ("Regional Sales Director, West"), has a wrong packet. It is left in review on the deployment, and its call counts in `/calls`.
+- **Step 3:** done through the pages.
+  - F2 needed context. Marcus clarified it, and it then needed a senior.
+  - Marcus decided the AI-suggested F3 and F4. Jordan sent F1 and F2 to legal.
+  - Marcus attested and drafted the summary.
+  - The first release was refused by the leak check: the draft cited C7, whose words sit inside hidden passage F2 at T15. Marcus removed that sentence, approved v2 and released it.
+- **Step 4:**
+  - The banker's released transcript shows 6 blanked passages and the summary, with none of the hidden words in the page or its HTML.
+  - `/calls` shows both calls: 44 turns, typical 1.8 s, 19 in 20 within 2.8 s, worst 2.8 s, and 10 turns with a problem.
+- **Timings (attempt 2):** from Flux's window end, 1.75 · 2.81 · 2.84 s. From the end of the audio, 2.70 · 3.89 · 4.34 s. Task 38's local Halvorsen run was 1.83 · 2.57 · 2.57 and 2.63 · 3.63 · 3.96. The tail is about 0.25 s slower on the deployment, from the round trip to Railway.
+- **For the owner:**
+  - **Drafting and the leak check disagree.** Brief eligibility (`claimEligibility`) restricts claims by shared turn only for live findings, so an eligible claim inside an after-call hidden passage gets drafted and then blocks release.
+  - **A misheard issuer name keeps R3 quiet.** Flux heard Halvorsen as "Halvason" and "Talveshams". A claim naming "Halvason" did not match the covered issuer, so R3 stayed quiet until a reviewer mapped the company.
+  - Neither was changed. Details are in `docs/eval/2026-11-deployed-run.md`.
+

@@ -1617,12 +1617,12 @@ git commit   # docs(deploy): record the deployed address and the trial's limits
 **Files:**
 - Create: `docs/eval/2026-11-deployed-run.md`
 
-- [ ] **Step 1: Compile and approve the demo policy on the deployment**, signed in as the policy owner, through the pages. Expected: status Active. A live compile takes over two minutes.
-- [ ] **Step 2: Create a case as the banker and run a spoken call against the deployment.** Run: `pnpm eval:spoken --transcript fixtures/cases/halvorsen/transcript-v1.txt --case <id> --server <address> --as user_priya`. Expected: red on the source remark, a count at the end.
-- [ ] **Step 3: Finish the case as compliance through the pages:** decide every finding, attest, draft and approve the summary, release.
-- [ ] **Step 4: Check both ends.** As the banker, the released transcript shows blanked passages and the summary; as compliance, `/calls` shows the call with its timings.
-- [ ] **Step 5: Write `docs/eval/2026-11-deployed-run.md`:** what was run, the timings (median, 95th percentile, worst), anything that failed, and the spend.
-- [ ] **Step 6: Commit.**
+- [x] **Step 1: Compile and approve the demo policy on the deployment**, signed in as the policy owner, through the pages. Expected: status Active. A live compile takes over two minutes.
+- [x] **Step 2: Create a case as the banker and run a spoken call against the deployment.** Run: `pnpm eval:spoken --transcript fixtures/cases/halvorsen/transcript-v1.txt --case <id> --server <address> --as user_priya`. Expected: red on the source remark, a count at the end.
+- [x] **Step 3: Finish the case as compliance through the pages:** decide every finding, attest, draft and approve the summary, release.
+- [x] **Step 4: Check both ends.** As the banker, the released transcript shows blanked passages and the summary; as compliance, `/calls` shows the call with its timings.
+- [x] **Step 5: Write `docs/eval/2026-11-deployed-run.md`:** what was run, the timings (median, 95th percentile, worst), anything that failed, and the spend.
+- [x] **Step 6: Commit.**
 
 ```bash
 git add docs/eval/2026-11-deployed-run.md
