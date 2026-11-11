@@ -148,10 +148,17 @@ export function TrialCoach() {
         nodes.ring.style.width = `${width}px`;
         nodes.ring.style.height = `${height}px`;
       }
-      if (card) {
-        const cardWidth = card.offsetWidth || 380;
-        const overlaps = left < 24 + cardWidth && top > window.innerHeight - 480;
-        card.style.left = overlaps ? `${Math.max(24, window.innerWidth - cardWidth - 24)}px` : "24px";
+      const dock = document.querySelector<HTMLElement>("[data-trial-dock]");
+      if (card && dock) {
+        const place = dock.getBoundingClientRect();
+        card.style.top = `${place.top}px`;
+        card.style.left = `${place.left}px`;
+        card.style.width = `${place.width}px`;
+        card.style.bottom = "auto";
+        card.style.maxHeight = `${place.height}px`;
+        card.style.visibility = "visible";
+      } else if (card) {
+        card.style.visibility = pathname === "/trial" ? "hidden" : "visible";
       }
     };
     apply();
@@ -205,7 +212,7 @@ export function TrialCoach() {
       <div data-trial="right" className="trial-dim" style={{ right: 0, display: "none" }} />
       <div data-trial="bottom" className="trial-dim" style={{ left: 0, right: 0, bottom: 0, display: "none" }} />
       <div data-trial="ring" className="trial-ring" style={{ display: "none" }} />
-      <aside data-trial="card" className="glass-surface fixed bottom-6 left-6 z-[80] flex max-h-[70vh] w-[380px] flex-col px-6 py-5" data-testid="trial-card" data-step={step} aria-live="polite">
+      <aside data-trial="card" className="glass-surface fixed bottom-6 right-6 z-[80] flex max-h-[70vh] w-[380px] flex-col overflow-y-auto px-6 py-5" data-testid="trial-card" data-step={step} aria-live="polite" style={pathname === "/trial" ? { visibility: "hidden" } : undefined}>
         <p className="text-base text-muted-foreground">{step >= STEPS.length ? "The run" : `Step ${step + 1} of ${STEPS.length}`}</p>
         <h2 className="mt-1 text-2xl text-foreground">{step >= STEPS.length ? "That is a Blink run" : STEPS[step].title}</h2>
         <p className="mt-2 text-lg leading-snug text-foreground">{here.body}</p>

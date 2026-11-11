@@ -21,11 +21,13 @@ export function DemoRun() {
   const at = step === null ? -1 : step;
 
   return (
-    <main className="mx-auto w-full max-w-6xl px-6 py-6" data-testid="demo-run">
+    <main className="mx-auto w-full max-w-[90rem] px-6 py-6" data-testid="demo-run">
       <h1 className="text-3xl text-foreground">Northline Pumps</h1>
       <p className="mt-2 max-w-3xl text-lg leading-snug text-muted-foreground">A sample call, so you can watch Blink read one sentence.</p>
 
-      <div className="mt-6 grid items-start gap-4 lg:grid-cols-2">
+      <div className="mt-6 flex flex-col gap-4 xl:flex-row xl:items-start">
+        {step !== null && <div data-trial-dock className="h-[36rem] w-full shrink-0 xl:sticky xl:top-24 xl:order-last xl:w-96" />}
+        <div className="grid min-w-0 flex-1 items-start gap-4 lg:grid-cols-2">
         <section className="glass-surface px-7 py-6" data-demo="call">
           <h2 className="text-xl text-foreground">The call</h2>
           <ol className="mt-4 space-y-4">
@@ -102,6 +104,7 @@ export function DemoRun() {
             </div>
           )}
         </section>
+        </div>
       </div>
     </main>
   );
