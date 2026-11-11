@@ -117,6 +117,7 @@ When the owner has reported, the next step is to fill in the answers here, write
 - Task 20 Step 3: waits on Step 2. After the call, tell the agent; it reads the record back from `call_turns` (turn count, turns not read live, median, 95th percentile and worst of `shown_at` minus `speech_ended_at`, whether the pill went red where expected) and writes it in the notes against the targets.
 - Task 20 Step 4: waits on Step 3. Commit the notes as `docs: record the first real call's timings`.
 - Task 38: spoken input misses the speed target. The 95th percentile is 2.81 s from Flux's window end and 3.96 s from the end of the audio, against 2.0 s. Live, 0 of 6 labelled turns went red, because their reads timed out at 2.5 s (the after-call read hid all six). Task 20's measure, `speech_ended_at` (the end of Flux's audio window, a median 0.79 s after speech really ends), may also need redefining. Both go with the Groq / `haiku-slow` decision in Task 2 Step 5. Details are in "Task 38: the spoken path" and `docs/eval/2026-11-spoken.md`.
+- Task 39 Step 3: send `docs/eval/in-practise-request.md` from the owner's own address. Fill in the recipient from https://inpractise.com/about/compliance and add your name. If they grant permission, say so, and the interviews are added as stay-quiet cases in a follow-up. Until then the false-alarm bar stays unmeasured, and the reports say so.
 
 ## Task 10: the time limit is enforced twice
 

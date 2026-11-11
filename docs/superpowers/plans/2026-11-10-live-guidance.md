@@ -1535,8 +1535,8 @@ git commit   # test(live): run real transcripts through the live path as speech
 **Files:**
 - Create: `docs/eval/in-practise-request.md`
 
-- [ ] **Step 1: Draft the request.** Three short paragraphs for the owner to send from their own address: who they are and what Blink is; the ask (use of the twenty free interviews, text and audio, for internal testing only, not redistributed, deleted on request); and how results would be reported (counts only, no quotation). Leave the recipient address for the owner to fill from `https://inpractise.com/about/compliance`.
-- [ ] **Step 2: Commit.**
+- [x] **Step 1: Draft the request.** Three short paragraphs for the owner to send from their own address: who they are and what Blink is; the ask (use of the twenty free interviews, text and audio, for internal testing only, not redistributed, deleted on request); and how results would be reported (counts only, no quotation). Leave the recipient address for the owner to fill from `https://inpractise.com/about/compliance`.
+- [x] **Step 2: Commit.**
 
 ```bash
 git add docs/eval/in-practise-request.md
