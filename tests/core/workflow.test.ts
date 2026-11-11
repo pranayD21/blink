@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { type ReleaseCheckInput, checkRelease, citedClaimKeys, claimEligibility, enforceBriefCitations, hiddenBy, renderBriefMarkdown, transitionBrief } from "@/core/workflow/brief";
+import { type ReleaseCheckInput, checkRelease, citedClaimKeys, claimEligibility, enforceBriefCitations, findingHidesClaim, hiddenBy, renderBriefMarkdown, transitionBrief } from "@/core/workflow/brief";
 import { reviewBlockers, transitionCase } from "@/core/workflow/case";
 import { type FindingGuardContext, aggregateMonitorStates, initialFindingState, statePath, transitionFinding } from "@/core/workflow/finding";
 import { isImmutable, transitionPolicyVersion } from "@/core/workflow/policyVersion";
@@ -225,6 +225,7 @@ describe("brief workflow, eligibility, and release check", () => {
     ineligibleCitations: [],
     newlyStale: [],
     leaks: [],
+    citationLeaks: [],
     unplacedPassages: [],
   };
 
@@ -295,5 +296,108 @@ describe("brief workflow, eligibility, and release check", () => {
     expect(failures.map((f) => f.code)).toEqual(["BRIEF_NOT_APPROVED", "APPROVAL_STALE", "CASE_NOT_APPROVED", "ATTESTATION_STALE"]);
     expect(failures[1].message).toBe("approval stale: claim changed (C9 · T19)");
     expect(failures[3].message).toBe("attestation stale: transcript v2");
+  });
+});
+
+describe("eligibility by hidden span (Fix A)", () => {
+  // The deployed run's shape: C8 quotes the whole first sentence of T15 and is under an after-call finding;
+  // C7 quotes part of that same sentence and has no finding of its own.
+  const c7 = { logicalKey: "C7", status: "proposed" as const, turnLabels: ["T15"], spans: [{ turnLabel: "T15", start: 0, end: 55 }] };
+  const f2 = (state: string, outcome: string | null, stale = false) => ({
+    claimLogicalKey: "C8",
+    label: "F2",
+    state,
+    decision: outcome ? { outcome, stale } : null,
+    hiddenSpans: [{ turnLabel: "T15", start: 0, end: 180 }],
+  });
+  const onT15 = (start: number, end: number) => ({ ...c7, spans: [{ turnLabel: "T15", start, end }] });
+  const hiding = (start: number, end: number) => ({ ...f2("REVIEW_REQUIRED", null), hiddenSpans: [{ turnLabel: "T15", start, end }] });
+
+  it("a claim quoting words inside another claim's hidden quote is restricted, naming only the finding and the turn", () => {
+    for (const f of [f2("REVIEW_REQUIRED", null), f2("NEEDS_CONTEXT", null), f2("DISPOSITIONED", "restricted_escalate_to_legal"), f2("DISPOSITIONED", "no_concern", true)]) {
+      const e = claimEligibility(c7, [f]);
+      expect(e).toEqual({ eligible: false, reason: "restricted", detail: "it quotes words in T15 that finding F2 keeps hidden" });
+    }
+  });
+
+  it("touching spans do not overlap; spans sharing one character do", () => {
+    expect(claimEligibility(onT15(30, 60), [hiding(0, 30)])).toEqual({ eligible: true });
+    expect(claimEligibility(onT15(0, 30), [hiding(30, 60)])).toEqual({ eligible: true });
+    expect(claimEligibility(onT15(29, 60), [hiding(0, 30)])).toMatchObject({ eligible: false, reason: "restricted" });
+    expect(claimEligibility(onT15(0, 31), [hiding(30, 60)])).toMatchObject({ eligible: false, reason: "restricted" });
+    expect(claimEligibility(onT15(10, 20), [hiding(0, 30)])).toMatchObject({ eligible: false, reason: "restricted" }); // inside
+    expect(claimEligibility(onT15(0, 90), [hiding(30, 60)])).toMatchObject({ eligible: false, reason: "restricted" }); // around
+  });
+
+  it("the same offsets on a different turn do not restrict", () => {
+    expect(claimEligibility({ ...c7, turnLabels: ["T16"], spans: [{ turnLabel: "T16", start: 0, end: 55 }] }, [f2("REVIEW_REQUIRED", null)])).toEqual({ eligible: true });
+  });
+
+  it("a cleared finding does not restrict", () => {
+    expect(claimEligibility(c7, [f2("DISPOSITIONED", "cleared_for_research")])).toEqual({ eligible: true });
+    expect(claimEligibility(c7, [f2("DISPOSITIONED", "no_concern")])).toEqual({ eligible: true });
+  });
+
+  it("any one of a claim's quotes overlapping is enough", () => {
+    const twoQuotes = { ...c7, spans: [{ turnLabel: "T14", start: 0, end: 40 }, { turnLabel: "T15", start: 100, end: 120 }] };
+    expect(claimEligibility(twoQuotes, [f2("REVIEW_REQUIRED", null)])).toMatchObject({ eligible: false, reason: "restricted" });
+  });
+
+  it("a claim's own finding keeps its own reasons, and its hidden spans are not held against the claim itself", () => {
+    const own = (state: string, outcome: string | null, stale = false) => ({ ...f2(state, outcome, stale), claimLogicalKey: "C7" });
+    expect(claimEligibility(c7, [own("REVIEW_REQUIRED", null)])).toMatchObject({ eligible: false, reason: "finding_open" });
+    expect(claimEligibility(c7, [own("DISPOSITIONED", "no_concern", true)])).toMatchObject({ eligible: false, reason: "decision_stale" });
+    expect(claimEligibility(c7, [own("DISPOSITIONED", "restricted_exclude")])).toMatchObject({ eligible: false, reason: "restricted", detail: "finding F2 was dispositioned restricted_exclude" });
+    expect(claimEligibility(c7, [own("DISPOSITIONED", "no_concern")])).toEqual({ eligible: true });
+    // Cleared on its own finding, but another finding still hides some of its words.
+    expect(claimEligibility(c7, [own("DISPOSITIONED", "no_concern"), { ...f2("REVIEW_REQUIRED", null), label: "F5" }])).toMatchObject({ eligible: false, reason: "restricted", detail: "it quotes words in T15 that finding F5 keeps hidden" });
+  });
+
+  it("the transcript blanks exactly what it did: hiddenBy ignores spans", () => {
+    expect(hiddenBy(c7, [f2("REVIEW_REQUIRED", null)])).toBeNull();
+    expect(hiddenBy({ ...c7, logicalKey: "C8" }, [f2("REVIEW_REQUIRED", null)])).toBe("F2");
+  });
+
+  it("a finding hides a claim's quotes when it is on the claim or shares a turn as a live finding", () => {
+    const live = { claimLogicalKey: null, turnLabels: ["T5"], label: "F4", state: "REVIEW_REQUIRED", decision: null };
+    expect(findingHidesClaim(live, { logicalKey: "C1", status: "proposed", turnLabels: ["T5", "T11"] })).toBe(true);
+    expect(findingHidesClaim(live, { logicalKey: "C1", status: "proposed", turnLabels: ["T11"] })).toBe(false);
+    expect(findingHidesClaim(f2("REVIEW_REQUIRED", null), { logicalKey: "C8", status: "rejected" })).toBe(true);
+    expect(findingHidesClaim(f2("REVIEW_REQUIRED", null), c7)).toBe(false);
+  });
+});
+
+describe("release check: the cited claims' summaries (Fix A)", () => {
+  const okRelease: ReleaseCheckInput = {
+    actorRole: "reviewer",
+    audience: "analyst",
+    expectedBriefVersion: 2,
+    brief: { version: 2, status: "approved", contentHash: "h1", label: "Brief v1" },
+    latestApproval: { briefHash: "h1", audience: "analyst", stale: false, staleReason: null },
+    caseStatus: "APPROVED",
+    reviewBlockers: [],
+    ineligibleCitations: [],
+    newlyStale: [],
+    leaks: [],
+    citationLeaks: [],
+    unplacedPassages: [],
+  };
+
+  it("passes with no citation leak", () => expect(checkRelease(okRelease)).toEqual([]));
+
+  it("a cited claim's summary that repeats hidden words fails with CITATION_LEAK, naming the claim and passage but never the text", () => {
+    const failures = checkRelease({
+      ...okRelease,
+      citationLeaks: [
+        { claimKey: "C7", passage: "F2 · T15", kind: "quote", detail: "the cardinal utilities contract is being" },
+        { claimKey: "C7", passage: "F2 · T15", kind: "quote", detail: "halvorsen is out that hasn't been" },
+        { claimKey: "C7", passage: "F2 · T15", kind: "name", detail: "Cardinal Utilities" },
+      ],
+    });
+    expect(failures).toEqual([
+      { code: "CITATION_LEAK", message: "the summary of cited claim C7 repeats a quote from hidden passage F2 · T15", ref: "C7" },
+      { code: "CITATION_LEAK", message: "the summary of cited claim C7 repeats a name from hidden passage F2 · T15", ref: "C7" },
+    ]);
+    expect(JSON.stringify(failures)).not.toMatch(/cardinal/i);
   });
 });

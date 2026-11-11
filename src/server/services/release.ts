@@ -44,8 +44,12 @@ export function releaseBrief(tx: DbOrTx, briefId: string, input: ReleaseInput, a
 
   // Compare the summary's exact text (headings and sentences) with every hidden passage.
   const restricted = restrictedOnCase(tx, caseId);
-  const summary = fromJson<BriefSection[]>(brief.sentencesJson, []).flatMap((section) => [section.heading, ...section.sentences.map((s) => s.text)]);
+  const sections = fromJson<BriefSection[]>(brief.sentencesJson, []);
+  const summary = sections.flatMap((section) => [section.heading, ...section.sentences.map((s) => s.text)]);
   const leaks = findLeaks(summary, restricted.passages, restricted.visible);
+  // The banker's citation chip shows each cited claim's own summary: check it against the same hidden text.
+  const citations = citationsFor(tx, caseId, citedClaimKeys(sections));
+  const citationLeaks = citations.flatMap((c) => findLeaks([c.summary], restricted.passages, restricted.visibleForSummaries).map((l) => ({ claimKey: c.key, ...l })));
 
   const failures = checkRelease({
     actorRole: actor.role,
@@ -58,6 +62,7 @@ export function releaseBrief(tx: DbOrTx, briefId: string, input: ReleaseInput, a
     ineligibleCitations: ineligibleCitations(tx, brief),
     newlyStale: newlyStale.map((s) => ({ dependent: s.label, reason: s.reason })),
     leaks,
+    citationLeaks,
     unplacedPassages: restricted.unplaced,
   });
 
@@ -89,7 +94,7 @@ export function releaseBrief(tx: DbOrTx, briefId: string, input: ReleaseInput, a
       redactedTranscriptHash: redactedHash,
       hiddenPassages: redacted.hiddenPassages,
       // The quotes behind each cited claim, as they read now; a later correction must not change them.
-      citationsJson: toJson(citationsFor(tx, caseId, citedClaimKeys(fromJson<BriefSection[]>(brief.sentencesJson, [])))),
+      citationsJson: toJson(citations),
     })
     .run();
   const next = transitionBrief(brief.status, "RELEASE");

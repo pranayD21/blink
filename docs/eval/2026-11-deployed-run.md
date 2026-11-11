@@ -124,6 +124,7 @@ Measured from both ends, as Task 38 defined them. "Flux" means from `speech_ende
      - The banker's citation chip shows the cited claim's `summary`. `citationsFor` (`src/server/services/briefs.ts`) includes it, release freezes it (`src/server/services/release.ts`, `citationsJson`), and `src/components/brief/released-brief.tsx` renders it. `findLeaks` never sees those summaries, so C7's chip could show hidden words even when the summary sentence itself is clean.
      - The chip's quotes are not a route. `frozenCitations` keeps a quote only if `quoteIsVisible` finds it in a visible part of the blanked transcript, so C7's quote, which lies inside the hidden T15 span, never reaches the banker. Only the claim's summary goes unchecked.
    - **A fix follows in a separate commit:** a claim becomes ineligible while any of its quotes overlaps a span that an uncleared finding hides, and release also leak-checks the cited claims' summaries.
+   - **Fixed** in the commit `fix(brief): never give the summary a claim whose words are hidden`. See "Fix A" in the notes file.
    - **To reproduce:**
      1. Run a Halvorsen call where T15 is not flagged live.
      2. Let the after-call read raise the Cardinal finding.

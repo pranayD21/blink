@@ -5,8 +5,8 @@
 import { and, desc, eq, inArray } from "drizzle-orm";
 import { z } from "zod";
 import { type BriefSection, briefHash } from "@/core/deps/hash";
-import { type RedactedTurn, quoteIsVisible } from "@/core/release/redact";
-import { type Eligibility, type EligibilityFinding, citedClaimKeys, claimEligibility, enforceBriefCitations, renderBriefMarkdown, transitionBrief } from "@/core/workflow/brief";
+import { type RedactedTurn, type Span, quoteIsVisible } from "@/core/release/redact";
+import { type Eligibility, type EligibilityFinding, citedClaimKeys, claimEligibility, enforceBriefCitations, findingHidesClaim, renderBriefMarkdown, transitionBrief } from "@/core/workflow/brief";
 import { type Actor, isReviewer, requireReviewer } from "../auth/actor";
 import { appendAudit } from "../audit/log";
 import { nowIso } from "../clock";
@@ -77,16 +77,20 @@ export function eligibilityForCase(tx: DbOrTx, caseId: string, placer?: TurnPlac
   const passageRows = liveIds.length > 0 ? tx.select().from(findingPassages).where(inArray(findingPassages.findingId, liveIds)).all() : [];
   const loaded = loadCurrentClaims(tx, caseId).filter((c) => c.fields.speaker === "expert");
   // Live passages and claim quotes may sit on different transcript versions: compare them on the current one.
-  const place = liveIds.length > 0 ? (placer ?? turnPlacer(tx, caseId, [...passageRows.map((p) => p.turnId), ...loaded.flatMap((c) => c.quotes.map((q) => q.turnId))])) : null;
-  // A claim quote that cannot be placed keeps its own label (it can only restrict more). A live passage
-  // that cannot be placed adds none: its old label could name an unrelated current turn, and the release
-  // is refused through HIDDEN_PASSAGE_UNPLACED anyway.
-  const quoteLabel = (turnId: string, start: number, end: number, own: string) => (place ? (place.place(turnId, start, end)?.[0]?.turn.label ?? own) : own);
-  const passageLabels = (p: LivePassage) => (place?.place(p.turnId, p.start, p.end) ?? []).map((x) => x.turn.label);
+  const place = findingRows.length > 0 ? (placer ?? turnPlacer(tx, caseId, [...passageRows.map((p) => p.turnId), ...loaded.flatMap((c) => c.quotes.map((q) => q.turnId))])) : null;
+  // A claim quote that cannot be placed keeps its own turn and span (it can only restrict more). A live
+  // passage that cannot be placed adds none: its old label could name an unrelated current turn, and the
+  // release is refused through HIDDEN_PASSAGE_UNPLACED anyway.
+  const quoteSpans = (q: LoadedClaim["quotes"][number]): Span[] => {
+    const placed = place?.place(q.turnId, q.start, q.end);
+    return placed && placed.length > 0 ? placed.map((x) => ({ turnLabel: x.turn.label, start: x.start, end: x.end })) : [{ turnLabel: q.turnLabel, start: q.start, end: q.end }];
+  };
+  const passageSpans = (p: LivePassage): Span[] => (place?.place(p.turnId, p.start, p.end) ?? []).map((x) => ({ turnLabel: x.turn.label, start: x.start, end: x.end }));
 
   const forCheck: CaseFinding[] = findingRows.map((f) => {
     const decision = latestDecision(tx, f.id);
     const passages = passageRows.filter((p) => p.findingId === f.id).map((p) => ({ findingId: f.id, turnId: p.turnId, start: p.startChar, end: p.endChar }));
+    const own = passages.flatMap(passageSpans);
     return {
       id: f.id,
       origin: f.origin,
@@ -95,13 +99,19 @@ export function eligibilityForCase(tx: DbOrTx, caseId: string, placer?: TurnPlac
       state: f.state,
       decision: decision ? { outcome: decision.outcome, stale: decision.stale } : null,
       passages,
-      ...(f.origin === "live" ? { turnLabels: [...new Set(passages.flatMap(passageLabels))] } : {}),
+      hiddenSpans: own,
+      ...(f.origin === "live" ? { turnLabels: [...new Set(own.map((s) => s.turnLabel))] } : {}),
     };
   });
-  const claims = loaded.map((claim) => {
-    const turnLabels = [...new Set(claim.quotes.map((q) => quoteLabel(q.turnId, q.start, q.end, q.turnLabel)))];
-    return { claim, turnLabels, eligibility: claimEligibility({ logicalKey: claim.row.logicalKey, status: claim.row.status, turnLabels }, forCheck) };
+  const placedClaims = loaded.map((claim) => {
+    const spans = claim.quotes.map(quoteSpans);
+    // The label of the first place a quote landed, as before: hiddenBy and the blanking read these.
+    const turnLabels = [...new Set(spans.map((s) => s[0].turnLabel))];
+    return { claim, turnLabels, check: { logicalKey: claim.row.logicalKey, status: claim.row.status, turnLabels, spans: spans.flat() } };
   });
+  // Each finding keeps hidden every quote of a claim it hides, as the blanking does (`hiddenBy`).
+  for (const f of forCheck) f.hiddenSpans = [...(f.hiddenSpans ?? []), ...placedClaims.filter((c) => findingHidesClaim(f, c.check)).flatMap((c) => c.check.spans)];
+  const claims = placedClaims.map(({ claim, turnLabels, check }) => ({ claim, turnLabels, eligibility: claimEligibility(check, forCheck) }));
   const eligible = claims.filter((c) => c.eligibility.eligible).map((c) => c.claim);
   return { claims, eligible, eligibleKeys: new Set(eligible.map((c) => c.row.logicalKey)), withheldCount: claims.filter((c) => !c.eligibility.eligible && c.eligibility.reason === "restricted").length, findings: forCheck };
 }
