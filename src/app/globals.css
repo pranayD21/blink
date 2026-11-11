@@ -532,6 +532,136 @@ a:hover .blink-mark .blink-lid {
   50% { opacity: 0.2; }
 }
 
+.live-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  border-radius: 999px;
+  padding: 0.65rem 1.35rem;
+  background: color-mix(in srgb, var(--foreground) 6%, transparent);
+  backdrop-filter: blur(18px);
+  box-shadow:
+    inset 1px 1px 0 rgba(255, 255, 255, 0.45),
+    inset -1px -1px 0 rgba(255, 255, 255, 0.18),
+    0 10px 28px rgba(0, 0, 0, 0.22);
+  transition: box-shadow 0.35s ease, background-color 0.35s ease, transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.live-pill[data-level="amber"] {
+  background: color-mix(in srgb, var(--warning) 16%, transparent);
+  box-shadow:
+    inset 1px 1px 0 color-mix(in srgb, var(--warning) 70%, transparent),
+    inset -1px -1px 0 color-mix(in srgb, var(--warning) 35%, transparent),
+    0 10px 30px color-mix(in srgb, var(--warning) 18%, transparent);
+}
+
+.live-pill[data-level="red"] {
+  background: color-mix(in srgb, var(--destructive) 18%, transparent);
+  box-shadow:
+    inset 1px 1px 0 color-mix(in srgb, var(--destructive) 75%, transparent),
+    inset -1px -1px 0 color-mix(in srgb, var(--destructive) 40%, transparent),
+    0 12px 32px color-mix(in srgb, var(--destructive) 22%, transparent);
+}
+
+.live-pill-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 999px;
+  flex: none;
+  background: var(--muted-foreground);
+  transition: background-color 0.3s ease, transform 0.3s ease;
+}
+
+.live-pill[data-level="listening"] .live-pill-dot {
+  background: var(--success);
+}
+
+.live-pill[data-level="amber"] .live-pill-dot {
+  background: var(--warning);
+  transform: scale(1.15);
+}
+
+.live-pill[data-level="red"] .live-pill-dot {
+  background: var(--destructive);
+  transform: scale(1.2);
+}
+
+.call-track {
+  position: relative;
+  height: 10px;
+  width: 100%;
+  cursor: pointer;
+  overflow: hidden;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--foreground) 12%, transparent);
+}
+
+.call-track-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--foreground);
+  transition: width 0.1s linear;
+}
+
+.turn-card {
+  width: 100%;
+  border-radius: 1.1rem;
+  padding: 0.95rem 1.15rem;
+  text-align: left;
+  transition: background-color 0.25s ease, transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.turn-card:hover {
+  background: color-mix(in srgb, var(--foreground) 6%, transparent);
+}
+
+.turn-card[data-active="true"] {
+  background: color-mix(in srgb, var(--foreground) 9%, transparent);
+  box-shadow: inset 1px 1px 0 rgba(255, 255, 255, 0.28);
+}
+
+.turn-card[data-flag="amber"] {
+  background: color-mix(in srgb, var(--warning) 11%, transparent);
+}
+
+.turn-card[data-flag="red"] {
+  background: color-mix(in srgb, var(--destructive) 12%, transparent);
+}
+
+.word-upcoming {
+  color: color-mix(in srgb, var(--foreground) 42%, transparent);
+  transition: color 0.15s ease;
+}
+
+.word-spoken {
+  color: var(--foreground);
+  transition: color 0.15s ease;
+}
+
+.word-now {
+  color: var(--foreground);
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 4px;
+}
+
+.fsm-box {
+  border-radius: 1.1rem;
+  padding: 1rem 1.1rem;
+  background: color-mix(in srgb, var(--foreground) 4%, transparent);
+  box-shadow: inset 1px 1px 0 rgba(255, 255, 255, 0.18);
+}
+
+.sealed-bar {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 0.35rem 0.9rem;
+  background: color-mix(in srgb, var(--destructive) 15%, transparent);
+  color: var(--foreground);
+  box-shadow: inset 1px 1px 0 color-mix(in srgb, var(--destructive) 45%, transparent);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .aurora-field,
   .agent-mark,
@@ -544,7 +674,9 @@ a:hover .blink-mark .blink-lid {
 
   .glass-button,
   .glass-press,
-  .glass-reveal {
+  .glass-reveal,
+  .live-pill,
+  .turn-card {
     transition: none;
   }
 

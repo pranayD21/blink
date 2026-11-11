@@ -45,5 +45,5 @@ export function proxy(request: NextRequest) {
 
 export const config = {
   // Pages only: API calls must already carry the cookie, and static assets need no user.
-  matcher: ["/((?!api|_next/static|_next/image|favicon.ico|icon.svg|.*\\.(?:png|svg|jpg|ico)$).*)"],
+  matcher: ["/((?!api|_next/static|_next/image|favicon.ico|icon.svg|.*\\.(?:png|svg|jpg|ico|mp3)$).*)"],
 };

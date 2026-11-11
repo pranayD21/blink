@@ -37,15 +37,46 @@ export function startTrial() {
 }
 
 const STEPS = [
-  { title: "Read the call", body: "This is a sample call about Northline Pumps. A banker is asking an expert how the quarter is going. Blink has not read it yet.", target: "[data-demo='call']" },
-  { title: "Blink reads one sentence", body: "Blink stopped on “Distributor orders fell 15% this quarter.” It wrote that down as a claim: one thing the expert said that can be checked.", target: "[data-demo='sentence']" },
-  { title: "Blink checks the filing", body: "Northline’s earnings release says orders were down 4%. The expert said 15%. Those are different numbers, so Blink flags the sentence.", target: "[data-demo='check']" },
-  { title: "Here is the flag", body: "The flag keeps the expert’s exact words next to the filing. A person decides what happens next. Blink does not hide or clear anything by itself.", target: "[data-demo='finding']" },
-  { title: "Keep the 15% line hidden", body: "Click Keep hidden. The banker will not see the 15% line in the note.", target: "[data-demo='decide']", click: true },
-  { title: "This is what the banker reads", body: "The note says demand is soft, and it cites the expert. The 15% line is not in it. One statement was kept hidden.", target: "[data-demo='note']" },
+  {
+    title: "How Blink works",
+    body: "Before any call, Blink compiles the firm's compliance rules into finite-state machines and pins Halvorsen's SEC filings. Next, we will sit in on the live call.",
+    target: "[data-demo='workflow']",
+    button: "Sit in on the call",
+  },
+  {
+    title: "Listen in real time",
+    body: "Priya and Ray are talking now. At 0:22 Ray mentions a 20% drop without naming a company or source. Blink evaluates indeterminate and stays quiet instead of raising a false alarm.",
+    target: "[data-demo='live-room']",
+    button: "Jump to Amber warning",
+  },
+  {
+    title: "Amber before Ray answers",
+    body: "At 0:32 Priya asks for Halvorsen's own unreported Q3 bookings. Blink checks her question first and turns the banker pill Amber so she can steer away.",
+    target: "[data-demo='pill']",
+    button: "See Red & live FSM",
+  },
+  {
+    title: "Red leak, FSM & Kleene math",
+    body: "Ray reveals an active Salesforce login and cites -19.8% Q3 bookings versus -8.0% in the Q2 10-Q. Every predicate evaluates true, escalating Monitor M2 and flipping the pill Red.",
+    target: "[data-demo='engine']",
+    button: "Review as compliance",
+  },
+  {
+    title: "A human decides the flag",
+    body: "Blink never clears or deletes anything by itself. Compliance sees the linked quotes, the 10-Q mismatch, and the FSM trace. Click Keep hidden & seal.",
+    target: "[data-demo='decide']",
+    button: "Keep hidden & seal",
+    click: true,
+  },
+  {
+    title: "Safe brief for the banker",
+    body: "Priya gets a cited note built from Ray's public steel remarks (+12%), and a transcript with the Salesforce leak replaced by sealed bars.",
+    target: "[data-demo='note']",
+    button: "Next",
+  },
 ] as const;
 
-const DONE = "That was one call. Blink read a number, checked it against the public filing, and flagged the mismatch. You kept the 15% line hidden. The banker only received the part that was safe.";
+const DONE = "You just saw a full Blink run: policy compiled to state machines, live Amber and Red warnings during a real conversation, human review on pinned evidence, and a leak-checked brief.";
 
 type Place = {
   arrived: boolean;
@@ -56,8 +87,6 @@ type Place = {
   body: string;
 };
 
-// Never throws: an empty or invalid selector finds nothing. querySelector("") throws, and a step
-// with nothing to highlight has no selector.
 const found = (selector: string | null | undefined): HTMLElement | null => {
   if (!selector) return null;
   try {
@@ -69,15 +98,22 @@ const found = (selector: string | null | undefined): HTMLElement | null => {
 
 function place(index: number, pathname: string): Place {
   if (pathname !== "/trial") {
-    return { arrived: false, selector: null, go: "/trial", button: "Open the sample call", completesOnClick: false, body: "We’ll use a sample call about Northline Pumps. Blink will read one sentence and check it against the company’s public filing." };
+    return {
+      arrived: false,
+      selector: null,
+      go: "/trial",
+      button: "Open live call demo",
+      completesOnClick: false,
+      body: "We will walk through Blink's workflow and sit in on a live call between Priya Raman and former Halvorsen VP Ray Castellano.",
+    };
   }
   const step = STEPS[index];
   if (!step) return { arrived: true, selector: "[data-demo='note']", go: null, button: "Finish", completesOnClick: false, body: DONE };
   const click = "click" in step && step.click;
-  return { arrived: true, selector: step.target, go: null, button: click ? "Keep hidden" : "Next", completesOnClick: click, body: step.body };
+  return { arrived: true, selector: step.target, go: null, button: step.button, completesOnClick: click, body: step.body };
 }
 
-/** A guided run of the Northline sample call. The highlighted control is the next click. */
+/** A guided walkthrough of the Halvorsen live call, FSM calculations, and release workflow. */
 export function TrialCoach() {
   const pathname = usePathname() ?? "";
   const router = useRouter();
@@ -85,18 +121,18 @@ export function TrialCoach() {
   const step = raw === null || raw === "" ? null : Number(raw);
   const hidden = pathname === "/" || pathname === "/login" || pathname.startsWith("/desktop");
   const active = step !== null && !hidden && !Number.isNaN(step);
-  // place() reads the page. On a client navigation this render can run before the new page is on
-  // screen, so read it again once it has been painted (and once more for content that streams in).
   const [, setSeen] = useState(0);
+
   useEffect(() => {
     if (!active) return;
     const frame = requestAnimationFrame(() => setSeen((n) => n + 1));
-    const later = window.setTimeout(() => setSeen((n) => n + 1), 400);
+    const later = window.setTimeout(() => setSeen((n) => n + 1), 350);
     return () => {
       cancelAnimationFrame(frame);
       window.clearTimeout(later);
     };
   }, [active, pathname, step]);
+
   const here = active ? place(step, pathname) : null;
 
   useEffect(() => {
@@ -113,6 +149,19 @@ export function TrialCoach() {
     const apply = () => {
       const el = found(here.selector);
       const card = nodes.card;
+      const dock = document.querySelector<HTMLElement>("[data-trial-dock]");
+      if (card && dock) {
+        const placeRect = dock.getBoundingClientRect();
+        card.style.top = `${Math.max(16, placeRect.top)}px`;
+        card.style.left = `${placeRect.left}px`;
+        card.style.width = `${placeRect.width}px`;
+        card.style.bottom = "auto";
+        card.style.maxHeight = `${placeRect.height}px`;
+        card.style.visibility = "visible";
+      } else if (card) {
+        card.style.visibility = pathname === "/trial" ? "hidden" : "visible";
+      }
+
       const showHole = (on: boolean) => {
         for (const key of ["top", "left", "right", "bottom", "ring"] as const) {
           if (nodes[key]) nodes[key].style.display = on ? "block" : "none";
@@ -148,21 +197,9 @@ export function TrialCoach() {
         nodes.ring.style.width = `${width}px`;
         nodes.ring.style.height = `${height}px`;
       }
-      const dock = document.querySelector<HTMLElement>("[data-trial-dock]");
-      if (card && dock) {
-        const place = dock.getBoundingClientRect();
-        card.style.top = `${place.top}px`;
-        card.style.left = `${place.left}px`;
-        card.style.width = `${place.width}px`;
-        card.style.bottom = "auto";
-        card.style.maxHeight = `${place.height}px`;
-        card.style.visibility = "visible";
-      } else if (card) {
-        card.style.visibility = pathname === "/trial" ? "hidden" : "visible";
-      }
     };
     apply();
-    found(here.selector)?.scrollIntoView({ block: "center", behavior: "smooth" });
+    found(here.selector)?.scrollIntoView({ block: "nearest", behavior: "smooth" });
     window.addEventListener("resize", apply);
     window.addEventListener("scroll", apply, true);
     return () => {
@@ -212,20 +249,27 @@ export function TrialCoach() {
       <div data-trial="right" className="trial-dim" style={{ right: 0, display: "none" }} />
       <div data-trial="bottom" className="trial-dim" style={{ left: 0, right: 0, bottom: 0, display: "none" }} />
       <div data-trial="ring" className="trial-ring" style={{ display: "none" }} />
-      <aside data-trial="card" className="glass-surface fixed bottom-6 right-6 z-[80] flex max-h-[70vh] w-[380px] flex-col overflow-y-auto px-6 py-5" data-testid="trial-card" data-step={step} aria-live="polite" style={pathname === "/trial" ? { visibility: "hidden" } : undefined}>
-        <p className="text-base text-muted-foreground">{step >= STEPS.length ? "The run" : `Step ${step + 1} of ${STEPS.length}`}</p>
+      <aside
+        data-trial="card"
+        className="glass-surface fixed bottom-6 right-6 z-[80] flex max-h-[75vh] w-[380px] flex-col overflow-y-auto px-6 py-5"
+        data-testid="trial-card"
+        data-step={step}
+        aria-live="polite"
+        style={pathname === "/trial" ? { visibility: "hidden" } : undefined}
+      >
+        <p className="text-base text-muted-foreground">{step >= STEPS.length ? "Complete" : `Step ${step + 1} of ${STEPS.length}`}</p>
         <h2 className="mt-1 text-2xl text-foreground">{step >= STEPS.length ? "That is a Blink run" : STEPS[step].title}</h2>
         <p className="mt-2 text-lg leading-snug text-foreground">{here.body}</p>
         <ol className="mt-4 min-h-0 flex-1 space-y-1.5 overflow-y-auto text-base">
           {STEPS.map((item, index) => (
-            <li key={item.title} className={index === step ? "text-foreground" : "text-muted-foreground"}>
+            <li key={item.title} className={index === step ? "font-medium text-foreground" : "text-muted-foreground"}>
               <span className="tabular-nums">{index + 1}.</span> {item.title}
             </li>
           ))}
         </ol>
         <div className="mt-4 flex items-center justify-between gap-3">
-          <button type="button" className="text-base text-muted-foreground" onClick={() => setTrial(null)} data-testid="end-trial">
-            End trial
+          <button type="button" className="glass-press text-base text-muted-foreground hover:text-foreground" onClick={() => setTrial(null)} data-testid="end-trial">
+            End walkthrough
           </button>
           <Button type="button" onClick={primary} data-testid="trial-next">
             {here.button}
