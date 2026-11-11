@@ -1518,12 +1518,12 @@ git commit   # test(real): score Blink on real calls, per call and per policy
 - Consumes: `createTurnAssembler` (Task 16); the call routes (Task 14); `say` and `ffmpeg` on the Mac.
 - Produces: `pnpm eval:spoken --transcript <file> --case <caseId> [--server <url>] [--as <userId>]`, which reads each turn aloud with a different voice per speaker into two 16 kHz channels, streams them to Flux at real-time pace, posts turns exactly as the banker's app does, ends the call, and prints per turn: speaker, pill, read status, and milliseconds from end of speech to decision.
 
-- [ ] **Step 1: Write the script.** With `--as user_priya` it signs in through `/api/session/login` using that user's email and the password under that id in `BLINK_SEED_PASSWORDS`; without it, it uses the switcher cookie for `user_priya`. It never prints a password. It imports the pure assembler and never the browser modules.
-- [ ] **Step 2: Run it on the Halvorsen transcript locally.** Start `BLINK_LLM_MODE=live pnpm dev` on a fresh database with the manual policy, then run `pnpm eval:spoken --transcript fixtures/cases/halvorsen/transcript-v1.txt --case case_halvorsen`. Expected: the pill goes red on the turn that carries the source remark, and the call ends with a count.
-- [ ] **Step 3: Run it on each development call** under the Oaktree policy.
-- [ ] **Step 4: Check transcription on real audio.** Download two files of Earnings-21's ten-hour evaluation subset (`https://github.com/revdotcom/speech-datasets`, CC BY-SA 4.0), stream ten minutes of each through Flux, and compare with the reference transcript: word error rate, and separately the share of numbers and company names transcribed correctly.
-- [ ] **Step 5: Write `docs/eval/2026-11-spoken.md`.** Per call: turns, turns not read live, median, 95th percentile and worst time from end of speech to decision, and whether live flags matched the after-call read. Then the Earnings-21 figures, the Deepgram credit used, and the note that voices were synthetic and words real.
-- [ ] **Step 6: Commit.**
+- [x] **Step 1: Write the script.** With `--as user_priya` it signs in through `/api/session/login` using that user's email and the password under that id in `BLINK_SEED_PASSWORDS`; without it, it uses the switcher cookie for `user_priya`. It never prints a password. It imports the pure assembler and never the browser modules.
+- [x] **Step 2: Run it on the Halvorsen transcript locally.** Start `BLINK_LLM_MODE=live pnpm dev` on a fresh database with the manual policy, then run `pnpm eval:spoken --transcript fixtures/cases/halvorsen/transcript-v1.txt --case case_halvorsen`. Expected: the pill goes red on the turn that carries the source remark, and the call ends with a count.
+- [x] **Step 3: Run it on each development call** under the Oaktree policy.
+- [x] **Step 4: Check transcription on real audio.** Download two files of Earnings-21's ten-hour evaluation subset (`https://github.com/revdotcom/speech-datasets`, CC BY-SA 4.0), stream ten minutes of each through Flux, and compare with the reference transcript: word error rate, and separately the share of numbers and company names transcribed correctly.
+- [x] **Step 5: Write `docs/eval/2026-11-spoken.md`.** Per call: turns, turns not read live, median, 95th percentile and worst time from end of speech to decision, and whether live flags matched the after-call read. Then the Earnings-21 figures, the Deepgram credit used, and the note that voices were synthetic and words real.
+- [x] **Step 6: Commit.**
 
 ```bash
 git add scripts/speak-call.ts docs/eval/2026-11-spoken.md package.json

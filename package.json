@@ -23,6 +23,7 @@
     "eval": "tsx scripts/eval.ts",
     "eval:policies": "tsx scripts/compile-real-policies.ts",
     "eval:real": "tsx scripts/eval-real.ts",
+    "eval:spoken": "tsx scripts/speak-call.ts",
     "record": "BLINK_LLM_MODE=record tsx scripts/record-demo.ts",
     "demo:check": "BLINK_LLM_MODE=replay tsx scripts/record-demo.ts",
     "record:live": "BLINK_LLM_MODE=record tsx scripts/record-live.ts",
