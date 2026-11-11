@@ -1,0 +1,15 @@
+import { bundle } from "@remotion/bundler";
+import { renderStill, selectComposition, openBrowser } from "@remotion/renderer";
+import { execFileSync } from "node:child_process";
+import { mkdirSync, rmSync } from "node:fs";
+const [, , out, ...secs] = process.argv;
+rmSync(".prev", { recursive: true, force: true }); mkdirSync(".prev");
+const serveUrl = await bundle({ entryPoint: new URL("./src/index.ts", import.meta.url).pathname });
+const browser = await openBrowser("chrome");
+const composition = await selectComposition({ serveUrl, id: "Film", puppeteerInstance: browser });
+let i = 0; const jobs = secs.map((s, n) => async () => renderStill({ composition, serveUrl, output: `.prev/${String(n).padStart(3, "0")}.jpeg`, frame: Math.round(Number(s) * 60), imageFormat: "jpeg", jpegQuality: 88, scale: 0.3333, puppeteerInstance: browser }));
+await Promise.all(Array.from({ length: 4 }, async () => { while (i < jobs.length) await jobs[i++](); }));
+await browser.close({ silent: true });
+const cols = 4, rows = Math.ceil(secs.length / cols);
+execFileSync("ffmpeg", ["-v", "error", "-y", "-pattern_type", "glob", "-i", ".prev/*.jpeg", "-vf", `tile=${cols}x${rows}:padding=4`, "-frames:v", "1", out]);
+console.log("ok", secs.length);

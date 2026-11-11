@@ -1,0 +1,19 @@
+[
+ {"id":"l1","text":"An expert says one sentence too many."},
+ {"id":"l2","text":"And suddenly, your research is inside information."},
+ {"id":"l3","text":"Usually, nobody catches it until someone reads the transcript, days later."},
+ {"id":"l4","text":"This is Blink."},
+ {"id":"l5","text":"It listens along, and reads every turn against your firm's own policy."},
+ {"id":"l6","text":"The banker never sees a transcript. No suggestions. No noise. Only this."},
+ {"id":"l8","text":"And if a warning doesn't land in time, nothing is lost. When the call ends, Blink reads the whole transcript again, hides every flagged passage, and sends it to compliance."},
+ {"id":"l9","text":"Compliance sees the exact quotes, the rule that fired, and why."},
+ {"id":"l10a","text":"A model reads."},
+ {"id":"l10b","text":"Code applies the policy."},
+ {"id":"l10c","text":"A person decides."},
+ {"id":"l11","text":"The rules are your rules. Written in plain English, compiled, tested against every combination of evidence, and approved by hash."},
+ {"id":"l12","text":"Only then is a summary drafted, from cleared statements alone, with every sentence cited."},
+ {"id":"l13","text":"The banker reads only what was released. Restricted passages are blank. The hidden words never reach their browser."},
+ {"id":"l14","text":"Every action lands in a tamper-evident audit log. Every call is measured. Even the misses."},
+ {"id":"l15","text":"Talk freely. Compliance decides the rest."},
+ {"id":"l16","text":"Blink."}
+]
